@@ -8,10 +8,13 @@ import sys
 import matplotlib.pyplot as plt
 import multiprocessing
 import argparse
-import gff
+import os
 from functools import partial
 from multiprocessing import Pool
 from tempfile import NamedTemporaryFile
+import gff
+import protein_domains_pd
+import configuration
 
 t0 = time.time()
 np.set_printoptions(threshold=np.nan)
@@ -39,8 +42,7 @@ def multifasta(QUERY):
 def fasta_read(subfasta):
 	sequence_lines = []
 	with open(subfasta, "r") as fasta:
-		header = str(fasta.readline().strip())
-		header = header.replace(",","_")	# prevent problems with csv parsing
+		header = fasta.readline().strip().split(" ")[0]
 		for line in fasta:
 			clean_line = line.strip()			
 			if clean_line:				
@@ -85,7 +87,7 @@ def annot_profile(annotation_keys, part):
 	subprofile = {} 				
 	for key in annotation_keys:
 		subprofile[key] = np.zeros(part, dtype=int)
-	subprofile["repeat"] = np.zeros(part, dtype=int)
+	subprofile["Unclassified_repetition"] = np.zeros(part, dtype=int)
 	subprofile["all"] = np.zeros(part, dtype=int)
 	return subprofile
 
@@ -103,7 +105,8 @@ def parallel_process(WINDOW, query_length, annotation_keys, reads_annotations, s
 		subprofile = annot_profile(annotation_keys, WINDOW + 1)
 		
 	# Find HSP records using blast for every window defined by query location and parse the tabular stdout -> 1. query, 2. database read, 3. %identical, 4. alignment length, 5. alignment start, 6. alignment end
-	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db ./reads -evalue {} -word_size {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start,loc_end, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
+	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
+	#p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db ./reads -evalue {} -word_size {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start,loc_end, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
 	for line in p.stdout:
 		column = line.decode("utf-8").rstrip().split("\t")
 		if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
@@ -114,7 +117,7 @@ def parallel_process(WINDOW, query_length, annotation_keys, reads_annotations, s
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
-				annotation = "repeat"
+				annotation = "Unclassified_repetition"
 			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
 	return subprofile
 
@@ -134,21 +137,34 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 
 
 # Convert profile dictionary to output table and plot profile graphs
-def profile_to_csv(profile, OUTPUT, OUTPUT_PIC, query_length, header, fig, ax, cm):
+def profile_to_csv(profile, OUTPUT, query_length, header, fig, ax, cm):
 	data = np.zeros((len(profile), query_length), dtype=int)
 	labels = []
 	count = 0
+	number_of_plots = 0
 	for key in list(profile.keys()):
 		labels.append(key) 					
 		data[count] = profile[key]		
 		if np.any(data[count]):
 			ax.plot(list(range(query_length)), data[count], label=labels[count])
-		#ax.set_prop_cycle([cm(1.*count/len(profile))])
+			number_of_plots += 1
+		ax.set_prop_cycle(plt.cycler("color", [cm(1.*count/len(profile))]))
 		if key == "all":
 			all_position = count 				
 		count += 1
-	plt.legend(loc="upper left")
-	OUPUT_PIC=fig.savefig("output.png")
+	if not np.any(data):
+		ax.hlines(0, 0, query_length, color="red", lw=4)
+	ax.set_title(header[1:])
+	ax.set_xlabel('sequence bp')
+	ax.set_ylabel('copy numbers')
+	art = []
+	if number_of_plots != 0:
+		lgd = ax.legend(bbox_to_anchor=(0.5,-0.1 ), loc=9, ncol=3)
+		art.append(lgd)
+	#output_pic_png = "{}.png".format(OUTPUT_PIC)
+	#fig.savefig(output_pic_png, additional_artists=art, bbox_inches="tight", format='png')
+	#fig.savefig("output_files/output.png")
+	#os.rename(output_pic_png, OUTPUT_PIC)
 
 	# Swap positions so that "all" record is the first in the table
 	data[0], data[all_position] = data[all_position], data[0].copy()
@@ -168,11 +184,38 @@ def profile_to_csv(profile, OUTPUT, OUTPUT_PIC, query_length, header, fig, ax, c
 
 # Define profiles visualization
 def set_visualization():
-	fig = plt.figure()
+	fig = plt.figure(figsize=(18, 8))
 	ax = fig.add_subplot(111)
 	cm = plt.get_cmap("gist_rainbow")
 	return fig, ax, cm
 	
+def html_output(seq_names, link, HTML):
+	pictures = "\n".join(["<img src={}.png>".format(pic)for pic in seq_names])
+	html_str = """
+	<!DOCTYPE html>
+	<html>
+	<body>
+		<h1>Repetitive profile picture</h1>
+		{}
+		<a href={} target="_blank" >Link to JBrowser</a>	
+	</body>
+	</html>
+	""".format(pictures, link)
+	with open("{}".format(HTML),"w") as html_file:
+		html_file.write(html_str)
+
+def jbrowse_prep(HTML_PATH, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF):
+	jbrowse_in_galaxy_dir = os.path.join(HTML_PATH, "jbrowse")
+	convert = "%2F"
+	#link_part0 = "http://nod6/JBrowse-1.12.1/index.html?data="
+	link_part1 = "data/galaxy_files/" 
+	link_part2 = convert.join(HTML_PATH.split("/")[-2:])
+	link_part3 = "{}jbrowse".format(convert)
+	link = configuration.LINK_PART0 + link_part1.replace("/", convert) + link_part2 + link_part3
+	subprocess.call("{}/prepare-refseqs.pl --fasta {} --out {}".format(configuration.JBROWSE_BIN, QUERY, jbrowse_in_galaxy_dir), shell=True)
+	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_domains --out {}".format(configuration.JBROWSE_BIN, OUT_DOMAIN_GFF, jbrowse_in_galaxy_dir), shell=True)
+	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --out {}".format(configuration.JBROWSE_BIN, OUTPUT_GFF, jbrowse_in_galaxy_dir), shell=True)
+	return link
 
 def main(args):
 	# Parse the command line arguments 
@@ -188,16 +231,25 @@ def main(args):
 	OVERLAP = args.overlap
 	BLAST_TASK = args.task
 	MAX_ALIGNMENTS = args.max_alignments
-	NEW_DB=args.new_db
+	NEW_DB = args.new_db
 	GFF = args.gff
 	THRESHOLD = args.threshold
+	THRESHOLD_SEGMENT = args.threshold_segment
 	OUTPUT = args.output
 	OUTPUT_GFF = args.output_gff
-	OUTPUT_PIC = args.output_pic
+	DOMAINS = args.protein_domains
+	LAST_DB = args.protein_database
+	CLASSIFICATION = args.classification
+	OUT_DOMAIN_GFF = args.domain_gff	
+	HTML = args.html_file
+	HTML_PATH = args.html_path
+
 	
 	# Create new blast database of reads
+	#if NEW_DB:
+		#subprocess.call("makeblastdb -in {} -dbtype nucl -out ./reads".format(BLAST_DB), shell=True)
 	if NEW_DB:
-		subprocess.call("makeblastdb -in {} -dbtype nucl -out ./reads".format(BLAST_DB), shell=True)
+		subprocess.call("makeblastdb -in {} -dbtype nucl".format(BLAST_DB), shell=True)
 		
 	# Define the parallel process
 	STEP = WINDOW - OVERLAP		
@@ -212,6 +264,8 @@ def main(args):
 	
 	# Process every input fasta sequence sequentially
 	fasta_list = multifasta(QUERY)
+	fig_list = []
+	ax_list = []
 	for subfasta in fasta_list:
 		[header, sequence] = fasta_read(subfasta)
 		query_length = len(sequence)
@@ -231,57 +285,75 @@ def main(args):
 		[fig, ax, cm] = set_visualization()
 
 		# Write output to a table and plot the profiles
-		output_table = profile_to_csv(profile, OUTPUT, OUTPUT_PIC, query_length, header, fig, ax, cm)
+		output_table = profile_to_csv(profile, OUTPUT, query_length, header, fig, ax, cm)
+		fig_list.append(fig)
+		ax_list.append(ax)
 	output_table.close()
-
 	# Use gff module to convert profile table to GFF3 format
 	if GFF:
-		gff.main(OUTPUT, OUTPUT_GFF, THRESHOLD)		
+		gff.main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
 
+	if DOMAINS:
+		seq_names = protein_domains_pd.main(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_PATH, 100, fig_list, ax_list, 1, False)
+		print(OUTPUT_GFF)
+		link = jbrowse_prep(HTML_PATH, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF)		
+		html_output(seq_names, link, HTML)
 
 if __name__ == "__main__":
-    # Define command line arguments 
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-q','--query', type=str, required=True,
+    
+    #Define command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-q', '--query', type=str, required=True,
 						help='query sequence to be processed')
-	parser.add_argument('-d','--database', type=str, required=True,
+    parser.add_argument('-d', '--database', type=str, required=True,
 						help='blast database of all reads')
-	parser.add_argument('-a','--annotation_tbl', type=str, required=True,
+    parser.add_argument('-a', '--annotation_tbl', type=str, required=True,
 						help='clusters annotation table')
-	parser.add_argument('-c','--cls', type=str, required=True,
+    parser.add_argument('-c', '--cls', type=str, required=True,
 						help='cls file containing reads assigned to clusters')
-	parser.add_argument('-i','--identical', type=float, default=95,
+    parser.add_argument('-i', '--identical', type=float, default=95,
 						help='blast filtering option: sequence indentity threshold between query and mapped read from db in %')
-	parser.add_argument('-l','--align_length', type=int, default=40,
-						help='blast filtering option: minimal align length threshold in bp')
-	parser.add_argument('-m','--max_alignments', type=int, default=10000000,
+    parser.add_argument('-l', '--align_length', type=int, default=40,
+						help='blast filtering option: minimal alignment length threshold in bp')
+    parser.add_argument('-m', '--max_alignments', type=int, default=10000000,
 						help='blast filtering option: maximal number of alignments in the output')
-	parser.add_argument('-e','--e_value', type=str, default=1e-15,
+    parser.add_argument('-e', '--e_value', type=str, default=1e-15,
 						help='blast setting option: e-value')
-	parser.add_argument('-ws','--word_size', type=int, default=11,
+    parser.add_argument('-ws', '--word_size', type=int, default=11,
 						help='blast setting option: initial word size for alignment')
-	parser.add_argument('-t','--task', type=str, default="blastn",
+    parser.add_argument('-t', '--task', type=str, default="blastn",
 						help='type of blast to be triggered')
-	parser.add_argument('-w','--window', type=int, default=5000,
+    parser.add_argument('-w', '--window', type=int, default=5000,
 						help='window size for parallel processing')
-	parser.add_argument('-o','--overlap', type=int, default=150,
+    parser.add_argument('-o', '--overlap', type=int, default=150,
 						help='overlap for parallely processed regions, set greater than read size')
-	parser.add_argument('-n','--new_db', default=False,
+    parser.add_argument('-n', '--new_db', default=False,
 						help='create a new blast database')
-	parser.add_argument('-g','--gff', default=False,
+    parser.add_argument('-g', '--gff', default=False,
 						help='use module for gff')
-	parser.add_argument('-th','--threshold',type=int, default=100,
+    parser.add_argument('-th', '--threshold', type=int, default=100,
 						help='threshold (number of hits) for report repetitive area in gff')
-	parser.add_argument('-ou','--output',type=str, default="output.csv",
+    parser.add_argument('-ths', '--threshold_segment', type=int, default=100,
+                        help='threshold for a single segment length to be reported as repetitive reagion in gff')
+    parser.add_argument('-pd', '--protein_domains', default=False,
+						help='use module for protein domains')
+    parser.add_argument('-pdb', '--protein_database', type=str,
+                        help='protein domains database')
+    parser.add_argument('-cs','--classification', type=str,
+                        help='protein domains classification file')
+    parser.add_argument('-ou', '--output', type=str, default="output.csv",
 						help='output profile table name')
-	parser.add_argument('-ouf','--output_gff',type=str, default="output.gff",
-                                                help='output gff format')
-	parser.add_argument('-oup','--output_pic',type=str, default="output.png",
-                                                help='output profile graph name')
+    parser.add_argument('-ouf', '--output_gff', type=str, default="output.gff",
+                        help='output gff format')
+    parser.add_argument("-oug","--domain_gff",type=str, default="output_domains.gff",
+						help="output domains gff format")
+    parser.add_argument("-hf","--html_file", type=str, default="output.html",
+                        help="output html file name")
+    parser.add_argument("-hp","--html_path", type=str, default="html_path",
+                        help="path to html extra files")
 
-
-	args = parser.parse_args()
-	main(args)
+    args = parser.parse_args()
+    main(args)
 
 print((time.time() - t0))
-#plt.show()
+

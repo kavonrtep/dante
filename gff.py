@@ -5,8 +5,9 @@ import numpy as np
 from operator import itemgetter
 from itertools import groupby
  
-def main(OUTPUT, THRESHOLD):
+def main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 	# Predefine the standard columns of GFF3 format
+	print(OUTPUT_GFF)
 	SOURCE = "Profrep"
 	FEATURE = "Repeat"
 	SCORE = "."
@@ -15,17 +16,18 @@ def main(OUTPUT, THRESHOLD):
 	# Find the position of header(s) 
 	PATTERN = ">"
 	header = []
+	threshold_segment = 100
 	with open(OUTPUT, "r") as input_profile:
 		for num, line in enumerate(input_profile): 
 			if PATTERN in line:
-				header.append([num, line.rstrip().split(",")])
+				header.append([num, line.rstrip().split("\t")])
 		csv_length = num + 1 
 	header.append([csv_length])
-	annotation_output = np.genfromtxt(OUTPUT, dtype=int, delimiter=",")
+	annotation_output = np.genfromtxt(OUTPUT, dtype=int, delimiter="\t")
 	for fasta_counter in range(len(header) - 1):
 		fasta_start = header[fasta_counter][0]
 		fasta_end = header[fasta_counter + 1][0]
-		fasta_id = header[fasta_counter][1][0]
+		fasta_id = header[fasta_counter][1][0][1:]
 		# Choose the profile for certain repetitive class, "all" profile is omitted
 		for column in range(2, annotation_output.shape[1]):
 			repetitive_class = header[fasta_counter][1][column]
@@ -35,10 +37,11 @@ def main(OUTPUT, THRESHOLD):
 				# Take the vector of nonzero records (above threshold) and group it to vectors of consecutive sequences, one group is one record in gff output
 				for key, group in groupby(enumerate(nonzero_records), lambda index_item: index_item[0] - index_item[1]):
 					group = list(map(itemgetter(1), group))
-					# Take boundaries of the group vectors
-					ranges.append(group[0])
-					ranges.append(group[-1])
-				with open("{}.gff".format(OUTPUT.split(".")[0]), "a") as gff:	
+					if len(group) > THRESHOLD_SEGMENT:
+						# Take boundaries of the group vectors
+						ranges.append(group[0])
+						ranges.append(group[-1])
+				with open(OUTPUT_GFF, "a") as gff:	
 					for i in range(len(ranges) - 1)[::2]:
 						 gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(fasta_id, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, repetitive_class))
 
@@ -49,5 +52,7 @@ if __name__ == "__main__":
 	parser.add_argument("-ou","--output",type=str, required=True,
 						help="output profile table name")
 	parser.add_argument("-th","--threshold",type=int, default=100,
-						help="threshold (number of hits) for report repetitive area in gff")
-	main(OUTPUT, THRESHOLD)
+						help="threshold for copy numbers (numbers of hits) at the  position to be considered as repetitive")
+	parser.add_argument("-ths","--threshold_segment",type=int, default=100,
+                                                help="threshold for a single segment length to be reported as repetitive reagion in gff")
+	main(OUTPUT, THRESHOLD, THRESHOLD_SEGMENT)

@@ -13,7 +13,7 @@ from functools import partial
 from multiprocessing import Pool
 from tempfile import NamedTemporaryFile
 
-t0 = time.time()
+t
 np.set_printoptions(threshold=np.nan)
 
 # Create single fasta temporary files to be processed sequentially
@@ -134,7 +134,7 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 
 
 # Convert profile dictionary to output table and plot profile graphs
-def profile_to_csv(profile, OUTPUT, OUTPUT_PIC, query_length, header, fig, ax, cm):
+def profile_to_csv(profile, OUTPUT, query_length, header, ax, cm):
 	data = np.zeros((len(profile), query_length), dtype=int)
 	labels = []
 	count = 0
@@ -148,7 +148,6 @@ def profile_to_csv(profile, OUTPUT, OUTPUT_PIC, query_length, header, fig, ax, c
 			all_position = count 				
 		count += 1
 	plt.legend(loc="upper left")
-	OUPUT_PIC=fig.savefig("output.png")
 
 	# Swap positions so that "all" record is the first in the table
 	data[0], data[all_position] = data[all_position], data[0].copy()
@@ -171,7 +170,7 @@ def set_visualization():
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
 	cm = plt.get_cmap("gist_rainbow")
-	return fig, ax, cm
+	return ax, cm
 	
 
 def main(args):
@@ -193,7 +192,6 @@ def main(args):
 	THRESHOLD = args.threshold
 	OUTPUT = args.output
 	OUTPUT_GFF = args.output_gff
-	OUTPUT_PIC = args.output_pic
 	
 	# Create new blast database of reads
 	if NEW_DB:
@@ -228,10 +226,10 @@ def main(args):
 		profile["all"] = sum(profile.values())
 
 		# Set up the visualization
-		[fig, ax, cm] = set_visualization()
+		[ax, cm] = set_visualization()
 
 		# Write output to a table and plot the profiles
-		output_table = profile_to_csv(profile, OUTPUT, OUTPUT_PIC, query_length, header, fig, ax, cm)
+		output_table = profile_to_csv(profile, OUTPUT, query_length, header, ax, cm)
 	output_table.close()
 
 	# Use gff module to convert profile table to GFF3 format
@@ -276,12 +274,8 @@ if __name__ == "__main__":
 						help='output profile table name')
 	parser.add_argument('-ouf','--output_gff',type=str, default="output.gff",
                                                 help='output gff format')
-	parser.add_argument('-oup','--output_pic',type=str, default="output.png",
-                                                help='output profile graph name')
 
 
 	args = parser.parse_args()
 	main(args)
 
-print((time.time() - t0))
-#plt.show()
