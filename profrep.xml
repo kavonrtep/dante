@@ -1,20 +1,20 @@
 <tool id="profrep" name="Sequence Repetitive Profile" version="1.0.0">
 <description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
 <command>
-export JBROWSE_BIN=/home/galaxy/bin/JBrowse-1.12.1/bin;
+export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 /mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/profrep_pd.py --query ${input} --identical ${identical}  
 --align_length ${align_length} --word_size ${word_size} --e_value ${e_value} --threshold ${threshold} --window ${window} 
 --overlap ${overlap} --output ${ProfTbl} --output_gff ${ProfGff} --gff True --html_file ${html_file}
 --html_path ${html_file.extra_files_path} 
  #if $custom_data.options_custom_data:
 	--database ${reads}
-        --annotation_tbl ${annotations}
-        --cls ${cls}
+    --annotation_tbl ${annotations}
+    --cls ${cls}
 	--new_db True
  #else
 	--database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*reads_all
-        --annotation_tbl /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*annotation
-        --cls /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*.cls
+    --annotation_tbl /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*annotation
+    --cls /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*.cls
 	--protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data
 	--classification /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/classification.csv
 	--domain_gff ${DomGff}

@@ -106,7 +106,6 @@ def parallel_process(WINDOW, query_length, annotation_keys, reads_annotations, s
 		
 	# Find HSP records using blast for every window defined by query location and parse the tabular stdout -> 1. query, 2. database read, 3. %identical, 4. alignment length, 5. alignment start, 6. alignment end
 	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
-	#p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db ./reads -evalue {} -word_size {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start,loc_end, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
 	for line in p.stdout:
 		column = line.decode("utf-8").rstrip().split("\t")
 		if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
@@ -148,7 +147,7 @@ def profile_to_csv(profile, OUTPUT, query_length, header, fig, ax, cm):
 		if np.any(data[count]):
 			ax.plot(list(range(query_length)), data[count], label=labels[count])
 			number_of_plots += 1
-		ax.set_prop_cycle(plt.cycler("color", [cm(1.*count/len(profile))]))
+		#ax.set_prop_cycle(plt.cycler("color", [cm(1.*count/len(profile))]))
 		if key == "all":
 			all_position = count 				
 		count += 1
@@ -201,20 +200,25 @@ def html_output(seq_names, link, HTML):
 	</body>
 	</html>
 	""".format(pictures, link)
-	with open("{}".format(HTML),"w") as html_file:
+	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
 
-def jbrowse_prep(HTML_PATH, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF):
-	jbrowse_in_galaxy_dir = os.path.join(HTML_PATH, "jbrowse")
+def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF):
+	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
 	convert = "%2F"
-	#link_part0 = "http://nod6/JBrowse-1.12.1/index.html?data="
-	link_part1 = "data/galaxy_files/" 
-	link_part2 = convert.join(HTML_PATH.split("/")[-2:])
-	link_part3 = "{}jbrowse".format(convert)
-	link = configuration.LINK_PART0 + link_part1.replace("/", convert) + link_part2 + link_part3
-	subprocess.call("{}/prepare-refseqs.pl --fasta {} --out {}".format(configuration.JBROWSE_BIN, QUERY, jbrowse_in_galaxy_dir), shell=True)
-	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_domains --out {}".format(configuration.JBROWSE_BIN, OUT_DOMAIN_GFF, jbrowse_in_galaxy_dir), shell=True)
-	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --out {}".format(configuration.JBROWSE_BIN, OUTPUT_GFF, jbrowse_in_galaxy_dir), shell=True)
+	if os.getenv("JBROWSE_BIN"):
+		JBROWSE_BIN = os.environ[JBROWSE_BIN]
+		extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
+		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, confoguration.jbrowse_data_dir).replace("/",convert)
+	else: 
+		JBROWSE_BIN = configuration.JBROWSE_BIN_PC
+		jbrowse_link_to_profrep = "data/profrep_data"
+		link_part2 = os.path.join(jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
+		#QUERY = "/mnt/raid/users/ninah/profrep_git/tmp/test_seq_1"
+	link = configuration.LINK_PART1 + link_part2
+	subprocess.call("{}/prepare-refseqs.pl --fasta {} --out {}".format(JBROWSE_BIN, QUERY, jbrowse_data_path), shell=True)
+	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_domains --out {}".format(JBROWSE_BIN, OUT_DOMAIN_GFF, jbrowse_data_path), shell=True)
+	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --out {}".format(JBROWSE_BIN, OUTPUT_GFF, jbrowse_data_path), shell=True)
 	return link
 
 def main(args):
@@ -238,22 +242,21 @@ def main(args):
 	OUTPUT = args.output
 	OUTPUT_GFF = args.output_gff
 	DOMAINS = args.protein_domains
-	LAST_DB = args.protein_database
-	CLASSIFICATION = args.classification
+	#LAST_DB = args.protein_database
+	#CLASSIFICATION = args.classification
 	OUT_DOMAIN_GFF = args.domain_gff	
 	HTML = args.html_file
-	HTML_PATH = args.html_path
-
+	HTML_DATA = args.html_path
 	
 	# Create new blast database of reads
-	#if NEW_DB:
-		#subprocess.call("makeblastdb -in {} -dbtype nucl -out ./reads".format(BLAST_DB), shell=True)
 	if NEW_DB:
 		subprocess.call("makeblastdb -in {} -dbtype nucl".format(BLAST_DB), shell=True)
 		
 	# Define the parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
+	print("++++++")
+	print(NUM_CORES)
 	parallel_pool = Pool(NUM_CORES)
 
 	# Assign clusters to repetitive classes
@@ -272,6 +275,7 @@ def main(args):
 		
 		# Create parallel process																												
 		subset_index = list(range(0, query_length, STEP))	
+		print(subset_index)
 		multiple_param = partial(parallel_process, WINDOW, query_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
 		profile_list = parallel_pool.map(multiple_param, subset_index)		 							
 
@@ -294,12 +298,21 @@ def main(args):
 		gff.main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
 
 	if DOMAINS:
-		seq_names = protein_domains_pd.main(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_PATH, 100, fig_list, ax_list, 1, False)
+		seq_names = protein_domains_pd.main(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA, fig_list, ax_list, 1, False)
 		print(OUTPUT_GFF)
-		link = jbrowse_prep(HTML_PATH, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF)		
+		link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF)		
 		html_output(seq_names, link, HTML)
 
 if __name__ == "__main__":
+    
+    HTML = configuration.HTML
+    TMP = configuration.TMP
+    DOMAINS_GFF = configuration.DOMAINS_GFF
+    REPEATS_GFF = configuration.REPEATS_GFF
+    REPEATS_TABLE = configuration.REPEATS_TABLE
+    CLASSIFICATION = configuration.CLASSIFICATION
+    LAST_DB = configuration.LAST_DB
+    
     
     #Define command line arguments
     parser = argparse.ArgumentParser()
@@ -329,31 +342,31 @@ if __name__ == "__main__":
 						help='overlap for parallely processed regions, set greater than read size')
     parser.add_argument('-n', '--new_db', default=False,
 						help='create a new blast database')
-    parser.add_argument('-g', '--gff', default=False,
+    parser.add_argument('-g', '--gff', default=True,
 						help='use module for gff')
     parser.add_argument('-th', '--threshold', type=int, default=100,
 						help='threshold (number of hits) for report repetitive area in gff')
     parser.add_argument('-ths', '--threshold_segment', type=int, default=100,
                         help='threshold for a single segment length to be reported as repetitive reagion in gff')
-    parser.add_argument('-pd', '--protein_domains', default=False,
+    parser.add_argument('-pd', '--protein_domains', default=True,
 						help='use module for protein domains')
-    parser.add_argument('-pdb', '--protein_database', type=str,
-                        help='protein domains database')
-    parser.add_argument('-cs','--classification', type=str,
-                        help='protein domains classification file')
-    parser.add_argument('-ou', '--output', type=str, default="output.csv",
+    #parser.add_argument('-pdb', '--protein_database', type=str,
+                        #help='protein domains database')
+    #parser.add_argument('-cs','--classification', type=str,
+                        #help='protein domains classification file')
+    parser.add_argument('-ou', '--output', type=str, default=REPEATS_TABLE,
 						help='output profile table name')
-    parser.add_argument('-ouf', '--output_gff', type=str, default="output.gff",
+    parser.add_argument('-ouf', '--output_gff', type=str, default=REPEATS_GFF,
                         help='output gff format')
-    parser.add_argument("-oug","--domain_gff",type=str, default="output_domains.gff",
+    parser.add_argument("-oug","--domain_gff",type=str, default=DOMAINS_GFF,
 						help="output domains gff format")
-    parser.add_argument("-hf","--html_file", type=str, default="output.html",
+    parser.add_argument("-hf","--html_file", type=str, default=HTML,
                         help="output html file name")
-    parser.add_argument("-hp","--html_path", type=str, default="html_path",
+    parser.add_argument("-hp","--html_path", type=str, default=TMP,
                         help="path to html extra files")
 
     args = parser.parse_args()
     main(args)
 
-print((time.time() - t0))
+print("ELAPSED_TIME_PROFREP = {}".format(time.time() - t0))
 

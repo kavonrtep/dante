@@ -2,10 +2,14 @@
 """ sequence repetitive profile conversion to GFF3 format """
 
 import numpy as np
+import time
 from operator import itemgetter
 from itertools import groupby
+import configuration
+  
  
 def main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
+	t1 = time.time() 
 	# Predefine the standard columns of GFF3 format
 	print(OUTPUT_GFF)
 	SOURCE = "Profrep"
@@ -16,7 +20,6 @@ def main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 	# Find the position of header(s) 
 	PATTERN = ">"
 	header = []
-	threshold_segment = 100
 	with open(OUTPUT, "r") as input_profile:
 		for num, line in enumerate(input_profile): 
 			if PATTERN in line:
@@ -45,14 +48,21 @@ def main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 					for i in range(len(ranges) - 1)[::2]:
 						 gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(fasta_id, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, repetitive_class))
 
+	print("ELAPSED_TIME_GFF = {}".format(time.time() - t1))
 
 if __name__ == "__main__":
 	import argparse
+	
+	REPEATS_GFF = configuration.REPEATS_GFF
+	
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-ou","--output",type=str, required=True,
 						help="output profile table name")
+	parser.add_argument('-ouf', '--output_gff', type=str, default=REPEATS_GFF,
+                        help='output gff format')
 	parser.add_argument("-th","--threshold",type=int, default=100,
 						help="threshold for copy numbers (numbers of hits) at the  position to be considered as repetitive")
 	parser.add_argument("-ths","--threshold_segment",type=int, default=100,
-                                                help="threshold for a single segment length to be reported as repetitive reagion in gff")
-	main(OUTPUT, THRESHOLD, THRESHOLD_SEGMENT)
+                        help="threshold for a single segment length to be reported as repetitive reagion in gff")
+    
+	main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
