@@ -349,9 +349,9 @@ if __name__ == "__main__":
                         help='threshold for a single segment length to be reported as repetitive reagion in gff')
     parser.add_argument('-pd', '--protein_domains', default=True,
 						help='use module for protein domains')
-    parser.add_argument('-pdb', '--protein_database', type=str, default=LAST_DB
+    parser.add_argument('-pdb', '--protein_database', type=str, default=LAST_DB,
                         help='protein domains database')
-    parser.add_argument('-cs','--classification', type=str, default=CLASSIFICATION
+    parser.add_argument('-cs','--classification', type=str, default=CLASSIFICATION,
                         help='protein domains classification file')
     parser.add_argument('-ou', '--output', type=str, default=REPEATS_TABLE,
 						help='output profile table name')
