@@ -207,7 +207,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF):
 	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
 	convert = "%2F"
 	if os.getenv("JBROWSE_BIN"):
-		JBROWSE_BIN = os.environ[JBROWSE_BIN]
+		JBROWSE_BIN = os.environ["JBROWSE_BIN"]
 		extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
 		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, confoguration.jbrowse_data_dir).replace("/",convert)
 	else: 

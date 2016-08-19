@@ -147,8 +147,8 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 	end_pos = []
 	line_counter = 1
 	sequence_hits = np.empty((0,9))
-	seq_id = None
-	
+	with open(SEQUENCE, "r") as fasta:
+		seq_id = fasta.readline.strip()[1:]
 	if NEW_PDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
 	tab = subprocess.Popen("lastal -F15 {} {} -f TAB ".format(LAST_DB, SEQUENCE), stdout=subprocess.PIPE, shell=True)
@@ -165,7 +165,8 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 			line = line_tab.rstrip().split("\t")
 			line_maf = []
 			element_name = line[1]
-			if line[6] != seq_id and seq_id != None:
+			#if line[6] != seq_id and seq_id != None:
+			if line[6] != seq_id 
 				[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
 				print(seq_length)
 				if reverse_strand_idx == []:
@@ -188,21 +189,22 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()
-			
-	[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
-	if reverse_strand_idx == []:
-		positions = overlapping_regions(regions_plus)
-		best_idx = best_score(sequence_hits[:,0], positions)
-		[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT, CLASSIFICATION)
-	else:
-		positions_plus = overlapping_regions(regions_plus)
-		positions_minus = overlapping_regions(regions_minus)
-		regions = regions_plus + regions_minus
-		positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
-		best_idx = best_score(sequence_hits[:,0], positions)
-		[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
-	seq_name = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[-1], ax_list[-1], profrep_module)
-	seq_names.append(seq_name)
+	
+	if sequence_hits:		
+		[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
+		if reverse_strand_idx == []:
+			positions = overlapping_regions(regions_plus)
+			best_idx = best_score(sequence_hits[:,0], positions)
+			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT, CLASSIFICATION)
+		else:
+			positions_plus = overlapping_regions(regions_plus)
+			positions_minus = overlapping_regions(regions_minus)
+			regions = regions_plus + regions_minus
+			positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
+			best_idx = best_score(sequence_hits[:,0], positions)
+			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
+		seq_id = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[-1], ax_list[-1], profrep_module)
+	seq_names.append(seq_id)
 	
 	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t2))
 	return seq_names
