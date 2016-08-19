@@ -32,7 +32,7 @@ def domain_annotation(element, CLASSIFICATION):
 def hits_processing(sequence_hits):
 	seq_length = sequence_hits[0,5]
 	reverse_strand_idx = np.where(sequence_hits[:,4] == "-")[0]
-	print(reverse_strand_idx)
+	#print(reverse_strand_idx)
 	if not reverse_strand_idx.any():
 		start_pos_plus = sequence_hits[:,2]
 		end_pos_plus = sequence_hits[:,3]
@@ -74,7 +74,7 @@ def best_score(scores, indices):
 	best_scores = []
 	best_idx = []
 	for idx in indices:
-		print(np.where(scores[idx] == max(scores[idx])))
+		#print(np.where(scores[idx] == max(scores[idx])))
 		best_idx.append(idx[np.where(scores[idx] == max(scores[idx]))[0][0]])
 	return best_idx
 
@@ -109,12 +109,9 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
 	
 	
 def visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig, ax, profrep_module):
-	if np.all(sequence_hits==0):
-		seq_id = "sequence" 
-	else:
-		seq_id = sequence_hits[0,1]
+	seq_id = sequence_hits[0,1]
 	colors = [strand.replace("+", "red").replace("-", "blue") for strand in strands]
-	if profrep_module == 0:
+	if not profrep_module:
 		plt.xlim([0, seq_length])
 		ax.hlines(scores, xminimal, xmaximal, color=colors, lw=2)
 		ax.set_title(seq_id)
@@ -128,8 +125,6 @@ def visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaxi
 		print(y_upper_lim)
 		for count in range(len(domain)):
 			ax.text(xminimal[count], y_upper_lim + y_upper_lim/10, "{} {}".format(domain[count], strands[count]), size=9)
-	if not os.path.exists(OUTPUT_PIC):
-		os.makedirs(OUTPUT_PIC)
 	output_pic_png = "{}/{}.png".format(OUTPUT_PIC, seq_id)
 	fig.savefig(output_pic_png, bbox_inches="tight", format='png')
 	return seq_id
@@ -147,8 +142,10 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 	end_pos = []
 	line_counter = 1
 	sequence_hits = np.empty((0,9))
+	if not os.path.exists(OUTPUT_PIC):
+		os.makedirs(OUTPUT_PIC)
 	with open(SEQUENCE, "r") as fasta:
-		seq_id = fasta.readline.strip()[1:]
+		seq_id = fasta.readline().strip().split(" ")[0][1:]
 	if NEW_PDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
 	tab = subprocess.Popen("lastal -F15 {} {} -f TAB ".format(LAST_DB, SEQUENCE), stdout=subprocess.PIPE, shell=True)
@@ -166,31 +163,43 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 			line_maf = []
 			element_name = line[1]
 			#if line[6] != seq_id and seq_id != None:
-			if line[6] != seq_id 
-				[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
-				print(seq_length)
-				if reverse_strand_idx == []:
-					positions = overlapping_regions(regions_plus)
-					best_idx = best_score(sequence_hits[:,0], positions)
-					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT, CLASSIFICATION)
+			#print(seq_id)
+			#print(line[6])
+			#print(profrep_module[seq_count])
+			if line[6] != seq_id: 
+				if line[6] != profrep_module[seq_count+1]:
+					output_pic_png = "{}/{}.png".format(OUTPUT_PIC, profrep_module[seq_count])
+					fig_list[seq_count].savefig(output_pic_png, bbox_inches="tight", format='png')
+					#seq_name = profrep_module[seq_count]
 				else:
-					positions_plus = overlapping_regions(regions_plus)
-					positions_minus = overlapping_regions(regions_minus)
-					regions = regions_plus + regions_minus
-					positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
-					best_idx = best_score(sequence_hits[:,0], positions)
-					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
-				seq_name = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[seq_count], ax_list[seq_count], profrep_module)
-				seq_names.append(seq_name)
+					[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
+					print(seq_length)
+					if reverse_strand_idx == []:
+						positions = overlapping_regions(regions_plus)
+						best_idx = best_score(sequence_hits[:,0], positions)
+						[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT, CLASSIFICATION)
+					else:
+						positions_plus = overlapping_regions(regions_plus)
+						positions_minus = overlapping_regions(regions_minus)
+						regions = regions_plus + regions_minus
+						positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
+						best_idx = best_score(sequence_hits[:,0], positions)
+						[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
+					seq_name = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[seq_count], ax_list[seq_count], profrep_module)
+				#seq_names.append(seq_name)
 				seq_count += 1
 				sequence_hits = np.empty((0,9))
-			seq_id = line[6]
+				seq_id = line[6]
 			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq], dtype=object)
 			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()
 	
-	if sequence_hits:		
+	if np.all(sequence_hits==0):
+		output_pic_png = "{}/{}.png".format(OUTPUT_PIC, profrep_module[seq_count])
+		fig_list[-1].savefig(output_pic_png, bbox_inches="tight", format='png')
+		open(OUTPUT, 'a').close()
+	else:		
 		[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
 		if reverse_strand_idx == []:
 			positions = overlapping_regions(regions_plus)
@@ -203,11 +212,11 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 			positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
 			best_idx = best_score(sequence_hits[:,0], positions)
 			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
-		seq_id = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[-1], ax_list[-1], profrep_module)
-	seq_names.append(seq_id)
+		seq_id = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[-1], ax_list[-1], profrep_module)	
+	#seq_names.append(seq_id)
 	
 	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t2))
-	return seq_names
+	#return seq_names
 
 if __name__ == "__main__":
 	import argparse
@@ -229,8 +238,8 @@ if __name__ == "__main__":
 						#help="protein domains classification file")	
 	#parser.add_argument("-ouf","--output_gff", type=str,
 						#help="output domains gff format")		
-	parser.add_argument("-oup","--output_pic", type=str, default="/mnt/raid/users/ninah/profrep/",
-						help="output domains picture")
+	#parser.add_argument("-oup","--output_pic", type=str, default=TMP,
+						#help="output domains picture")
 	#parser.add_argument("-th","--threshold",type=int, default=100,
 						#help="threshold for score")
 	parser.add_argument("-npd","--new_pdb",type=str, default=False,
@@ -247,7 +256,7 @@ if __name__ == "__main__":
 	
 	fig = plt.figure(figsize=(18, 8))
 	ax = fig.add_subplot(111)		
-	profrep_module = 0	
+	profrep_module = []	
 	print(DOMAINS_GFF)
 	
 	main(SEQUENCE, LAST_DB, CLASSIFICATION, DOMAINS_GFF, TMP, [fig], [ax], profrep_module, NEW_PDB)

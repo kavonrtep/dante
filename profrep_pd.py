@@ -268,10 +268,11 @@ def main(args):
 	fasta_list = multifasta(QUERY)
 	fig_list = []
 	ax_list = []
+	headers=[]
 	for subfasta in fasta_list:
 		[header, sequence] = fasta_read(subfasta)
 		query_length = len(sequence)
-		
+		headers.append(header[1:])
 		# Create parallel process																												
 		subset_index = list(range(0, query_length, STEP))	
 		print(subset_index)
@@ -297,10 +298,11 @@ def main(args):
 		gff.main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
 
 	if DOMAINS:
-		seq_names = protein_domains_pd.main(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA, fig_list, ax_list, 1, False)
+		protein_domains_pd.main(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA, fig_list, ax_list, headers, False)
 		print(OUTPUT_GFF)
 		link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF)		
-		html_output(seq_names, link, HTML)
+		html_output(headers, link, HTML)
+	print(headers)
 
 if __name__ == "__main__":
     

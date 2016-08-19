@@ -65,7 +65,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 
 **What it does**
 
-This tool uses former outputs from Repeat Explorer to create repetitive profile of a sequence and assigns reported regions to known repetition classes. As result the table containg all hits for all classes, profile visualization picture and GFF3 format of regions are produced.
+This tool uses former outputs from Repeat Explorer to create repetitive profile of a sequence and assigns reported regions to known repetition classes. As result the table containg all hits for all classes, repetitive profile picture and GFF3 format of regions are produced.
 Using window parameter can speed up the analysis in case of having large input data.
  </help>
 
