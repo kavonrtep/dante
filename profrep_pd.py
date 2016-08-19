@@ -242,8 +242,8 @@ def main(args):
 	OUTPUT = args.output
 	OUTPUT_GFF = args.output_gff
 	DOMAINS = args.protein_domains
-	#LAST_DB = args.protein_database
-	#CLASSIFICATION = args.classification
+	LAST_DB = args.protein_database
+	CLASSIFICATION = args.classification
 	OUT_DOMAIN_GFF = args.domain_gff	
 	HTML = args.html_file
 	HTML_DATA = args.html_path
@@ -255,8 +255,7 @@ def main(args):
 	# Define the parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
-	print("++++++")
-	print(NUM_CORES)
+	print("NUM_OF_CORES={}".format(NUM_CORES))
 	parallel_pool = Pool(NUM_CORES)
 
 	# Assign clusters to repetitive classes
@@ -350,10 +349,10 @@ if __name__ == "__main__":
                         help='threshold for a single segment length to be reported as repetitive reagion in gff')
     parser.add_argument('-pd', '--protein_domains', default=True,
 						help='use module for protein domains')
-    #parser.add_argument('-pdb', '--protein_database', type=str,
-                        #help='protein domains database')
-    #parser.add_argument('-cs','--classification', type=str,
-                        #help='protein domains classification file')
+    parser.add_argument('-pdb', '--protein_database', type=str, default=LAST_DB
+                        help='protein domains database')
+    parser.add_argument('-cs','--classification', type=str, default=CLASSIFICATION
+                        help='protein domains classification file')
     parser.add_argument('-ou', '--output', type=str, default=REPEATS_TABLE,
 						help='output profile table name')
     parser.add_argument('-ouf', '--output_gff', type=str, default=REPEATS_GFF,

@@ -15,7 +15,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 	--database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*reads_all
     --annotation_tbl /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*annotation
     --cls /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*.cls
-	--protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data
+	--protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/proteins_all
 	--classification /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/classification.csv
 	--domain_gff ${DomGff}
 	--protein_domains True 
