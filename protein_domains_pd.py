@@ -3,6 +3,7 @@
 import numpy as np
 import subprocess
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import sys
 import csv
 import time
@@ -128,19 +129,38 @@ def visualization(fig_list, ax_list, seq_ids, xminimal, xmaximal, strands, domai
 
 def visualization_profrep(fig_list, ax_list, profrep_module, seq_ids, xminimal, xmaximal, strands, domains, OUTPUT_PIC):
 	count = 0
+	
 	print(seq_ids)
 	print(profrep_module)
 	for sequence in profrep_module:
 		if sequence in seq_ids:
+		
 			y_upper_lim = ax_list[count].get_ylim()[1]
 			seq_idx = seq_ids.index(sequence)
 			colors = [strand.replace("+", "red").replace("-", "blue") for strand in strands[seq_idx]]
 			dom_uniq = list(set(domains[seq_idx]))
-			#colors = [configuration.COLORS[dom_uniq.index(domain)] for domain in domains[seq_idx]]
-			hlns = ax_list[count].hlines([y_upper_lim + y_upper_lim/10]*len(xminimal[seq_idx]), xminimal[seq_idx], xmaximal[seq_idx], color=colors, lw=2, label = dom_uniq)
-			#plt.gca().add_artist(plt.legend(handles=hlns,loc=1))
-			for dom_count in range(len(domains[seq_idx])):
-				ax_list[count].text(xminimal[seq_idx][dom_count], y_upper_lim + y_upper_lim/10, "{}{}".format(domains[seq_idx][dom_count], strands[seq_idx][dom_count]), size=9)
+			colors = [configuration.COLORS[dom_uniq.index(domain)] for domain in domains[seq_idx]]
+			colors_dom = [list(reversed(configuration.COLORS))[dom_uniq.index(domain)] for domain in domains[seq_idx]]
+			colors_legend = list(reversed(configuration.COLORS))[0:len(dom_uniq)]
+			ax_list[count].hlines([y_upper_lim + y_upper_lim/10]*len(xminimal[seq_idx]), xminimal[seq_idx], xmaximal[seq_idx], color=colors_dom, lw=2, label = dom_uniq)
+			lines_legend = [] 
+			ax2 = ax_list[count].twinx()
+			for count_uniq in list(range(len(dom_uniq))):
+				print("++++")
+				print(colors_dom[count_uniq])
+				print(dom_uniq[count_uniq])
+				lines_legend.append(mlines.Line2D([], [], color=colors_legend[count_uniq], markersize=15, label=dom_uniq[count_uniq]))
+			#lines_legend =[]
+			#lines_legend.append(mlines.Line2D([], [], color="green",markersize=15, label="green line"))
+			#lines_legend.append(mlines.Line2D([], [], color="blue",markersize=15, label="blue line"))
+			ax2.legend(lines_legend, [line.get_label() for line in lines_legend], bbox_to_anchor=(1.05, 1),  loc='upper left', borderaxespad=0.)
+			ax2.yaxis.set_visible(False)
+			#plt.gca().add_artist(ax2.legend(lines_legend, bbox_to_anchor=(1.05, 0),  loc='lower left', borderaxespad=0.))
+			#for dom_count in range(len(domains[seq_idx])):
+				#ax_list[count].text(xminimal[seq_idx][dom_count], y_upper_lim + y_upper_lim/10, "{}{}".format(domains[seq_idx][dom_count], strands[seq_idx][dom_count]), size=9)
+				
+			#for dom_count in range(len(domains[seq_idx])):
+				#ax_list[count].text(xminimal[seq_idx][dom_count], y_upper_lim + y_upper_lim/10, "{}".format(strands[seq_idx][dom_count]), size=9)
 		output_pic_png = "{}/{}.png".format(OUTPUT_PIC, sequence)
 		fig_list[count].savefig(output_pic_png, bbox_inches="tight", format='png')
 		count += 1
