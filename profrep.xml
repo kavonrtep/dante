@@ -48,7 +48,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by blast for alignment" />  
  <param name="window" type="integer" value="5000" min="5000" label="Window size" help="Use when having a long input sequence so that it can be processed parallely" />
  <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
- <param name="threshold" type="integer" value="100" min="1" label="Threshold" help="Threshold for copy numbers at certain position to be reported as a repeat in GFF format. Must be set considering the genome size/sequencing coverage" />
+ <param name="threshold" type="integer" value="50" min="1" label="Threshold" help="Threshold for copy numbers at certain position to be reported as a repeat in GFF format. Must be set considering the genome size/sequencing coverage" />
 
 </inputs>
 

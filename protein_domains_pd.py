@@ -32,7 +32,6 @@ def domain_annotation(element, CLASSIFICATION):
 def hits_processing(sequence_hits):
 	seq_length = sequence_hits[0,5]
 	reverse_strand_idx = np.where(sequence_hits[:,4] == "-")[0]
-	#print(reverse_strand_idx)
 	if not reverse_strand_idx.any():
 		start_pos_plus = sequence_hits[:,2]
 		end_pos_plus = sequence_hits[:,3]
@@ -103,31 +102,48 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
 		sequence = sequence_hits[i,7]
 		alignment = sequence_hits[i,8]
 		with open(OUTPUT, "a") as gff:	
-			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tDomain={},Rep_type={},Rep_lineage={},Sequence={},Alignment={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], sequence, alignment))	
+			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Rep_type={},Rep_lineage={},Sequence={},Alignment={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], sequence, alignment))	
 		count += 1	
 	return xminimal, xmaximal, scores, strands, domain
 	
 	
-def visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig, ax, profrep_module):
-	seq_id = sequence_hits[0,1]
-	colors = [strand.replace("+", "red").replace("-", "blue") for strand in strands]
-	if not profrep_module:
-		plt.xlim([0, seq_length])
-		ax.hlines(scores, xminimal, xmaximal, color=colors, lw=2)
-		ax.set_title(seq_id)
-		ax.set_xlabel('sequence bp')
-		ax.set_ylabel('score')
-		for count in range(len(domain)):
-			plt.text(xminimal[count], scores[count], "{} {}".format(domain[count], strands[count]), size=9)
-	else:
-		y_upper_lim = ax.get_ylim()[1]
-		ax.hlines([y_upper_lim + y_upper_lim/10]*len(xminimal), xminimal, xmaximal, color=colors, lw=2)
-		print(y_upper_lim)
-		for count in range(len(domain)):
-			ax.text(xminimal[count], y_upper_lim + y_upper_lim/10, "{} {}".format(domain[count], strands[count]), size=9)
-	output_pic_png = "{}/{}.png".format(OUTPUT_PIC, seq_id)
-	fig.savefig(output_pic_png, bbox_inches="tight", format='png')
-	return seq_id
+def visualization(fig_list, ax_list, seq_ids, xminimal, xmaximal, strands, domains, scores, seq_length, OUTPUT_PIC):
+	count = 0
+	print(scores)
+	print(fig_list)
+	for seq_id in seq_ids:
+		print(scores[count])
+		print(ax_list[count])
+		colors = [strand.replace("+", "red").replace("-", "blue") for strand in strands[count]]
+		plt.xlim([0, seq_length[count]])	
+		ax_list[count].hlines(scores[count], xminimal[count], xmaximal[count], color=colors, lw=2)
+		ax_list[count].set_title(seq_id)
+		ax_list[count].set_xlabel('sequence bp')
+		ax_list[count].set_ylabel('score')
+		for dom_count in range(len(domains[count])):
+			ax_list[count].text(xminimal[count][dom_count], scores[count][dom_count], "{} {}".format(domains[count][dom_count], strands[count][dom_count]), size=9)
+		output_pic_png = "{}/{}.png".format(OUTPUT_PIC, seq_id)
+		fig_list[count].savefig(output_pic_png, bbox_inches="tight", format='png')
+		count +=1
+
+def visualization_profrep(fig_list, ax_list, profrep_module, seq_ids, xminimal, xmaximal, strands, domains, OUTPUT_PIC):
+	count = 0
+	print(seq_ids)
+	print(profrep_module)
+	for sequence in profrep_module:
+		if sequence in seq_ids:
+			y_upper_lim = ax_list[count].get_ylim()[1]
+			seq_idx = seq_ids.index(sequence)
+			colors = [strand.replace("+", "red").replace("-", "blue") for strand in strands[seq_idx]]
+			dom_uniq = list(set(domains[seq_idx]))
+			#colors = [configuration.COLORS[dom_uniq.index(domain)] for domain in domains[seq_idx]]
+			hlns = ax_list[count].hlines([y_upper_lim + y_upper_lim/10]*len(xminimal[seq_idx]), xminimal[seq_idx], xmaximal[seq_idx], color=colors, lw=2, label = dom_uniq)
+			#plt.gca().add_artist(plt.legend(handles=hlns,loc=1))
+			for dom_count in range(len(domains[seq_idx])):
+				ax_list[count].text(xminimal[seq_idx][dom_count], y_upper_lim + y_upper_lim/10, "{}{}".format(domains[seq_idx][dom_count], strands[seq_idx][dom_count]), size=9)
+		output_pic_png = "{}/{}.png".format(OUTPUT_PIC, sequence)
+		fig_list[count].savefig(output_pic_png, bbox_inches="tight", format='png')
+		count += 1
 
 
 def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_list, profrep_module, NEW_PDB):		
@@ -140,18 +156,29 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 	rep_lineage = []
 	start_pos = []
 	end_pos = []
+	seq_ids = []
+	xminimal_all = []
+	xmaximal_all = []
+	scores_all = []
+	strands_all = []
+	domains_all = []
+	seq_length_all = []
+	## configuration
+	header_gff = "##gff-version 3"
 	line_counter = 1
 	sequence_hits = np.empty((0,9))
 	if not os.path.exists(OUTPUT_PIC):
 		os.makedirs(OUTPUT_PIC)
 	with open(SEQUENCE, "r") as fasta:
 		seq_id = fasta.readline().strip().split(" ")[0][1:]
+	with open(OUTPUT, "a") as gff:
+		gff.write("{}\n".format(header_gff))
 	if NEW_PDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
 	tab = subprocess.Popen("lastal -F15 {} {} -f TAB ".format(LAST_DB, SEQUENCE), stdout=subprocess.PIPE, shell=True)
 	maf = subprocess.Popen("lastal -F15 {} {} -f MAF ".format(LAST_DB, SEQUENCE), stdout=subprocess.PIPE, shell=True)
 	maf.stdout.readline()
-	seq_count = 0
+	seq_count = 1
 	seq_names = []
 	for line_tab in tab.stdout:
 		line_tab = line_tab.decode("utf-8")
@@ -162,44 +189,38 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 			line = line_tab.rstrip().split("\t")
 			line_maf = []
 			element_name = line[1]
-			#if line[6] != seq_id and seq_id != None:
-			#print(seq_id)
-			#print(line[6])
-			#print(profrep_module[seq_count])
+			if np.all(sequence_hits==0):
+				seq_id = line[6]
+				seq_ids.append(seq_id)
 			if line[6] != seq_id: 
-				if line[6] != profrep_module[seq_count+1]:
-					output_pic_png = "{}/{}.png".format(OUTPUT_PIC, profrep_module[seq_count])
-					fig_list[seq_count].savefig(output_pic_png, bbox_inches="tight", format='png')
-					#seq_name = profrep_module[seq_count]
+				[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
+				print(seq_length)
+				if reverse_strand_idx == []:
+					positions = overlapping_regions(regions_plus)
+					best_idx = best_score(sequence_hits[:,0], positions)
+					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT, CLASSIFICATION)
 				else:
-					[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
-					print(seq_length)
-					if reverse_strand_idx == []:
-						positions = overlapping_regions(regions_plus)
-						best_idx = best_score(sequence_hits[:,0], positions)
-						[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT, CLASSIFICATION)
-					else:
-						positions_plus = overlapping_regions(regions_plus)
-						positions_minus = overlapping_regions(regions_minus)
-						regions = regions_plus + regions_minus
-						positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
-						best_idx = best_score(sequence_hits[:,0], positions)
-						[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
-					seq_name = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[seq_count], ax_list[seq_count], profrep_module)
-				#seq_names.append(seq_name)
+					positions_plus = overlapping_regions(regions_plus)
+					positions_minus = overlapping_regions(regions_minus)
+					regions = regions_plus + regions_minus
+					positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
+					best_idx = best_score(sequence_hits[:,0], positions)
+					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
 				seq_count += 1
 				sequence_hits = np.empty((0,9))
 				seq_id = line[6]
+				seq_ids.append(seq_id)
+				xminimal_all.append(xminimal)
+				xmaximal_all.append(xmaximal)
+				scores_all.append(scores)
+				strands_all.append(strands)
+				domains_all.append(domain)
+				seq_length_all.append(seq_length)
 			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq], dtype=object)
 			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()
-	
-	if np.all(sequence_hits==0):
-		output_pic_png = "{}/{}.png".format(OUTPUT_PIC, profrep_module[seq_count])
-		fig_list[-1].savefig(output_pic_png, bbox_inches="tight", format='png')
-		open(OUTPUT, 'a').close()
-	else:		
+	if not np.all(sequence_hits==0):	
 		[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
 		if reverse_strand_idx == []:
 			positions = overlapping_regions(regions_plus)
@@ -212,11 +233,29 @@ def main(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT, OUTPUT_PIC, fig_list, ax_lis
 			positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
 			best_idx = best_score(sequence_hits[:,0], positions)
 			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT, CLASSIFICATION)
-		seq_id = visualization(sequence_hits, seq_length, reverse_strand_idx, xminimal, xmaximal, scores, strands, domain, OUTPUT_PIC, fig_list[-1], ax_list[-1], profrep_module)	
-	#seq_names.append(seq_id)
+		xminimal_all.append(xminimal)
+		xmaximal_all.append(xmaximal)
+		scores_all.append(scores)
+		strands_all.append(strands)
+		domains_all.append(domain)
+		seq_length_all.append(seq_length)
+	
+	
+	if profrep_module:
+		visualization_profrep(fig_list, ax_list, profrep_module, seq_ids, xminimal_all, xmaximal_all, strands_all, domains_all, OUTPUT_PIC)
+	elif seq_ids:
+		for count in list(range(1,len(seq_ids))):
+			fig_list.append(plt.figure(figsize=(18, 8)))
+			ax_list.append(fig_list[count].add_subplot(111))
+			print(ax_list)
+		visualization(fig_list, ax_list, seq_ids, xminimal_all, xmaximal_all, strands_all, domains_all, scores_all, seq_length_all, OUTPUT_PIC)
+	else:
+		output_pic_png = "{}/{}.png".format(OUTPUT_PIC, "no_domains")
+		fig.savefig(output_pic_png, bbox_inches="tight", format='png')
+
 	
 	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t2))
-	#return seq_names
+
 
 if __name__ == "__main__":
 	import argparse

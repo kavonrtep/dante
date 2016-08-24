@@ -6,6 +6,8 @@ import csv
 import time
 import sys
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
 import multiprocessing
 import argparse
 import os
@@ -139,17 +141,29 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 def profile_to_csv(profile, OUTPUT, query_length, header, fig, ax, cm):
 	data = np.zeros((len(profile), query_length), dtype=int)
 	labels = []
-	count = 0
+	count = 1
 	number_of_plots = 0
-	for key in list(profile.keys()):
+	#jet = cm = plt.get_cmap('jet') 
+	#cNorm  = colors.Normalize(vmin=0, vmax=len(profile))
+	#scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
+	data[0] = profile["all"]
+	ax.plot(list(range(query_length)), data[0], label="all", color="#7F7F7F")
+	labels.append("all")
+	keys = set(profile.keys())
+	exclude = set(["all"])
+	#for key in list(profile.keys()):
+	for key in keys.difference(exclude):
 		labels.append(key) 					
 		data[count] = profile[key]		
 		if np.any(data[count]):
-			ax.plot(list(range(query_length)), data[count], label=labels[count])
+			#color_value = scalarMap.to_rgba(range(len(profile))[count])
+			ax.plot(list(range(query_length)), data[count], label=key, color=configuration.COLORS[number_of_plots])
+			#ax.plot(list(range(query_length)), data[count], label=labels[count], color=color_value)
 			number_of_plots += 1
 		#ax.set_prop_cycle(plt.cycler("color", [cm(1.*count/len(profile))]))
-		if key == "all":
-			all_position = count 				
+		#ax.set_color_cycle([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
+		#if key == "all":
+			#all_position = count 				
 		count += 1
 	if not np.any(data):
 		ax.hlines(0, 0, query_length, color="red", lw=4)
@@ -166,8 +180,8 @@ def profile_to_csv(profile, OUTPUT, query_length, header, fig, ax, cm):
 	#os.rename(output_pic_png, OUTPUT_PIC)
 
 	# Swap positions so that "all" record is the first in the table
-	data[0], data[all_position] = data[all_position], data[0].copy()
-	labels[0], labels[all_position] = labels[all_position], labels[0]
+	#data[0], data[all_position] = data[all_position], data[0].copy()
+	#labels[0], labels[all_position] = labels[all_position], labels[0]
 	
 	# Write output to a csv table
 	sequence_counter = np.array(list(range(1, query_length + 1)))				
@@ -209,7 +223,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF):
 	if os.getenv("JBROWSE_BIN"):
 		JBROWSE_BIN = os.environ["JBROWSE_BIN"]
 		extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
-		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, confoguration.jbrowse_data_dir).replace("/",convert)
+		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
 	else: 
 		JBROWSE_BIN = configuration.JBROWSE_BIN_PC
 		jbrowse_link_to_profrep = "data/profrep_data"
@@ -345,9 +359,9 @@ if __name__ == "__main__":
 						help='create a new blast database')
     parser.add_argument('-g', '--gff', default=True,
 						help='use module for gff')
-    parser.add_argument('-th', '--threshold', type=int, default=100,
+    parser.add_argument('-th', '--threshold', type=int, default=50,
 						help='threshold (number of hits) for report repetitive area in gff')
-    parser.add_argument('-ths', '--threshold_segment', type=int, default=100,
+    parser.add_argument('-ths', '--threshold_segment', type=int, default=50,
                         help='threshold for a single segment length to be reported as repetitive reagion in gff')
     parser.add_argument('-pd', '--protein_domains', default=True,
 						help='use module for protein domains')

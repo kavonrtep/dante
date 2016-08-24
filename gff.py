@@ -60,9 +60,9 @@ if __name__ == "__main__":
 						help="output profile table name")
 	parser.add_argument('-ouf', '--output_gff', type=str, default=REPEATS_GFF,
                         help='output gff format')
-	parser.add_argument("-th","--threshold",type=int, default=100,
+	parser.add_argument("-th","--threshold",type=int, default=50,
 						help="threshold for copy numbers (numbers of hits) at the  position to be considered as repetitive")
-	parser.add_argument("-ths","--threshold_segment",type=int, default=100,
+	parser.add_argument("-ths","--threshold_segment",type=int, default=50,
                         help="threshold for a single segment length to be reported as repetitive reagion in gff")
     
 	main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
