@@ -24,9 +24,13 @@ def domain_annotation(element, CLASSIFICATION):
 			annotation[record[0]] = [record[1],record[2]]		
 	for i in range(len(element)):
 		domain.append(element[i].split("__")[0].split("-")[1])
-		element_name = element[i].split("__")[1]		
-		rep_type.append(annotation[element_name][0])
-		rep_lineage.append(annotation[element_name][1])
+		element_name = element[i].split("__")[1]
+		if element[i] in annotation.keys():			
+			rep_type.append(annotation[element_name][0])
+			rep_lineage.append(annotation[element_name][1])
+		else:
+			rep_type.append(" ")
+			rep_lineage.append(" ")
 	return domain, rep_type, rep_lineage
 	
 
@@ -129,7 +133,6 @@ def visualization(fig_list, ax_list, seq_ids, xminimal, xmaximal, strands, domai
 
 def visualization_profrep(fig_list, ax_list, profrep_module, seq_ids, xminimal, xmaximal, strands, domains, OUTPUT_PIC):
 	count = 0
-	
 	print(seq_ids)
 	print(profrep_module)
 	for sequence in profrep_module:
