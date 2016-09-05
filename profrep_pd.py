@@ -17,6 +17,7 @@ from tempfile import NamedTemporaryFile
 import gff
 import protein_domains_pd
 import configuration
+import visualization
 
 t0 = time.time()
 np.set_printoptions(threshold=np.nan)
@@ -97,12 +98,12 @@ def annot_profile(annotation_keys, part):
 # Run parallel function to process the input sequence in windows
 # run blast for subsequence defined by the input index and window size
 # create and increment subprofile vector based on reads aligned and position of alignment
-def parallel_process(WINDOW, query_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, subset_index):
+def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, subset_index):
 	loc_start = subset_index + 1
 	loc_end = subset_index + WINDOW
-	if loc_end > query_length:
-		loc_end = query_length
-		subprofile = annot_profile(annotation_keys, query_length - loc_start + 1)
+	if loc_end > seq_length:
+		loc_end = seq_length
+		subprofile = annot_profile(annotation_keys, seq_length - loc_start + 1)
 	else:
 		subprofile = annot_profile(annotation_keys, WINDOW + 1)
 		
@@ -137,70 +138,54 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 	return profile
 
 
-# Convert profile dictionary to output table and plot profile graphs
-def profile_to_csv(profile, OUTPUT, query_length, header, fig, ax, cm):
-	data = np.zeros((len(profile), query_length), dtype=int)
-	labels = []
-	count = 1
-	number_of_plots = 0
-	#jet = cm = plt.get_cmap('jet') 
-	#cNorm  = colors.Normalize(vmin=0, vmax=len(profile))
-	#scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-	data[0] = profile["all"]
-	ax.plot(list(range(query_length)), data[0], label="all", color="#7F7F7F")
-	labels.append("all")
-	keys = set(profile.keys())
-	exclude = set(["all"])
-	#for key in list(profile.keys()):
-	for key in keys.difference(exclude):
-		labels.append(key) 					
-		data[count] = profile[key]		
-		if np.any(data[count]):
-			#color_value = scalarMap.to_rgba(range(len(profile))[count])
-			ax.plot(list(range(query_length)), data[count], label=key, color=configuration.COLORS[number_of_plots])
-			#ax.plot(list(range(query_length)), data[count], label=labels[count], color=color_value)
-			number_of_plots += 1
-		#ax.set_prop_cycle(plt.cycler("color", [cm(1.*count/len(profile))]))
-		#ax.set_color_cycle([cm(1.*i/NUM_COLORS) for i in range(NUM_COLORS)])
-		#if key == "all":
-			#all_position = count 				
-		count += 1
-	if not np.any(data):
-		ax.hlines(0, 0, query_length, color="red", lw=4)
-	ax.set_title(header[1:])
-	ax.set_xlabel('sequence bp')
-	ax.set_ylabel('copy numbers')
-	art = []
-	if number_of_plots != 0:
-		lgd = ax.legend(bbox_to_anchor=(0.5,-0.1 ), loc=9, ncol=3)
-		art.append(lgd)
-	#output_pic_png = "{}.png".format(OUTPUT_PIC)
-	#fig.savefig(output_pic_png, additional_artists=art, bbox_inches="tight", format='png')
-	#fig.savefig("output_files/output.png")
-	#os.rename(output_pic_png, OUTPUT_PIC)
-
-	# Swap positions so that "all" record is the first in the table
-	#data[0], data[all_position] = data[all_position], data[0].copy()
-	#labels[0], labels[all_position] = labels[all_position], labels[0]
+def hits_table(profile, OUTPUT, seq_id, seq_length):
+	nonzero_keys = []
+	[nonzero_keys.append(k) for k,v in profile.items() if any(v)]
+	if any(profile["all"]):
+		data = np.zeros((seq_length, len(nonzero_keys) + 1), dtype=int)
+		data[:,0] = np.array([list(range(1, seq_length + 1))])
+		data[:,1] = profile["all"] 
+		keys = set(nonzero_keys)
+		exclude = set(["all"])
+		header = "{}\tall\t{}".format(seq_id, "\t".join(keys.difference(exclude)))
+		count = 2
+		for key in keys.difference(exclude):
+			data[:,count] = profile[key]
+			count += 1
+	else:
+		header = "{}\tno_hits".format(seq_id)    
+		data = []
+	with open(OUTPUT, "ab") as hits_tbl:
+		np.savetxt(hits_tbl, data, delimiter= "\t", header=header, fmt="%d")
 	
-	# Write output to a csv table
-	sequence_counter = np.array(list(range(1, query_length + 1)))				
-	labels = np.append([header], labels)
-	data = np.append([sequence_counter], data, 0)		
-	output_table = open(OUTPUT, "a")
-	writer = csv.writer(output_table, delimiter="\t")
-	writer.writerow(labels)
-	for values in np.transpose(data):		
-		writer.writerow(values)
-	return output_table
+		
+def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom):
+	with open(SEQ_INFO, "r") as s_info:
+		next(s_info)
+		repeats_all = []
+		header_gff = "##gff-version 3"
+		with open(OUTPUT_GFF, "a") as gff_file:
+			gff_file.write("{}\n".format(header_gff))
+		for line in s_info:
+			print(line)
+			line_parsed = line.strip().split("\t")
+			fasta_start = int(line_parsed[3])
+			fasta_end = int(line_parsed[4])
+			seq_length = int(line_parsed[1])
+			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=seq_length, delimiter="\t", deletechars="")
+			seq_id = seq_repeats.dtype.names[0]
+			if any(seq_repeats):
+				if GFF:
+					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
+				repeats_all = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
+			[fig, ax] = visualization.vis_profrep(seq_repeats, seq_length)
+			if seq_id in seq_ids_dom:
+				dom_idx = seq_ids_dom.index(seq_id) 
+				[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
+			output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
+			fig.savefig(output_pic_png, bbox_inches="tight", format="png")	
+	return repeats_all
 
-
-# Define profiles visualization
-def set_visualization():
-	fig = plt.figure(figsize=(18, 8))
-	ax = fig.add_subplot(111)
-	cm = plt.get_cmap("gist_rainbow")
-	return fig, ax, cm
 	
 def html_output(seq_names, link, HTML):
 	pictures = "\n".join(["<img src={}.png>".format(pic)for pic in seq_names])
@@ -217,7 +202,9 @@ def html_output(seq_names, link, HTML):
 	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
 
-def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF):
+
+def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all):
+	print(repeats_all)
 	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
 	convert = "%2F"
 	if os.getenv("JBROWSE_BIN"):
@@ -229,12 +216,28 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF):
 		jbrowse_link_to_profrep = "data/profrep_data"
 		link_part2 = os.path.join(jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
 		#QUERY = "/mnt/raid/users/ninah/profrep_git/tmp/test_seq_1"
-	link = configuration.LINK_PART1 + link_part2
+	link = configuration.LINK_PART1_PC + link_part2
 	subprocess.call("{}/prepare-refseqs.pl --fasta {} --out {}".format(JBROWSE_BIN, QUERY, jbrowse_data_path), shell=True)
 	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_domains --out {}".format(JBROWSE_BIN, OUT_DOMAIN_GFF, jbrowse_data_path), shell=True)
 	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --out {}".format(JBROWSE_BIN, OUTPUT_GFF, jbrowse_data_path), shell=True)
+	for repeat_id in repeats_all:
+		subprocess.call("{}/wig-to-json.pl --trackLabel {} --wig {}/{}.wig --out {}".format(JBROWSE_BIN, repeat_id, HTML_DATA, repeat_id.split("/")[-1], jbrowse_data_path), shell=True)
 	return link
 
+	
+def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
+	header_repeats = seq_repeats.dtype.names
+	seq_id = header_repeats[0]
+	for track in header_repeats[1:]:
+		header_wig = "variableStep\tchrom={}".format(seq_id)
+		track_name = track.split("/")[-1]
+		if track not in repeats_all:
+			repeats_all.append(track)
+		with open("{}/{}.wig".format(HTML_DATA, track_name), "ab") as track_file:
+			np.savetxt(track_file, np.c_[seq_repeats[seq_id],seq_repeats[track]], fmt='%d', delimiter = "\t", header=header_wig, comments="")
+	return repeats_all
+	
+	
 def main(args):
 	# Parse the command line arguments 
 	QUERY = args.query
@@ -261,10 +264,14 @@ def main(args):
 	OUT_DOMAIN_GFF = args.domain_gff	
 	HTML = args.html_file
 	HTML_DATA = args.html_path
+	SEQ_INFO = args.seq_info
 	
 	# Create new blast database of reads
 	if NEW_DB:
 		subprocess.call("makeblastdb -in {} -dbtype nucl".format(BLAST_DB), shell=True)
+	
+	if not os.path.exists(HTML_DATA):
+		os.makedirs(HTML_DATA)
 		
 	# Define the parallel process
 	STEP = WINDOW - OVERLAP		
@@ -280,17 +287,21 @@ def main(args):
 	
 	# Process every input fasta sequence sequentially
 	fasta_list = multifasta(QUERY)
-	fig_list = []
-	ax_list = []
 	headers=[]
+	seq_count = 1
+	start = 1
+	with open(SEQ_INFO, "a") as s_info:
+		s_info.write("seq_id\tseq_legth\tseq_count\tfile_start_pos\tfile_end_pos\n")
 	for subfasta in fasta_list:
 		[header, sequence] = fasta_read(subfasta)
-		query_length = len(sequence)
+		seq_length = len(sequence)
+		end = start + seq_length
+		seq_id = header[1:]
+		##############################################################################################
 		headers.append(header[1:])
 		# Create parallel process																												
-		subset_index = list(range(0, query_length, STEP))	
-		print(subset_index)
-		multiple_param = partial(parallel_process, WINDOW, query_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
+		subset_index = list(range(0, seq_length, STEP))	
+		multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
 		profile_list = parallel_pool.map(multiple_param, subset_index)		 							
 
 		# Join partial profiles to the final profile of the sequence 
@@ -298,26 +309,21 @@ def main(args):
 
 		# Sum the profile counts to get "all" repetitive profile (including all repetitions and also hits not belonging anywhere)
 		profile["all"] = sum(profile.values())
-
-		# Set up the visualization
-		[fig, ax, cm] = set_visualization()
-
-		# Write output to a table and plot the profiles
-		output_table = profile_to_csv(profile, OUTPUT, query_length, header, fig, ax, cm)
-		fig_list.append(fig)
-		ax_list.append(ax)
-	output_table.close()
-	# Use gff module to convert profile table to GFF3 format
-	if GFF:
-		gff.main(OUTPUT, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
-
+		if not any(profile["all"]):
+			end = start
+		hits_table(profile, OUTPUT, seq_id, seq_length)
+		with open(SEQ_INFO, "a") as s_info:
+			s_info.write("{}\t{}\t{}\t{}\t{}\n".format(seq_id, seq_length, seq_count, start, end))
+		start = end + 1
+		seq_count += 1
+		
 	if DOMAINS:
-		protein_domains_pd.main(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA, fig_list, ax_list, headers, False)
-		print(OUTPUT_GFF)
-		link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF)		
-		html_output(headers, link, HTML)
-	print(headers)
+		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA)
 
+	repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom)
+	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all)		
+	html_output(headers, link, HTML)
+	
 if __name__ == "__main__":
     
     HTML = configuration.HTML
@@ -327,6 +333,7 @@ if __name__ == "__main__":
     REPEATS_TABLE = configuration.REPEATS_TABLE
     CLASSIFICATION = configuration.CLASSIFICATION
     LAST_DB = configuration.LAST_DB
+    SEQ_INFO = configuration.SEQ_INFO
     
     
     #Define command line arguments
@@ -367,18 +374,20 @@ if __name__ == "__main__":
 						help='use module for protein domains')
     parser.add_argument('-pdb', '--protein_database', type=str, default=LAST_DB,
                         help='protein domains database')
-    parser.add_argument('-cs','--classification', type=str, default=CLASSIFICATION,
+    parser.add_argument('-cs', '--classification', type=str, default=CLASSIFICATION,
                         help='protein domains classification file')
     parser.add_argument('-ou', '--output', type=str, default=REPEATS_TABLE,
 						help='output profile table name')
     parser.add_argument('-ouf', '--output_gff', type=str, default=REPEATS_GFF,
                         help='output gff format')
-    parser.add_argument("-oug","--domain_gff",type=str, default=DOMAINS_GFF,
+    parser.add_argument("-oug", "--domain_gff",type=str, default=DOMAINS_GFF,
 						help="output domains gff format")
-    parser.add_argument("-hf","--html_file", type=str, default=HTML,
+    parser.add_argument("-hf", "--html_file", type=str, default=HTML,
                         help="output html file name")
-    parser.add_argument("-hp","--html_path", type=str, default=TMP,
+    parser.add_argument("-hp", "--html_path", type=str, default=TMP,
                         help="path to html extra files")
+    parser.add_argument("-si", "--seq_info", type=str, default=SEQ_INFO,
+                        help="file containg general info about sequence")
 
     args = parser.parse_args()
     main(args)

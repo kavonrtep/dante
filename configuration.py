@@ -4,10 +4,11 @@ import os
 
 # PATHS
 JBROWSE_BIN = "/home/galaxy/bin/JBrowse-1.12.1/bin"
-JBROWSE_BIN_PC = "/var/www/JBrowse-1.12.1/bin"
+JBROWSE_BIN_PC = "/var/www/html/JBrowse-1.12.1/bin"
 jbrowse_data_dir = "jbrowse"
 jbrowse_link_to_galaxy = "data/galaxy_files"
 LINK_PART1 = "http://nod6/JBrowse-1.12.1/index.html?data="
+LINK_PART1_PC = "http://nina/JBrowse-1.12.1/index.html?data="
 LAST_DB = "proteins_all"
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA = "{}/{}".format(MAIN_DIR, "data")
@@ -29,3 +30,4 @@ DOMAINS_GFF = "{}/{}".format(TMP,"output_domains.gff")
 HTML = "{}/{}".format(TMP,"output.html")
 REPEATS_GFF = "{}/{}".format(TMP,"output_repeats.gff")
 REPEATS_TABLE = "{}/{}".format(TMP,"output_table.csv")
+SEQ_INFO = "{}/{}".format(TMP,"seq_info.csv")
