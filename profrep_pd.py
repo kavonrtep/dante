@@ -211,12 +211,12 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all):
 		JBROWSE_BIN = os.environ["JBROWSE_BIN"]
 		extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
 		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
+		link = configuration.LINK_PART1 + link_part2
 	else: 
 		JBROWSE_BIN = configuration.JBROWSE_BIN_PC
 		jbrowse_link_to_profrep = "data/profrep_data"
 		link_part2 = os.path.join(jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
-		#QUERY = "/mnt/raid/users/ninah/profrep_git/tmp/test_seq_1"
-	link = configuration.LINK_PART1_PC + link_part2
+		link = configuration.LINK_PART1_PC + link_part2
 	subprocess.call("{}/prepare-refseqs.pl --fasta {} --out {}".format(JBROWSE_BIN, QUERY, jbrowse_data_path), shell=True)
 	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_domains --out {}".format(JBROWSE_BIN, OUT_DOMAIN_GFF, jbrowse_data_path), shell=True)
 	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --out {}".format(JBROWSE_BIN, OUTPUT_GFF, jbrowse_data_path), shell=True)

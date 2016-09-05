@@ -5,7 +5,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 /mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/profrep_pd.py --query ${input} --identical ${identical}  
 --align_length ${align_length} --word_size ${word_size} --e_value ${e_value} --threshold ${threshold} --window ${window} 
 --overlap ${overlap} --output ${ProfTbl} --output_gff ${ProfGff} --gff True --html_file ${html_file}
---html_path ${html_file.extra_files_path} 
+--html_path ${html_file.extra_files_path} --seq_info ${seq_info}
  #if $custom_data.options_custom_data:
 	--database ${reads}
     --annotation_tbl ${annotations}
