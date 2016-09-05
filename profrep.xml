@@ -58,7 +58,6 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid})" />
 	<data format="html" name="html_file" label="HTML output including link for interactive visualization of output ${input.hid})" />
 	<data format="txt" name="log_file" label="Log file" />
-	<data format="txt" name="seq_info" label="Seqs info" />
 
  </outputs>
 
