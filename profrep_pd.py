@@ -45,7 +45,7 @@ def multifasta(QUERY):
 def fasta_read(subfasta):
 	sequence_lines = []
 	with open(subfasta, "r") as fasta:
-		header = fasta.readline().strip().split(" ")[0]
+		header = fasta.readline().strip().split(" ")[0][1:]
 		for line in fasta:
 			clean_line = line.strip()			
 			if clean_line:				
@@ -152,6 +152,7 @@ def hits_table(profile, OUTPUT, seq_id, seq_length):
 		for key in keys.difference(exclude):
 			data[:,count] = profile[key]
 			count += 1
+		data = data[~np.all(data[:,1:] == 0, axis=1)]
 	else:
 		header = "{}\tno_hits".format(seq_id)    
 		data = []
@@ -166,8 +167,8 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 		header_gff = "##gff-version 3"
 		with open(OUTPUT_GFF, "a") as gff_file:
 			gff_file.write("{}\n".format(header_gff))
+		seq_count = 1
 		for line in s_info:
-			print(line)
 			line_parsed = line.strip().split("\t")
 			fasta_start = int(line_parsed[3])
 			fasta_end = int(line_parsed[4])
@@ -178,17 +179,19 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 				if GFF:
 					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
 				repeats_all = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
-			[fig, ax] = visualization.vis_profrep(seq_repeats, seq_length)
-			if seq_id in seq_ids_dom:
-				dom_idx = seq_ids_dom.index(seq_id) 
-				[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
-			output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
-			fig.savefig(output_pic_png, bbox_inches="tight", format="png")	
+			if seq_count <= configuration.MAX_PIC_NUM:
+				[fig, ax] = visualization.vis_profrep(seq_repeats, seq_length)
+				if seq_id in seq_ids_dom:
+					dom_idx = seq_ids_dom.index(seq_id) 
+					[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
+				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
+				fig.savefig(output_pic_png, bbox_inches="tight", format="png")	
+			seq_count += 1
 	return repeats_all
 
 	
 def html_output(seq_names, link, HTML):
-	pictures = "\n".join(["<img src={}.png>".format(pic)for pic in seq_names])
+	pictures = "\n".join(["<img src={}.png>".format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM]])
 	html_str = """
 	<!DOCTYPE html>
 	<html>
@@ -231,10 +234,12 @@ def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
 	for track in header_repeats[1:]:
 		header_wig = "variableStep\tchrom={}".format(seq_id)
 		track_name = track.split("/")[-1]
+		track_data = np.c_[seq_repeats[seq_id],seq_repeats[track]]
+		track_nonzero = track_data[np.nonzero(track_data[:,1])]
 		if track not in repeats_all:
 			repeats_all.append(track)
 		with open("{}/{}.wig".format(HTML_DATA, track_name), "ab") as track_file:
-			np.savetxt(track_file, np.c_[seq_repeats[seq_id],seq_repeats[track]], fmt='%d', delimiter = "\t", header=header_wig, comments="")
+			np.savetxt(track_file, track_nonzero, fmt='%d', delimiter = "\t", header=header_wig, comments="")
 	return repeats_all
 	
 	
@@ -296,9 +301,9 @@ def main(args):
 		[header, sequence] = fasta_read(subfasta)
 		seq_length = len(sequence)
 		end = start + seq_length
-		seq_id = header[1:]
+		#seq_id = header[1:]
 		##############################################################################################
-		headers.append(header[1:])
+		headers.append(header)
 		# Create parallel process																												
 		subset_index = list(range(0, seq_length, STEP))	
 		multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
@@ -311,9 +316,9 @@ def main(args):
 		profile["all"] = sum(profile.values())
 		if not any(profile["all"]):
 			end = start
-		hits_table(profile, OUTPUT, seq_id, seq_length)
+		hits_table(profile, OUTPUT, header, seq_length)
 		with open(SEQ_INFO, "a") as s_info:
-			s_info.write("{}\t{}\t{}\t{}\t{}\n".format(seq_id, seq_length, seq_count, start, end))
+			s_info.write("{}\t{}\t{}\t{}\t{}\n".format(header, seq_length, seq_count, start, end))
 		start = end + 1
 		seq_count += 1
 		

@@ -19,7 +19,7 @@ def create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 	seq_id = header[0]
 	for repeat in header[2:]:
 		ranges = []
-		nonzero_records = np.where(seq_repeats[repeat] > THRESHOLD)[0] + 1
+		nonzero_records = seq_repeats[seq_id][np.where(seq_repeats[repeat] > THRESHOLD)[0]]
 		for key, group in groupby(enumerate(nonzero_records), lambda index_item: index_item[0] - index_item[1]):
 			group = list(map(itemgetter(1), group))
 			if len(group) > THRESHOLD_SEGMENT:

@@ -19,9 +19,9 @@ def vis_profrep(seq_repeats, seq_length):
 	if not any(seq_repeats):
 		ax.hlines(0, 0, seq_length, color="red", lw=4)
 	else:
-		ax.plot(list(range(seq_length)), seq_repeats[header[1]], label=header[1], color="#7F7F7F")
+		ax.plot(seq_repeats[seq_id], seq_repeats[header[1]], label=header[1], color="#7F7F7F")
 		for repeat in header[2:]: 
-			ax.plot(list(range(seq_length)), seq_repeats[repeat], label=repeat, color=configuration.COLORS[plot_num])
+			ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label=repeat, color=configuration.COLORS[plot_num])
 			plot_num += 1
 		art = []
 		lgd = ax.legend(bbox_to_anchor=(0.5,-0.1 ), loc=9, ncol=3)
