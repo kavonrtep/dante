@@ -11,7 +11,7 @@ from operator import itemgetter
 import os
 import configuration
 
-t2 = time.time()
+
 
 def domain_annotation(element, CLASSIFICATION):
 	domain = []
@@ -86,6 +86,8 @@ def best_score(scores, indices):
 
 def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION):
 	# Predefine the standard columns of GFF3 format
+	t2 = time.time()
+	
 	SOURCE = "profrep"
 	FEATURE = "protein_domain"
 	PHASE = "."
@@ -181,11 +183,9 @@ def domain_search(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, NEW_PDB):
 		xmaximal_all.append(xmaximal)
 		domains_all.append(domain)
 
-
 	
-	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t2))
 	return xminimal_all, xmaximal_all, domains_all, seq_ids
-	
+	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t2))
 	
 def main(args):
 	QUERY = args.query

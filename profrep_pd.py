@@ -222,7 +222,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all):
 		link = configuration.LINK_PART1_PC + link_part2
 	subprocess.call("{}/prepare-refseqs.pl --fasta {} --out {}".format(JBROWSE_BIN, QUERY, jbrowse_data_path), shell=True)
 	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_domains --out {}".format(JBROWSE_BIN, OUT_DOMAIN_GFF, jbrowse_data_path), shell=True)
-	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --out {}".format(JBROWSE_BIN, OUTPUT_GFF, jbrowse_data_path), shell=True)
+	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --config '{}' --out {}".format(JBROWSE_BIN, OUTPUT_GFF, configuration.JSON_CONF, jbrowse_data_path), shell=True)
 	for repeat_id in repeats_all:
 		subprocess.call("{}/wig-to-json.pl --trackLabel {} --wig {}/{}.wig --out {}".format(JBROWSE_BIN, repeat_id, HTML_DATA, repeat_id.split("/")[-1], jbrowse_data_path), shell=True)
 	return link
@@ -301,8 +301,6 @@ def main(args):
 		[header, sequence] = fasta_read(subfasta)
 		seq_length = len(sequence)
 		end = start + seq_length
-		#seq_id = header[1:]
-		##############################################################################################
 		headers.append(header)
 		# Create parallel process																												
 		subset_index = list(range(0, seq_length, STEP))	

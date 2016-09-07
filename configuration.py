@@ -23,11 +23,15 @@ COLORS = ["#00FF00", "#0000FF", "#FF0000", "#01FFFE", "#FFA6FE", "#FFDB66", "#00
 CLASSIFICATION = "{}/{}".format(DATA, "classification.csv")
 LAST_DB = "{}/{}".format(DATA, "proteins_all")
 
+# JBROWSE TRACKS CONF
+JSON_CONF = """{
+				"style":{
+					"color":"black"
+					}
+				}"""
 
 # OUPUTS
-
 DOMAINS_GFF = "{}/{}".format(TMP,"output_domains.gff")
-#DOMAINS_PIC = "{}/{}".format(TMP,"output_domains.png")
 HTML = "{}/{}".format(TMP,"output.html")
 REPEATS_GFF = "{}/{}".format(TMP,"output_repeats.gff")
 REPEATS_TABLE = "{}/{}".format(TMP,"output_table.csv")
