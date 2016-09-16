@@ -7,7 +7,6 @@ from operator import itemgetter
 from itertools import groupby
 import configuration
  
-t1 = time.time() 
  
 def create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 	SOURCE = "Profrep"
@@ -18,21 +17,38 @@ def create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 	header = seq_repeats.dtype.names
 	seq_id = header[0]
 	for repeat in header[2:]:
-		ranges = []
-		nonzero_records = seq_repeats[seq_id][np.where(seq_repeats[repeat] > THRESHOLD)[0]]
-		for key, group in groupby(enumerate(nonzero_records), lambda index_item: index_item[0] - index_item[1]):
+		above_th = seq_repeats[seq_id][np.where(seq_repeats[repeat] > THRESHOLD)[0]]
+		ranges = idx_ranges(above_th, THRESHOLD_SEGMENT)
+		with open(OUTPUT_GFF, "a") as gff:	
+			for i in range(len(ranges) - 1)[::2]:
+				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, repeat))
+
+
+def N_gff(header, sequence, HTML_DATA):
+	SOURCE = "Profrep"
+	FEATURE = "N_region"
+	SCORE = "."
+	STRAND = "."
+	FRAME = "."
+	name = "N"
+	indices = [indices + 1 for indices, n in enumerate(sequence) if n == "n" or n == "N"]
+	ranges = idx_ranges(indices, configuration.N_segment)
+	with open("{}/N.gff".format(HTML_DATA), "a") as gff2:	
+			for i in range(len(ranges) - 1)[::2]:
+				gff2.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(header, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, name))
+
+
+def idx_ranges(indices, THRESHOLD_SEGMENT):
+	ranges = []
+	for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):
 			group = list(map(itemgetter(1), group))
 			if len(group) > THRESHOLD_SEGMENT:
 				# Take boundaries of the group vectors
 				ranges.append(group[0])
 				ranges.append(group[-1])
-		with open(OUTPUT_GFF, "a") as gff:	
-			for i in range(len(ranges) - 1)[::2]:
-				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, repeat))
-				
-	### only for 1 sequence
-	print("ELAPSED_TIME_GFF = {}".format(time.time() - t1))
- 
+	return ranges
+
+	
 def main(args):
 	OUTPUT = args.output
 	OUTPUT_GFF = args.output_gff
@@ -49,7 +65,7 @@ def main(args):
 			seq_length = int(line_parsed[1])
 			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=seq_length, delimiter="\t", deletechars="")
 			gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
-			
+ 
 
 if __name__ == "__main__":
 	import argparse

@@ -12,7 +12,6 @@ import os
 import configuration
 
 
-
 def domain_annotation(element, CLASSIFICATION):
 	domain = []
 	rep_type = []
@@ -54,6 +53,7 @@ def hits_processing(sequence_hits):
 	return reverse_strand_idx, regions_plus, regions_minus, seq_length
 
 
+# m
 def overlapping_regions(input_data):
 	if input_data: 
 		sorted_idx, sorted_data = zip(*sorted([(index,data) for index,data in enumerate(input_data)], key=itemgetter(1)))
@@ -79,7 +79,7 @@ def best_score(scores, indices):
 	best_scores = []
 	best_idx = []
 	for idx in indices:
-		# take only the first one !! may be more than with the same score
+		# if more hits have the same best score take only the first one
 		best_idx.append(idx[np.where(scores[idx] == max(scores[idx]))[0][0]])
 	return best_idx
 
@@ -182,10 +182,9 @@ def domain_search(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, NEW_PDB):
 		xminimal_all.append(xminimal)
 		xmaximal_all.append(xmaximal)
 		domains_all.append(domain)
-
 	
 	return xminimal_all, xmaximal_all, domains_all, seq_ids
-	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t2))
+	
 	
 def main(args):
 	QUERY = args.query
@@ -206,7 +205,6 @@ if __name__ == "__main__":
 	CLASSIFICATION = configuration.CLASSIFICATION
 	DOMAINS_GFF = configuration.DOMAINS_GFF
 
-	
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-q","--query",type=str, required=True,
 						help="query sequence to find protein domains in")

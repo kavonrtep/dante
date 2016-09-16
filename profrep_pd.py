@@ -19,9 +19,10 @@ import protein_domains_pd
 import configuration
 import visualization
 
-t0 = time.time()
+t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
-
+ 
+ 
 # Create single fasta temporary files to be processed sequentially
 def multifasta(QUERY):
 	PATTERN = ">"
@@ -85,7 +86,9 @@ def read_annotation(CLS, cl_annotations_items):
 				clust = line.split(" ")[0][3:]  
 	return reads_annotations
 
-# Predefine dictionary of known annotations and partial sequence repetitive profiles defined by parallel process
+
+# Predefine dictionary of known annotations and partial sequence 
+# repetitive profiles defined by parallel process
 def annot_profile(annotation_keys, part):
 	subprofile = {} 				
 	for key in annotation_keys:
@@ -96,8 +99,8 @@ def annot_profile(annotation_keys, part):
 
 
 # Run parallel function to process the input sequence in windows
-# run blast for subsequence defined by the input index and window size
-# create and increment subprofile vector based on reads aligned and position of alignment
+# Run blast for subsequence defined by the input index and window size
+# Create and increment subprofile vector based on reads aligned within window 
 def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, subset_index):
 	loc_start = subset_index + 1
 	loc_end = subset_index + WINDOW
@@ -115,7 +118,7 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			read = column[1]				# ID of individual aligned read
 			qstart = int(column[4])			# starting position of alignment
 			qend = int(column[5])			# ending position of alignemnt
-			# Assign repetition class to the read, if does not belong to any, assign to general "repeat" class
+			# Assign repetition class to the read
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
@@ -124,7 +127,8 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 	return subprofile
 
 
-# Concatenate sequential subprofiles to the final profile representing the whole sequence and deal with overlaping parts
+# Concatenate sequential subprofiles to the final profile representing 
+# the whole sequence and deal with overlaping parts
 def concatenate_dict(profile_list, WINDOW, OVERLAP):
 	profile = {}
 	for key in profile_list[0].keys():
@@ -137,7 +141,7 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 			profile[key] = np.append(profile[key], profile_list[-1][key][OVERLAP//2:])
 	return profile
 
-
+# Create table of blast hits of all fasta sequences
 def hits_table(profile, OUTPUT, seq_id, seq_length):
 	nonzero_keys = []
 	[nonzero_keys.append(k) for k,v in profile.items() if any(v)]
@@ -147,19 +151,21 @@ def hits_table(profile, OUTPUT, seq_id, seq_length):
 		data[:,1] = profile["all"] 
 		keys = set(nonzero_keys)
 		exclude = set(["all"])
-		header = "{}\tall\t{}".format(seq_id, "\t".join(keys.difference(exclude)))
+		seq_id = "{}\tall\t{}".format(seq_id, "\t".join(keys.difference(exclude)))
 		count = 2
 		for key in keys.difference(exclude):
 			data[:,count] = profile[key]
 			count += 1
 		data = data[~np.all(data[:,1:] == 0, axis=1)]
-	else:
-		header = "{}\tno_hits".format(seq_id)    
-		data = []
+	else:  
+		data = [0]
+	nonzero_len = len(data)
 	with open(OUTPUT, "ab") as hits_tbl:
-		np.savetxt(hits_tbl, data, delimiter= "\t", header=header, fmt="%d")
+		np.savetxt(hits_tbl, data, delimiter= "\t", header=seq_id, fmt="%d")
+	return nonzero_len
+
 	
-		
+# Process the hits table separately for each fasta, create gff file and profile picture		
 def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom):
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
@@ -173,9 +179,9 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 			fasta_start = int(line_parsed[3])
 			fasta_end = int(line_parsed[4])
 			seq_length = int(line_parsed[1])
-			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=seq_length, delimiter="\t", deletechars="")
+			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=fasta_end - fasta_start, delimiter="\t", deletechars="")
 			seq_id = seq_repeats.dtype.names[0]
-			if any(seq_repeats):
+			if any(seq_repeats.shape):
 				if GFF:
 					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
 				repeats_all = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
@@ -189,7 +195,8 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 			seq_count += 1
 	return repeats_all
 
-	
+
+# Define html output with limited number of output pictures and link to JBrowse
 def html_output(seq_names, link, HTML):
 	pictures = "\n".join(["<img src={}.png>".format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM]])
 	html_str = """
@@ -206,28 +213,38 @@ def html_output(seq_names, link, HTML):
 		html_file.write(html_str)
 
 
+# Set up the paths, link and convert output data to be displayed as tracks in Jbrowse
 def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all):
-	print(repeats_all)
 	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
 	convert = "%2F"
+	# Galaxy usage
 	if os.getenv("JBROWSE_BIN"):
 		JBROWSE_BIN = os.environ["JBROWSE_BIN"]
 		extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
 		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
 		link = configuration.LINK_PART1 + link_part2
+	# Commnad line usage
 	else: 
 		JBROWSE_BIN = configuration.JBROWSE_BIN_PC
 		jbrowse_link_to_profrep = "data/profrep_data"
 		link_part2 = os.path.join(jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
 		link = configuration.LINK_PART1_PC + link_part2
-	subprocess.call("{}/prepare-refseqs.pl --fasta {} --out {}".format(JBROWSE_BIN, QUERY, jbrowse_data_path), shell=True)
-	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_domains --out {}".format(JBROWSE_BIN, OUT_DOMAIN_GFF, jbrowse_data_path), shell=True)
-	subprocess.call("{}/flatfile-to-json.pl --gff {} --trackLabel GFF_repetitions --config '{}' --out {}".format(JBROWSE_BIN, OUTPUT_GFF, configuration.JSON_CONF, jbrowse_data_path), shell=True)
-	for repeat_id in repeats_all:
-		subprocess.call("{}/wig-to-json.pl --trackLabel {} --wig {}/{}.wig --out {}".format(JBROWSE_BIN, repeat_id, HTML_DATA, repeat_id.split("/")[-1], jbrowse_data_path), shell=True)
+	subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", "/mnt/raid/users/ninah/profrep_git/tmp/N.gff", "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])
+
+	count = 0
+	for repeat_id in repeats_all[1:]:
+		color = configuration.COLORS_RGB[count]
+		print(color)
+		print(repeat_id)
+		subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+		#subprocess.call("{}/wig-to-json.pl --trackLabel {} --wig {}/{}.wig --config --out {}".format(JBROWSE_BIN, repeat_id, HTML_DATA, repeat_id.split("/")[-1], jbrowse_data_path), shell=True)
+		count += 1
 	return link
 
-	
+# Create wiggle format to display individual profiles by JBrowse
 def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
 	header_repeats = seq_repeats.dtype.names
 	seq_id = header_repeats[0]
@@ -275,10 +292,11 @@ def main(args):
 	if NEW_DB:
 		subprocess.call("makeblastdb -in {} -dbtype nucl".format(BLAST_DB), shell=True)
 	
+	# Create dir to store outputs for html 
 	if not os.path.exists(HTML_DATA):
 		os.makedirs(HTML_DATA)
 		
-	# Define the parallel process
+	# Define parameters for parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
 	print("NUM_OF_CORES={}".format(NUM_CORES))
@@ -290,42 +308,52 @@ def main(args):
 	# Assign reads to repetitive classes
 	reads_annotations = read_annotation(CLS, cl_annotations_items)
 	
-	# Process every input fasta sequence sequentially
+	# Detect all fasta sequences in input
 	fasta_list = multifasta(QUERY)
 	headers=[]
 	seq_count = 1
 	start = 1
+	# Create file to record info about fasta sequences
 	with open(SEQ_INFO, "a") as s_info:
 		s_info.write("seq_id\tseq_legth\tseq_count\tfile_start_pos\tfile_end_pos\n")
-	for subfasta in fasta_list:
-		[header, sequence] = fasta_read(subfasta)
-		seq_length = len(sequence)
-		end = start + seq_length
-		headers.append(header)
-		# Create parallel process																												
-		subset_index = list(range(0, seq_length, STEP))	
-		multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
-		profile_list = parallel_pool.map(multiple_param, subset_index)		 							
+		# Process every input fasta sequence sequentially
+		for subfasta in fasta_list:
+			[header, sequence] = fasta_read(subfasta)
+			gff.N_gff(header, sequence, HTML_DATA)
+			seq_length = len(sequence)
+			
+			headers.append(header)
+			# Create parallel process																												
+			subset_index = list(range(0, seq_length, STEP))	
+			multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
+			profile_list = parallel_pool.map(multiple_param, subset_index)		 							
 
-		# Join partial profiles to the final profile of the sequence 
-		profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
+			# Join partial profiles to the final profile of the sequence 
+			profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
 
-		# Sum the profile counts to get "all" repetitive profile (including all repetitions and also hits not belonging anywhere)
-		profile["all"] = sum(profile.values())
-		if not any(profile["all"]):
-			end = start
-		hits_table(profile, OUTPUT, header, seq_length)
-		with open(SEQ_INFO, "a") as s_info:
+			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
+			profile["all"] = sum(profile.values())
+			#if not any(profile["all"]):
+				#end = start
+			nonzero_len = hits_table(profile, OUTPUT, header, seq_length)
+			end = start + nonzero_len
+			# Each line defines one sequence and its position in hits table 
 			s_info.write("{}\t{}\t{}\t{}\t{}\n".format(header, seq_length, seq_count, start, end))
-		start = end + 1
-		seq_count += 1
-		
+			start = end + 1
+			seq_count += 1
+	
+	# Protein domains module
+	t_domains=time.time()
 	if DOMAINS:
-		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA)
-
+		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA)	
+	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t_domains))
+		
+	t_gff_vis = time.time() 
 	repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom)
+	print("ELAPSED_TIME_GFF_VIS = {}".format(time.time() - t_gff_vis))
 	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all)		
 	html_output(headers, link, HTML)
+	
 	
 if __name__ == "__main__":
     
@@ -339,7 +367,7 @@ if __name__ == "__main__":
     SEQ_INFO = configuration.SEQ_INFO
     
     
-    #Define command line arguments
+    # Define command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-q', '--query', type=str, required=True,
 						help='query sequence to be processed')
@@ -395,5 +423,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(args)
 
-print("ELAPSED_TIME_PROFREP = {}".format(time.time() - t0))
+print("ELAPSED_TIME_PROFREP = {}".format(time.time() - t_profrep))
 

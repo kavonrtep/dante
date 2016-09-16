@@ -16,12 +16,12 @@ def vis_profrep(seq_repeats, seq_length):
 	ax.set_title(seq_id)
 	plt.xlim([0, seq_length])	
 	plot_num = 0
-	if not any(seq_repeats):
+	if not any(seq_repeats.shape):
 		ax.hlines(0, 0, seq_length, color="red", lw=4)
 	else:
 		ax.plot(seq_repeats[seq_id], seq_repeats[header[1]], label=header[1], color="#7F7F7F")
 		for repeat in header[2:]: 
-			ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label=repeat, color=configuration.COLORS[plot_num])
+			ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label=repeat, color=configuration.COLORS_HEX[plot_num])
 			plot_num += 1
 		art = []
 		lgd = ax.legend(bbox_to_anchor=(0.5,-0.1 ), loc=9, ncol=3)
@@ -32,9 +32,9 @@ def vis_profrep(seq_repeats, seq_length):
 def vis_domains(fig, ax, seq_id, xminimal, xmaximal, domains):
 	y_upper_lim = ax.get_ylim()[1]
 	dom_uniq = list(set(domains))
-	colors = [configuration.COLORS[dom_uniq.index(domain)] for domain in domains]
-	colors_dom = [list(reversed(configuration.COLORS))[dom_uniq.index(domain)] for domain in domains]
-	colors_legend = list(reversed(configuration.COLORS))[0:len(dom_uniq)]
+	colors = [configuration.COLORS_HEX[dom_uniq.index(domain)] for domain in domains]
+	colors_dom = [list(reversed(configuration.COLORS_HEX))[dom_uniq.index(domain)] for domain in domains]
+	colors_legend = list(reversed(configuration.COLORS_HEX))[0:len(dom_uniq)]
 	ax.hlines([y_upper_lim + y_upper_lim/10]*len(xminimal), xminimal, xmaximal, color=colors_dom, lw=2, label = dom_uniq)
 	lines_legend = [] 
 	ax2 = ax.twinx()
