@@ -24,7 +24,7 @@ def create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, repeat))
 
 
-def N_gff(header, sequence, HTML_DATA):
+def N_gff(header, sequence, N_GFF):
 	SOURCE = "Profrep"
 	FEATURE = "N_region"
 	SCORE = "."
@@ -33,7 +33,7 @@ def N_gff(header, sequence, HTML_DATA):
 	name = "N"
 	indices = [indices + 1 for indices, n in enumerate(sequence) if n == "n" or n == "N"]
 	ranges = idx_ranges(indices, configuration.N_segment)
-	with open("{}/N.gff".format(HTML_DATA), "a") as gff2:	
+	with open(N_GFF, "a") as gff2:	
 			for i in range(len(ranges) - 1)[::2]:
 				gff2.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(header, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, name))
 

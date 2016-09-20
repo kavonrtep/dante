@@ -24,7 +24,7 @@ def vis_profrep(seq_repeats, seq_length):
 			ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label=repeat, color=configuration.COLORS_HEX[plot_num])
 			plot_num += 1
 		art = []
-		lgd = ax.legend(bbox_to_anchor=(0.5,-0.1 ), loc=9, ncol=3)
+		lgd = ax.legend(bbox_to_anchor=(0.5,-0.1), loc=9, ncol=3)
 		art.append(lgd)
 	return fig, ax
 	
@@ -37,7 +37,7 @@ def vis_domains(fig, ax, seq_id, xminimal, xmaximal, domains):
 	colors_legend = list(reversed(configuration.COLORS_HEX))[0:len(dom_uniq)]
 	ax.hlines([y_upper_lim + y_upper_lim/10]*len(xminimal), xminimal, xmaximal, color=colors_dom, lw=2, label = dom_uniq)
 	lines_legend = [] 
-	ax2 = ax.twinx()
+	ax2 = ax.twinx()	# second axis for domains
 	for count_uniq in list(range(len(dom_uniq))):
 		lines_legend.append(mlines.Line2D([], [], color=colors_legend[count_uniq], markersize=15, label=dom_uniq[count_uniq]))
 	ax2.legend(lines_legend, [line.get_label() for line in lines_legend], bbox_to_anchor=(1.05, 1),  loc='upper left', borderaxespad=0.)

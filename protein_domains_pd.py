@@ -13,6 +13,7 @@ import configuration
 
 
 def domain_annotation(element, CLASSIFICATION):
+	""" assign protein domain to each hit from protein database  """
 	domain = []
 	rep_type = []
 	rep_lineage = []
@@ -35,6 +36,7 @@ def domain_annotation(element, CLASSIFICATION):
 	
 
 def hits_processing(sequence_hits):
+	""" gain hits intervals separately for forward and reverse strand """
 	seq_length = sequence_hits[0,5]
 	reverse_strand_idx = np.where(sequence_hits[:,4] == "-")[0]
 	if not reverse_strand_idx.any():
@@ -53,8 +55,8 @@ def hits_processing(sequence_hits):
 	return reverse_strand_idx, regions_plus, regions_minus, seq_length
 
 
-# m
 def overlapping_regions(input_data):
+	""" join all overalapping intervals """
 	if input_data: 
 		sorted_idx, sorted_data = zip(*sorted([(index,data) for index,data in enumerate(input_data)], key=itemgetter(1)))
 		merged_ends = input_data[sorted_idx[0]][1]
@@ -76,6 +78,7 @@ def overlapping_regions(input_data):
 
 
 def best_score(scores, indices):
+	""" from overlapping intervals take the one with the highest score """
 	best_scores = []
 	best_idx = []
 	for idx in indices:
@@ -85,7 +88,11 @@ def best_score(scores, indices):
 
 
 def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION):
-	# Predefine the standard columns of GFF3 format
+	""" track format of domains found in query sequence(s)
+	- custom atributes reported:
+	Domain Name, Repet.type, Repet.lineage, 
+	Original protein sequence, Aligned sequence 
+	"""
 	t2 = time.time()
 	
 	SOURCE = "profrep"
@@ -115,12 +122,16 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFI
 	return xminimal, xmaximal, scores, strands, domain
 
 
-def domain_search(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, NEW_PDB):			
+def domain_search(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, NEW_PDB):		
+	""" search for protein domains using our protein database and external tool LAST,
+	stdout is parsed in real time and hits for one sequence undergo further processing
+	- tabular format(TAB) to get info about position, score, orientation 
+	- MAF format to mantain the alignment sequence
+	"""	
 	seq_ids = []
 	xminimal_all = []
 	xmaximal_all = []
 	domains_all = []
-	## configuration
 	header_gff = "##gff-version 3"
 	sequence_hits = np.empty((0,9))
 	with open(SEQUENCE, "r") as fasta:

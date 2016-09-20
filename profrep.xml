@@ -1,11 +1,15 @@
-<tool id="profrep" name="Sequence Repetitive Profile" version="1.0.0">
+<tool id="profrep" name="ProfRep" version="1.0.0">
 <description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
 <command>
 export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 /mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/profrep_pd.py --query ${input} --identical ${identical}  
 --align_length ${align_length} --word_size ${word_size} --e_value ${e_value} --threshold ${threshold} --window ${window} 
---overlap ${overlap} --output ${ProfTbl} --output_gff ${ProfGff} --gff True --html_file ${html_file}
---html_path ${html_file.extra_files_path} --seq_info ${seq_info}
+--overlap ${overlap} --output ${ProfTbl} --output_gff ${ProfGff} --html_file ${html_file}
+--html_path ${html_file.extra_files_path} --seq_info ${seq_info} --n_gff ${NGff}
+--protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/proteins_all
+--classification /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/classification.csv
+--domain_gff ${DomGff}
+
  #if $custom_data.options_custom_data:
 	--database ${reads}
     --annotation_tbl ${annotations}
@@ -15,10 +19,8 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 	--database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*reads_all
     --annotation_tbl /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*annotation
     --cls /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*.cls
-	--protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/proteins_all
-	--classification /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/classification.csv
-	--domain_gff ${DomGff}
-	--protein_domains True 
+    --copy_num ${copy_numbers}
+	
  #end if
  >> $log_file 
 </command> 
@@ -33,7 +35,8 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
      <column name="name" index="1"/>
      <column name="value" index="0" />
     </options>
-   </param>   
+   </param>  
+   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers"  />  
   </when>
   <when value="true">
    <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="File containing reads sequences in fasta format" />
@@ -48,7 +51,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by blast for alignment" />  
  <param name="window" type="integer" value="5000" min="5000" label="Window size" help="Use when having a long input sequence so that it can be processed parallely" />
  <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
- <param name="threshold" type="integer" value="50" min="1" label="Threshold" help="Threshold for copy numbers at certain position to be reported as a repeat in GFF format. Must be set considering the genome size/sequencing coverage" />
+ <param name="threshold" type="integer" value="50" min="1" label="Threshold" help="Threshold for copy numbers at certain position to be reported as a repeat in GFF format"  />
 
 </inputs>
 
@@ -56,7 +59,8 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  	<data format="csv" name="ProfTbl" label="Repetitive profile table from dataset ${input.hid})" />
 	<data format="gff3" name="ProfGff" label="GFF file of repetitive regions from dataset ${input.hid})" />
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid})" />
-	<data format="html" name="html_file" label="HTML output including link for interactive visualization of output ${input.hid})" />
+	<data format="html" name="html_file" label="HTML output & JBrowse visualization ${input.hid})" />
+	<data format="gff3" name="NGff" label="GFF file of unknown bases(N) from dataset ${input.hid})" />
 	<data format="txt" name="log_file" label="Log file" />
 	<data format="txt" name="seq_info" label="Seqs info" />
 

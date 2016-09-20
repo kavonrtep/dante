@@ -52,7 +52,6 @@ def fasta_read(subfasta):
 			if clean_line:				
 				sequence_lines.append(clean_line)
 	sequence = "".join(sequence_lines)
-	print(header)
 	return header, sequence
 
 
@@ -93,7 +92,7 @@ def annot_profile(annotation_keys, part):
 	subprofile = {} 				
 	for key in annotation_keys:
 		subprofile[key] = np.zeros(part, dtype=int)
-	subprofile["Unclassified_repetition"] = np.zeros(part, dtype=int)
+	subprofile["Unclassified_repeat"] = np.zeros(part, dtype=int)
 	subprofile["all"] = np.zeros(part, dtype=int)
 	return subprofile
 
@@ -122,7 +121,7 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
-				annotation = "Unclassified_repetition"
+				annotation = "Unclassified_repeat"
 			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
 	return subprofile
 
@@ -142,26 +141,32 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 	return profile
 
 # Create table of blast hits of all fasta sequences
-def hits_table(profile, OUTPUT, seq_id, seq_length):
+def hits_table(profile, OUTPUT, seq_id, seq_length, CN):
 	nonzero_keys = []
 	[nonzero_keys.append(k) for k,v in profile.items() if any(v)]
 	if any(profile["all"]):
 		data = np.zeros((seq_length, len(nonzero_keys) + 1), dtype=int)
 		data[:,0] = np.array([list(range(1, seq_length + 1))])
-		data[:,1] = profile["all"] 
 		keys = set(nonzero_keys)
 		exclude = set(["all"])
-		seq_id = "{}\tall\t{}".format(seq_id, "\t".join(keys.difference(exclude)))
+		header = "{}\tall\t{}".format(seq_id, "\t".join(keys.difference(exclude)))
 		count = 2
-		for key in keys.difference(exclude):
-			data[:,count] = profile[key]
-			count += 1
+		if CN:
+			data[:,1] = profile["all"]/configuration.COVERAGE_PST
+			for key in keys.difference(exclude):
+				data[:,count] = profile[key]/configuration.COVERAGE_PST
+				count += 1
+		else:
+			data[:,1] = profile["all"]
+			for key in keys.difference(exclude):
+				data[:,count] = profile[key]
+				count += 1
 		data = data[~np.all(data[:,1:] == 0, axis=1)]
 	else:  
 		data = [0]
 	nonzero_len = len(data)
 	with open(OUTPUT, "ab") as hits_tbl:
-		np.savetxt(hits_tbl, data, delimiter= "\t", header=seq_id, fmt="%d")
+		np.savetxt(hits_tbl, data, delimiter= "\t", header=header, fmt="%d")
 	return nonzero_len
 
 	
@@ -191,7 +196,7 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 					dom_idx = seq_ids_dom.index(seq_id) 
 					[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
 				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
-				fig.savefig(output_pic_png, bbox_inches="tight", format="png")	
+				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=300)	
 			seq_count += 1
 	return repeats_all
 
@@ -232,15 +237,12 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all):
 	subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
 	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
 	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", "/mnt/raid/users/ninah/profrep_git/tmp/N.gff", "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])
 
 	count = 0
 	for repeat_id in repeats_all[1:]:
 		color = configuration.COLORS_RGB[count]
-		print(color)
-		print(repeat_id)
 		subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
-		#subprocess.call("{}/wig-to-json.pl --trackLabel {} --wig {}/{}.wig --config --out {}".format(JBROWSE_BIN, repeat_id, HTML_DATA, repeat_id.split("/")[-1], jbrowse_data_path), shell=True)
 		count += 1
 	return link
 
@@ -287,6 +289,8 @@ def main(args):
 	HTML = args.html_file
 	HTML_DATA = args.html_path
 	SEQ_INFO = args.seq_info
+	N_GFF = args.n_gff
+	CN = args.copy_numbers
 	
 	# Create new blast database of reads
 	if NEW_DB:
@@ -313,16 +317,17 @@ def main(args):
 	headers=[]
 	seq_count = 1
 	start = 1
+	total_length = 0
 	# Create file to record info about fasta sequences
 	with open(SEQ_INFO, "a") as s_info:
 		s_info.write("seq_id\tseq_legth\tseq_count\tfile_start_pos\tfile_end_pos\n")
 		# Process every input fasta sequence sequentially
 		for subfasta in fasta_list:
 			[header, sequence] = fasta_read(subfasta)
-			gff.N_gff(header, sequence, HTML_DATA)
+			gff.N_gff(header, sequence, N_GFF)
 			seq_length = len(sequence)
-			
 			headers.append(header)
+			
 			# Create parallel process																												
 			subset_index = list(range(0, seq_length, STEP))	
 			multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
@@ -333,14 +338,16 @@ def main(args):
 
 			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
 			profile["all"] = sum(profile.values())
-			#if not any(profile["all"]):
-				#end = start
-			nonzero_len = hits_table(profile, OUTPUT, header, seq_length)
+			
+			nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CN)
 			end = start + nonzero_len
 			# Each line defines one sequence and its position in hits table 
 			s_info.write("{}\t{}\t{}\t{}\t{}\n".format(header, seq_length, seq_count, start, end))
 			start = end + 1
 			seq_count += 1
+			total_length += seq_length 
+	
+	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
 	
 	# Protein domains module
 	t_domains=time.time()
@@ -361,6 +368,7 @@ if __name__ == "__main__":
     TMP = configuration.TMP
     DOMAINS_GFF = configuration.DOMAINS_GFF
     REPEATS_GFF = configuration.REPEATS_GFF
+    N_GFF = configuration.N_GFF
     REPEATS_TABLE = configuration.REPEATS_TABLE
     CLASSIFICATION = configuration.CLASSIFICATION
     LAST_DB = configuration.LAST_DB
@@ -413,13 +421,16 @@ if __name__ == "__main__":
                         help='output gff format')
     parser.add_argument("-oug", "--domain_gff",type=str, default=DOMAINS_GFF,
 						help="output domains gff format")
+    parser.add_argument("-oun", "--n_gff",type=str, default=N_GFF,
+						help="N regions gff format")
     parser.add_argument("-hf", "--html_file", type=str, default=HTML,
                         help="output html file name")
     parser.add_argument("-hp", "--html_path", type=str, default=TMP,
                         help="path to html extra files")
     parser.add_argument("-si", "--seq_info", type=str, default=SEQ_INFO,
-                        help="file containg general info about sequence")
-
+                        help="file containing general info about sequence")
+    parser.add_argument("-cn", "--copy_numbers", default=False,
+                        help="choose for conversion hits to copy numbers")
     args = parser.parse_args()
     main(args)
 
