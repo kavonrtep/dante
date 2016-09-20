@@ -59,7 +59,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  	<data format="csv" name="ProfTbl" label="Repetitive profile table from dataset ${input.hid})" />
 	<data format="gff3" name="ProfGff" label="GFF file of repetitive regions from dataset ${input.hid})" />
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid})" />
-	<data format="html" name="html_file" label="HTML output & JBrowse visualization ${input.hid})" />
+	<data format="html" name="html_file" label="HTML output, JBrowse visualization ${input.hid})" />
 	<data format="gff3" name="NGff" label="GFF file of unknown bases(N) from dataset ${input.hid})" />
 	<data format="txt" name="log_file" label="Log file" />
 	<data format="txt" name="seq_info" label="Seqs info" />
