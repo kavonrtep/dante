@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
 def vis_profrep(seq_repeats, seq_length):
+	''' visualization of repetitive profiles'''
 	header = seq_repeats.dtype.names
 	seq_id = header[0]
 	fig = plt.figure(figsize=(18, 8))
@@ -30,14 +31,15 @@ def vis_profrep(seq_repeats, seq_length):
 	
 	
 def vis_domains(fig, ax, seq_id, xminimal, xmaximal, domains):
+	''' visualization of protein domains'''
 	y_upper_lim = ax.get_ylim()[1]
-	dom_uniq = list(set(domains))
+	dom_uniq = list(set(domains)) 
 	colors = [configuration.COLORS_HEX[dom_uniq.index(domain)] for domain in domains]
 	colors_dom = [list(reversed(configuration.COLORS_HEX))[dom_uniq.index(domain)] for domain in domains]
 	colors_legend = list(reversed(configuration.COLORS_HEX))[0:len(dom_uniq)]
 	ax.hlines([y_upper_lim + y_upper_lim/10]*len(xminimal), xminimal, xmaximal, color=colors_dom, lw=2, label = dom_uniq)
 	lines_legend = [] 
-	ax2 = ax.twinx()	# second axis for domains
+	ax2 = ax.twinx()	# add second axis for domains
 	for count_uniq in list(range(len(dom_uniq))):
 		lines_legend.append(mlines.Line2D([], [], color=colors_legend[count_uniq], markersize=15, label=dom_uniq[count_uniq]))
 	ax2.legend(lines_legend, [line.get_label() for line in lines_legend], bbox_to_anchor=(1.05, 1),  loc='upper left', borderaxespad=0.)

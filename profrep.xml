@@ -15,12 +15,16 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
     --annotation_tbl ${annotations}
     --cls ${cls}
 	--new_db True
+	#if $custom_data.cn.copy_numbers:
+    --coverage ${custom_data.cn.genome_size}
+    #end if
  #else
 	--database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*reads_all
     --annotation_tbl /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*annotation
     --cls /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*.cls
-    --copy_num ${copy_numbers}
-	
+     #if $custom_data.copy_numbers:
+        --coverage ${custom_data.prepared_dataset.fields.coverage}
+    #end if
  #end if
  >> $log_file 
 </command> 
@@ -34,6 +38,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
     <options from_file="prepared_datasets.txt" >
      <column name="name" index="1"/>
      <column name="value" index="0" />
+     <column name="coverage" index="2"/>
     </options>
    </param>  
    <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers"  />  
@@ -42,6 +47,12 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
    <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="File containing reads sequences in fasta format" />
    <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" />
    <param format="cls" type="data" name="cls" label="Choose cls file" />
+   <conditional name="cn">
+    <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers" />
+    <when value="true">
+     <param name="genome_size" type="integer" value="None" label="Enter the genome size" />
+    </when>
+   </conditional>
   </when>
  </conditional>
 

@@ -124,9 +124,9 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFI
 
 def domain_search(SEQUENCE, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, NEW_PDB):		
 	""" search for protein domains using our protein database and external tool LAST,
-	stdout is parsed in real time and hits for one sequence undergo further processing
+	stdout is parsed in real time and hits for a single sequence undergo further processing
 	- tabular format(TAB) to get info about position, score, orientation 
-	- MAF format to mantain the alignment sequence
+	- MAF format to gain alignment and original sequence
 	"""	
 	seq_ids = []
 	xminimal_all = []
