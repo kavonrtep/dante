@@ -15,7 +15,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
     --annotation_tbl ${annotations}
     --cls ${cls}
 	--new_db True
-	#if $custom_data.cn.copy_numbers:
+	#if $custom_data.cn.copy_num:
     --coverage ${custom_data.cn.genome_size}
     #end if
  #else
@@ -48,7 +48,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
    <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" />
    <param format="cls" type="data" name="cls" label="Choose cls file" />
    <conditional name="cn">
-    <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers" />
+    <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers" />
     <when value="true">
      <param name="genome_size" type="integer" value="None" label="Enter the genome size" />
     </when>
