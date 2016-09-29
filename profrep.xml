@@ -41,7 +41,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
      <column name="coverage" index="2"/>
     </options>
    </param>  
-   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers"  />  
+   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers"  />  
   </when>
   <when value="true">
    <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="File containing reads sequences in fasta format" />
@@ -50,7 +50,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
    <conditional name="cn">
     <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers" />
     <when value="true">
-     <param name="genome_size (Mbp)" type="float" value="None" min="0.00001" label="Enter the genome size" />
+     <param name="genome_size (bp)" type="int" value="1" min="1" label="Enter the genome size" />
     </when>
    </conditional>
   </when>

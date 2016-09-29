@@ -275,7 +275,7 @@ def genome2coverage(GS, BLAST_DB):
 	num_of_reads = int(nr.communicate()[0])
 	lr = subprocess.Popen('''awk -v N=2 '{print}/>/&&--N<=0{exit}' ''' + BLAST_DB + '''| awk '$0 !~">"{print}' | awk '{sum+=length($0)}END{print sum}' ''', stdout=subprocess.PIPE, shell=True)
 	len_of_read = int(lr.communicate()[0])
-	CV = (num_of_reads*len_of_read)/(GS*1000000) # GS in Mbp
+	CV = (num_of_reads*len_of_read)/GS # GS in bp
 	print(len_of_read)
 	print(num_of_reads)
 	print("COVERAGE = {}".format(CV))
@@ -460,9 +460,9 @@ if __name__ == "__main__":
                         help="path to html extra files")
     parser.add_argument("-si", "--seq_info", type=str, default=SEQ_INFO,
                         help="file containing general info about sequence")
-    parser.add_argument("-cv", "--coverage", 
+    parser.add_argument("-cv", "--coverage", type=float, 
                         help="coverage")
-    parser.add_argument("-gs", "--genome_size", type=float,
+    parser.add_argument("-gs", "--genome_size", type=int,
                         help="genome size")
     args = parser.parse_args()
     main(args)
