@@ -58,7 +58,6 @@ def fasta_read(subfasta):
 def cluster_annotation(CL_ANNOTATION_TBL):
 	''' Create dictionary of known annotations classes and related clusters '''
 	cl_annotations = {} 			
-	# Load annotation table as 2D array
 	annot_table = np.genfromtxt(CL_ANNOTATION_TBL, dtype=str) 	
 	for line in annot_table:
 		if line[1] in cl_annotations:
@@ -120,7 +119,7 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			read = column[1]				# ID of individual aligned read
 			qstart = int(column[4])			# starting position of alignment
 			qend = int(column[5])			# ending position of alignemnt
-			# Assign repetition class to the read
+			# Assign repeat class to HSP
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
@@ -144,40 +143,39 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 	return profile
 
 
-def hits_table(profile, OUTPUT, seq_id, seq_length, CN):
+def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
 	''' Create table of blast hits of all fasta sequences '''
 	nonzero_keys = []
 	[nonzero_keys.append(k) for k,v in profile.items() if any(v)]
+	data = np.zeros((seq_length, len(nonzero_keys) + 1), dtype=int)
 	if any(profile["all"]):
-		data = np.zeros((seq_length, len(nonzero_keys) + 1), dtype=int)
 		data[:,0] = np.array([list(range(1, seq_length + 1))])
 		keys = set(nonzero_keys)
 		exclude = set(["all"])
-		seq_id = "{}\tall\t{}".format(seq_id, "\t".join(sorted(keys.difference(exclude))))
+		header = "{}\tall\t{}".format(seq_id, "\t".join(sorted(keys.difference(exclude))))
 		count = 2
-		if CN:
-			data[:,1] = profile["all"]/configuration.COVERAGE_PST
+		if CV:
+			data[:,1] = profile["all"]/CV
 			for key in sorted(keys.difference(exclude)):
-				print(key)
-				data[:,count] = profile[key]/configuration.COVERAGE_PST
+				data[:,count] = profile[key]/CV
 				count += 1
 		else:
 			data[:,1] = profile["all"]
 			for key in sorted(keys.difference(exclude)):
-				print(key)
 				data[:,count] = profile[key]
 				count += 1
 		# exclude rows containing only zeros
 		data = data[~np.all(data[:,1:] == 0, axis=1)]
-	else:  
+	if not np.any(data):
 		data = [0]
+		header = seq_id
 	nonzero_len = len(data)
 	with open(OUTPUT, "ab") as hits_tbl:
-		np.savetxt(hits_tbl, data, delimiter= "\t", header=seq_id, fmt="%d")
+		np.savetxt(hits_tbl, data, delimiter= "\t", header=header, fmt="%d")
 	return nonzero_len
 
 		
-def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom):
+def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom, CV):
 	''' Process the hits table separately for each fasta, create gff file and profile picture '''
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
@@ -198,7 +196,7 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
 				[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
 			if seq_count <= configuration.MAX_PIC_NUM:
-				[fig, ax] = visualization.vis_profrep(seq_repeats, seq_length)
+				[fig, ax] = visualization.vis_profrep(seq_repeats, seq_length, CV)
 				if seq_id in seq_ids_dom:
 					dom_idx = seq_ids_dom.index(seq_id) 
 					[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
@@ -271,9 +269,22 @@ def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
 		max_wig.append(max(seq_repeats[track]))
 	return repeats_all, max_wig
 	
+
+def genome2coverage(GS, BLAST_DB):
+	nr = subprocess.Popen('''cat {} | grep '>' | wc -l'''.format(BLAST_DB), stdout=subprocess.PIPE, shell=True)
+	num_of_reads = int(nr.communicate()[0])
+	lr = subprocess.Popen('''awk -v N=2 '{print}/>/&&--N<=0{exit}' ''' + BLAST_DB + '''| awk '$0 !~">"{print}' | awk '{sum+=length($0)}END{print sum}' ''', stdout=subprocess.PIPE, shell=True)
+	len_of_read = int(lr.communicate()[0])
+	CV = (num_of_reads*len_of_read)/(GS*1000000) # GS in Mbp
+	print(len_of_read)
+	print(num_of_reads)
+	print("COVERAGE = {}".format(CV))
+	return CV
+	
 	
 def main(args):
-	# Parse the command line arguments 
+	
+	# Command lien arguments
 	QUERY = args.query
 	BLAST_DB = args.database
 	CL_ANNOTATION_TBL = args.annotation_tbl 
@@ -300,7 +311,8 @@ def main(args):
 	HTML_DATA = args.html_path
 	SEQ_INFO = args.seq_info
 	N_GFF = args.n_gff
-	CN = args.copy_numbers
+	CV = args.coverage
+	GS = args.genome_size
 	
 	# Create new blast database of reads
 	if NEW_DB:
@@ -322,6 +334,10 @@ def main(args):
 	# Assign reads to repetitive classes
 	reads_annotations = read_annotation(CLS, cl_annotations_items)
 	
+	# Conevrt genome size to coverage
+	if GS:
+		CV = genome2coverage(GS, BLAST_DB)
+	
 	# Detect all fasta sequences in input
 	fasta_list = multifasta(QUERY)
 	headers=[]
@@ -331,11 +347,12 @@ def main(args):
 	# Create file to record info about fasta sequences
 	with open(SEQ_INFO, "a") as s_info:
 		s_info.write("seq_id\tseq_legth\tseq_count\tfile_start_pos\tfile_end_pos\n")
-		# Process every input fasta sequence sequentially
+		# Find hits for each fasta sequence separetely
 		for subfasta in fasta_list:
 			[header, sequence] = fasta_read(subfasta)
 			gff.N_gff(header, sequence, N_GFF)
 			seq_length = len(sequence)
+			print(seq_length)
 			headers.append(header)
 			
 			# Create parallel process																												
@@ -349,7 +366,7 @@ def main(args):
 			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
 			profile["all"] = sum(profile.values())
 			
-			nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CN)
+			nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CV)
 			end = start + nonzero_len
 			# Each line defines one sequence and its position in hits table 
 			s_info.write("{}\t{}\t{}\t{}\t{}\n".format(header, seq_length, seq_count, start, end))
@@ -366,14 +383,18 @@ def main(args):
 	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t_domains))
 		
 	t_gff_vis = time.time() 
-	repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom)
+	# Process individual sequences from the input file sequentially
+	repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom, CV)
 	print("ELAPSED_TIME_GFF_VIS = {}".format(time.time() - t_gff_vis))
+	
+	# Prepare data for html output
 	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF)		
 	html_output(headers, link, HTML)
 	
 	
 if __name__ == "__main__":
     
+    # Default values(command line usage)
     HTML = configuration.HTML
     TMP = configuration.TMP
     DOMAINS_GFF = configuration.DOMAINS_GFF
@@ -383,9 +404,9 @@ if __name__ == "__main__":
     CLASSIFICATION = configuration.CLASSIFICATION
     LAST_DB = configuration.LAST_DB
     SEQ_INFO = configuration.SEQ_INFO
+
     
-    
-    # Define command line arguments
+    # Command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-q', '--query', type=str, required=True,
 						help='query sequence to be processed')
@@ -439,8 +460,10 @@ if __name__ == "__main__":
                         help="path to html extra files")
     parser.add_argument("-si", "--seq_info", type=str, default=SEQ_INFO,
                         help="file containing general info about sequence")
-    parser.add_argument("-cv", "--coverage"
+    parser.add_argument("-cv", "--coverage", 
                         help="coverage")
+    parser.add_argument("-gs", "--genome_size", type=float,
+                        help="genome size")
     args = parser.parse_args()
     main(args)
 

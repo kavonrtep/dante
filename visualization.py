@@ -6,14 +6,17 @@ import configuration
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-def vis_profrep(seq_repeats, seq_length):
+def vis_profrep(seq_repeats, seq_length, CV):
 	''' visualization of repetitive profiles'''
 	header = seq_repeats.dtype.names
 	seq_id = header[0]
 	fig = plt.figure(figsize=(18, 8))
 	ax = fig.add_subplot(111)
 	ax.set_xlabel('sequence bp')
-	ax.set_ylabel('copy numbers')
+	if CV:
+		ax.set_ylabel('copy numbers')
+	else:
+		ax.set_ylabel('hits')	
 	ax.set_title(seq_id)
 	plt.xlim([0, seq_length])	
 	plot_num = 0

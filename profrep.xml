@@ -48,9 +48,9 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
    <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" />
    <param format="cls" type="data" name="cls" label="Choose cls file" />
    <conditional name="cn">
-    <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers" />
+    <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers" />
     <when value="true">
-     <param name="genome_size" type="integer" value="None" label="Enter the genome size" />
+     <param name="genome_size (Mbp)" type="float" value="None" min="0.00001" label="Enter the genome size" />
     </when>
    </conditional>
   </when>
