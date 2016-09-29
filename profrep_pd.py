@@ -275,9 +275,7 @@ def genome2coverage(GS, BLAST_DB):
 	num_of_reads = int(nr.communicate()[0])
 	lr = subprocess.Popen('''awk -v N=2 '{print}/>/&&--N<=0{exit}' ''' + BLAST_DB + '''| awk '$0 !~">"{print}' | awk '{sum+=length($0)}END{print sum}' ''', stdout=subprocess.PIPE, shell=True)
 	len_of_read = int(lr.communicate()[0])
-	CV = (num_of_reads*len_of_read)/GS # GS in bp
-	print(len_of_read)
-	print(num_of_reads)
+	CV = (num_of_reads*len_of_read)/(GS*1000000) # GS in Mbp
 	print("COVERAGE = {}".format(CV))
 	return CV
 	
@@ -352,7 +350,6 @@ def main(args):
 			[header, sequence] = fasta_read(subfasta)
 			gff.N_gff(header, sequence, N_GFF)
 			seq_length = len(sequence)
-			print(seq_length)
 			headers.append(header)
 			
 			# Create parallel process																												
@@ -462,7 +459,7 @@ if __name__ == "__main__":
                         help="file containing general info about sequence")
     parser.add_argument("-cv", "--coverage", type=float, 
                         help="coverage")
-    parser.add_argument("-gs", "--genome_size", type=int,
+    parser.add_argument("-gs", "--genome_size", type=float,
                         help="genome size")
     args = parser.parse_args()
     main(args)
