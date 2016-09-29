@@ -50,7 +50,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
    <conditional name="cn">
     <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers" />
     <when value="true">
-     <param name="genome_size (bp)" type="int" value="1" min="1" label="Enter the genome size" />
+     <param name="genome_size (bp)" type="integer" value="1" min="1" label="Enter the genome size" />
     </when>
    </conditional>
   </when>
