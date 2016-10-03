@@ -1,5 +1,6 @@
 tmp
 data
+__pycache__/gff.cpython-34.pyc
 *.pyc
 *.png
 *.fa

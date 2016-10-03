@@ -203,22 +203,38 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
 				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
 			seq_count += 1
+			plt.close()
 	return repeats_all
 
 
-def html_output(seq_names, link, HTML):
+def html_output(SEQ_INFO, total_length, seq_names, link, HTML):
 	''' Define html output with limited number of output pictures and link to JBrowse '''
-	pictures = "\n".join(["<img src={}.png width=1800>".format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM] ])
-	html_str = """
+	pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM] ])
+	with open(SEQ_INFO, "r") as s_info:
+		next(s_info)
+		#<h2 style="text-align:center;">PROFREP OUTPUT</h2>
+		info = "\t\t".join(['<pre> {} [{} bp]</pre>'.format(line.split("\t")[0],line.split("\t")[1])for line in s_info])
+		print(info)
+	html_str = '''
 	<!DOCTYPE html>
 	<html>
 	<body>
-		<h1>Repetitive profile picture</h1>
-		{}
-		<a href={} target="_blank" >Link to JBrowser</a>	
+		<h2>PROFREP OUTPUT</h2>
+		<h4> Sequences processed: </h4>
+		{} 
+		<h4> Total length: </h4>
+		<pre> {} bp </pre>
+		<h4> Interactive visualization: </h4>
+		<a href="{}" target="_blank" >Link to JBrowse</a> </br>
+		<hr>
+		<h3> Repetitive profiles</h3> </br>
+		{} <br/>
+		<h5>References: </h5>
+		<h6> Tran, T.D., Cao, H.X., Jovtchev, G., Neumann, P., Novak, P., Fojtova, M., Vu, G.T.H., Macas, J., Fajkus, J., Schubert, I., Fuchs, J. (2015) – Centromere and telomere sequence alterations reflect the rapid genome evolution within the carnivorous plant genus Genlisea. Plant J. 84: 1087-1099. </h6>
+		<h6> Marques, A., Ribeiro, T., Neumann, P., Macas, J., Novak, P., Schubert, V., Pellino, M., Fuchs, J., Ma, W., Kuhlmann, M., Brandt, R., Vanzela, A.L.L., Beseda, T., Simkova, H., Pedrosa-Harand, A., Houben, A. (2015) – Holocentromeres in Rhynchospora are associated with genome-wide centromere-specific repeat arrays interspersed amongst euchromatin. Proc. Natl. Acad. Sci. USA 112: 13633-13638. </h6>
 	</body>
 	</html>
-	""".format(pictures, link)
+	'''.format(info, total_length, link, pictures)
 	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
 
@@ -282,7 +298,7 @@ def genome2coverage(GS, BLAST_DB):
 	
 def main(args):
 	
-	# Command lien arguments
+	# Command line arguments
 	QUERY = args.query
 	BLAST_DB = args.database
 	CL_ANNOTATION_TBL = args.annotation_tbl 
@@ -307,7 +323,6 @@ def main(args):
 	OUT_DOMAIN_GFF = args.domain_gff	
 	HTML = args.html_file
 	HTML_DATA = args.html_path
-	SEQ_INFO = args.seq_info
 	N_GFF = args.n_gff
 	CV = args.coverage
 	GS = args.genome_size
@@ -323,7 +338,7 @@ def main(args):
 	# Define parameters for parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
-	print("NUM_OF_CORES={}".format(NUM_CORES))
+	print("NUM_OF_CORES = {}".format(NUM_CORES))
 	parallel_pool = Pool(NUM_CORES)
 
 	# Assign clusters to repetitive classes
@@ -343,6 +358,7 @@ def main(args):
 	start = 1
 	total_length = 0
 	# Create file to record info about fasta sequences
+	SEQ_INFO = "{}/{}".format(HTML_DATA, configuration.SEQ_INFO)
 	with open(SEQ_INFO, "a") as s_info:
 		s_info.write("seq_id\tseq_legth\tseq_count\tfile_start_pos\tfile_end_pos\n")
 		# Find hits for each fasta sequence separetely
@@ -377,16 +393,16 @@ def main(args):
 	t_domains=time.time()
 	if DOMAINS:
 		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA)	
-	print("ELAPSED_TIME_DOMAINS = {}".format(time.time() - t_domains))
+	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
 		
 	t_gff_vis = time.time() 
 	# Process individual sequences from the input file sequentially
 	repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom, CV)
-	print("ELAPSED_TIME_GFF_VIS = {}".format(time.time() - t_gff_vis))
+	print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 	
 	# Prepare data for html output
 	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF)		
-	html_output(headers, link, HTML)
+	html_output(SEQ_INFO, total_length, headers, link, HTML)
 	
 	
 if __name__ == "__main__":
@@ -400,7 +416,6 @@ if __name__ == "__main__":
     REPEATS_TABLE = configuration.REPEATS_TABLE
     CLASSIFICATION = configuration.CLASSIFICATION
     LAST_DB = configuration.LAST_DB
-    SEQ_INFO = configuration.SEQ_INFO
 
     
     # Command line arguments
@@ -455,8 +470,6 @@ if __name__ == "__main__":
                         help="output html file name")
     parser.add_argument("-hp", "--html_path", type=str, default=TMP,
                         help="path to html extra files")
-    parser.add_argument("-si", "--seq_info", type=str, default=SEQ_INFO,
-                        help="file containing general info about sequence")
     parser.add_argument("-cv", "--coverage", type=float, 
                         help="coverage")
     parser.add_argument("-gs", "--genome_size", type=float,
@@ -464,5 +477,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(args)
 
-print("ELAPSED_TIME_PROFREP = {}".format(time.time() - t_profrep))
+print("ELAPSED_TIME_PROFREP = {} s".format(time.time() - t_profrep))
 
