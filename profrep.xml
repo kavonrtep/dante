@@ -22,6 +22,8 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 	--database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*reads_all
     --annotation_tbl /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*annotation
     --cls /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*.cls
+    --db_name '${custom_data.prepared_dataset.fields.name}'
+    --reference '${custom_data.prepared_dataset.fields.reference}'
      #if $custom_data.copy_numbers:
         --coverage ${custom_data.prepared_dataset.fields.coverage}
     #end if
@@ -39,6 +41,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
      <column name="name" index="1"/>
      <column name="value" index="0" />
      <column name="coverage" index="2"/>
+     <column name="reference" index="3"/>
     </options>
    </param>  
    <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers"  />  
@@ -50,7 +53,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
    <conditional name="cn">
     <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers" />
     <when value="true">
-     <param name="genome_size in Mbp" type="float" value="0" min="0.0000001" max ="1000000" label="Enter the genome size" />
+     <param name="genome_size" type="float" value="0" min="0.0000001" max ="1000000" label="Enter the genome size (Mbp)" />
     </when>
    </conditional>
   </when>
@@ -62,7 +65,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by blast for alignment" />  
  <param name="window" type="integer" value="5000" min="5000" label="Window size" help="Use when having a long input sequence so that it can be processed parallely" />
  <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
- <param name="threshold" type="integer" value="50" min="1" label="Threshold" help="Threshold for copy numbers at certain position to be reported as a repeat in GFF format"  />
+ <param name="threshold" type="integer" value="10" min="1" label="Threshold" help="Threshold for copy numbers at certain position to be reported as a repeat in GFF format"  />
 
 </inputs>
 

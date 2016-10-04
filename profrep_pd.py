@@ -207,14 +207,12 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 	return repeats_all
 
 
-def html_output(SEQ_INFO, total_length, seq_names, link, HTML):
+def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF):
 	''' Define html output with limited number of output pictures and link to JBrowse '''
 	pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM] ])
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
-		#<h2 style="text-align:center;">PROFREP OUTPUT</h2>
 		info = "\t\t".join(['<pre> {} [{} bp]</pre>'.format(line.split("\t")[0],line.split("\t")[1])for line in s_info])
-		print(info)
 	html_str = '''
 	<!DOCTYPE html>
 	<html>
@@ -224,17 +222,18 @@ def html_output(SEQ_INFO, total_length, seq_names, link, HTML):
 		{} 
 		<h4> Total length: </h4>
 		<pre> {} bp </pre>
+		<h4> Database: </h4>
+		<pre> {} </pre>
 		<h4> Interactive visualization: </h4>
 		<a href="{}" target="_blank" >Link to JBrowse</a> </br>
 		<hr>
 		<h3> Repetitive profiles</h3> </br>
 		{} <br/>
 		<h5>References: </h5>
-		<h6> Tran, T.D., Cao, H.X., Jovtchev, G., Neumann, P., Novak, P., Fojtova, M., Vu, G.T.H., Macas, J., Fajkus, J., Schubert, I., Fuchs, J. (2015) – Centromere and telomere sequence alterations reflect the rapid genome evolution within the carnivorous plant genus Genlisea. Plant J. 84: 1087-1099. </h6>
-		<h6> Marques, A., Ribeiro, T., Neumann, P., Macas, J., Novak, P., Schubert, V., Pellino, M., Fuchs, J., Ma, W., Kuhlmann, M., Brandt, R., Vanzela, A.L.L., Beseda, T., Simkova, H., Pedrosa-Harand, A., Houben, A. (2015) – Holocentromeres in Rhynchospora are associated with genome-wide centromere-specific repeat arrays interspersed amongst euchromatin. Proc. Natl. Acad. Sci. USA 112: 13633-13638. </h6>
+		<h6> {} </h6>
 	</body>
 	</html>
-	'''.format(info, total_length, link, pictures)
+	'''.format(info, total_length, DB_NAME, link, pictures, REF)
 	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
 
@@ -326,6 +325,8 @@ def main(args):
 	N_GFF = args.n_gff
 	CV = args.coverage
 	GS = args.genome_size
+	DB_NAME = args.db_name
+	REF = args.reference
 	
 	# Create new blast database of reads
 	if NEW_DB:
@@ -402,7 +403,7 @@ def main(args):
 	
 	# Prepare data for html output
 	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF)		
-	html_output(SEQ_INFO, total_length, headers, link, HTML)
+	html_output(SEQ_INFO, total_length, headers, link, HTML, DB_NAME, REF)
 	
 	
 if __name__ == "__main__":
@@ -474,6 +475,11 @@ if __name__ == "__main__":
                         help="coverage")
     parser.add_argument("-gs", "--genome_size", type=float,
                         help="genome size")
+    parser.add_argument("-dbn", "--db_name", type=str,
+                        help="annotation database name")
+    parser.add_argument("-rf", "--reference", type=str,
+                        help="annotation database reference")
+
     args = parser.parse_args()
     main(args)
 
