@@ -6,8 +6,8 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 --align_length ${align_length} --word_size ${word_size} --e_value ${e_value} --threshold ${threshold} --window ${window} 
 --overlap ${overlap} --output ${ProfTbl} --output_gff ${ProfGff} --html_file ${html_file}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff}
---protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/proteins_all
---classification /mnt/raid/users/galaxy/galaxy-dist2/tool-data/protein_domains_data/classification.csv
+--protein_database proteins_all
+--classification classification.csv
 --domain_gff ${DomGff}
 
  #if $custom_data.options_custom_data:
@@ -16,17 +16,12 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
     --cls ${cls}
 	--new_db True
 	#if $custom_data.cn.copy_num:
-    --coverage ${custom_data.cn.genome_size}
+    --genome_size ${custom_data.cn.genome_size}
     #end if
  #else
-	--database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*reads_all
-    --annotation_tbl /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*annotation
-    --cls /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/$custom_data.prepared_dataset*.cls
-    --db_name '${custom_data.prepared_dataset.fields.name}'
-    --reference '${custom_data.prepared_dataset.fields.reference}'
-     #if $custom_data.copy_numbers:
-        --coverage ${custom_data.prepared_dataset.fields.coverage}
-    #end if
+	--datasets_tbl prepared_datasets.txt
+	--db_id ${custom_data.prepared_dataset}  
+    --copy_numbers $custom_data.copy_numbers
  #end if
  >> $log_file 
 </command> 
@@ -36,24 +31,22 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  <conditional name="custom_data" >
   <param name="options_custom_data" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Use custom annotation data" />
   <when value="false">
-   <param name="prepared_dataset" type="select" label="Choose existing annotation dataset" >
+   <param name="prepared_dataset" type="select" label="Choose existing annotation dataset"  help="You can find list of all available species below in the Database section">
     <options from_file="prepared_datasets.txt" >
      <column name="name" index="1"/>
-     <column name="value" index="0" />
-     <column name="coverage" index="2"/>
-     <column name="reference" index="3"/>
+     <column name="value" index="0"/>
     </options>
    </param>  
    <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers"  />  
   </when>
   <when value="true">
-   <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="File containing reads sequences in fasta format" />
+   <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="File containing reads sequences in fasta format"  />
    <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" />
    <param format="cls" type="data" name="cls" label="Choose cls file" />
    <conditional name="cn">
     <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers" />
     <when value="true">
-     <param name="genome_size" type="float" value="0" min="0.0000001" max ="1000000" label="Enter the genome size (Mbp)" />
+     <param name="genome_size" type="float" value="0" min="0.0000001" max ="1000000" label="Enter the genome size in Mbp" />
     </when>
    </conditional>
   </when>
@@ -80,11 +73,27 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  </outputs>
 
  <help>
+	 
+**Database**
+
+List of all species in hierarchical order available `HERE`__.
+
+.. __: /static/profrep/species_list.html
+
+
 
 **What it does**
 
-This tool uses former outputs from Repeat Explorer to create repetitive profile of a sequence and assigns reported regions to known repetition classes. As result the table containg all hits for all classes, repetitive profile picture and GFF3 format of regions are produced.
-Using window parameter can speed up the analysis in case of having large input data.
+This tool uses former clustering output from Repeat Explorer (list of clusters and belonging reads), annotation table that assign repetitive class to every cluster and list of all sequencing reads to create repetitive profile of a sequence as well as to report protein domains. At firts Blastn+ is used to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate lenght. Other parameters of blast search are also adjustable. Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be ask to provide genome size of the species so that the coverage can be calculated. 
+Protein domains search utilizes LAST tool to find hits comparing input sequence to our database of protein domains sequences. 
+External visualization tool Jbrowse has been employed to interactively visualize all output features for all sequences  
+OUTPUTS: - table reporting copy numbers at every position for all repeats occuring in the sequence
+		 - GFF file reporting N regions in the sequence
+		 - GFF file reporting repetitive regions of a certain length and above copy numbers threshold
+		 - GFF file reporting protein domains, classification of domain, chain orientation and alignment sequence
+		 - HTML reporting domains and profiles summary visualization that can be further explored using a link to JBrowse
+	
+
  </help>
 
  

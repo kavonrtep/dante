@@ -85,17 +85,15 @@ def read_annotation(CLS, cl_annotations_items):
 	return reads_annotations
 
 
-
 def annot_profile(annotation_keys, part):
 	''' Predefine dictionary of known annotations and partial sequence 
 	repetitive profiles defined by parallel process '''
 	subprofile = {} 				
 	for key in annotation_keys:
 		subprofile[key] = np.zeros(part, dtype=int)
-	subprofile["Unclassified_repeat"] = np.zeros(part, dtype=int)
-	subprofile["all"] = np.zeros(part, dtype=int)
+	subprofile["Unknown"] = np.zeros(part, dtype=int)
+	subprofile["ALL"] = np.zeros(part, dtype=int)
 	return subprofile
-
 
 
 def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, subset_index):
@@ -123,7 +121,7 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
-				annotation = "Unclassified_repeat"
+				annotation = "ALL"
 			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
 	return subprofile
 
@@ -148,19 +146,19 @@ def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
 	nonzero_keys = []
 	[nonzero_keys.append(k) for k,v in profile.items() if any(v)]
 	data = np.zeros((seq_length, len(nonzero_keys) + 1), dtype=int)
-	if any(profile["all"]):
+	if any(profile["ALL"]):
 		data[:,0] = np.array([list(range(1, seq_length + 1))])
 		keys = set(nonzero_keys)
-		exclude = set(["all"])
-		header = "{}\tall\t{}".format(seq_id, "\t".join(sorted(keys.difference(exclude))))
+		exclude = set(["ALL"])
+		header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(keys.difference(exclude))))
 		count = 2
 		if CV:
-			data[:,1] = profile["all"]/CV
+			data[:,1] = profile["ALL"]/CV
 			for key in sorted(keys.difference(exclude)):
 				data[:,count] = profile[key]/CV
 				count += 1
 		else:
-			data[:,1] = profile["all"]
+			data[:,1] = profile["ALL"]
 			for key in sorted(keys.difference(exclude)):
 				data[:,count] = profile[key]
 				count += 1
@@ -207,19 +205,26 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 	return repeats_all
 
 
-def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF):
+def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF, REF_LINK):
 	''' Define html output with limited number of output pictures and link to JBrowse '''
 	pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM] ])
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
 		info = "\t\t".join(['<pre> {} [{} bp]</pre>'.format(line.split("\t")[0],line.split("\t")[1])for line in s_info])
+	if REF:
+		ref_part_1 = REF.split("-")[0]
+		ref_part_2 = "-".join(REF.split("-")[1:]).split(". ")[0]
+		ref_part_3 = ". ".join("-".join(REF.split("-")[1:]).split(". ")[1:])
+		ref_string = '''<h6> {} - <a href="{}" target="_blank" >{}</a>. {}'''.format(ref_part_1, REF_LINK, ref_part_2, ref_part_3)
+	else:
+		ref_string = ""
 	html_str = '''
 	<!DOCTYPE html>
 	<html>
 	<body>
 		<h2>PROFREP OUTPUT</h2>
 		<h4> Sequences processed: </h4>
-		{} 
+		{}
 		<h4> Total length: </h4>
 		<pre> {} bp </pre>
 		<h4> Database: </h4>
@@ -227,28 +232,29 @@ def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF):
 		<h4> Interactive visualization: </h4>
 		<a href="{}" target="_blank" >Link to JBrowse</a> </br>
 		<hr>
-		<h3> Repetitive profiles</h3> </br>
+		<h3> Repetitive profile(s)</h3> </br>
 		{} <br/>
-		<h5>References: </h5>
-		<h6> {} </h6>
+		<h4>References: </h4>
+		{}
+		</h6>
 	</body>
 	</html>
-	'''.format(info, total_length, DB_NAME, link, pictures, REF)
+	'''.format(info, total_length, DB_NAME, link, pictures, ref_string)
 	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
 
 
-def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF):
+def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
 	convert = "%2F"
 	# Galaxy usage
-	if os.getenv("JBROWSE_BIN"):
+	if GALAXY:
 		JBROWSE_BIN = os.environ["JBROWSE_BIN"]
 		extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
 		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
 		link = configuration.LINK_PART1 + link_part2
-	# Commnad line usage
+	# Local usage
 	else: 
 		JBROWSE_BIN = configuration.JBROWSE_BIN_PC
 		jbrowse_link_to_profrep = "data/profrep_data"
@@ -294,6 +300,18 @@ def genome2coverage(GS, BLAST_DB):
 	print("COVERAGE = {}".format(CV))
 	return CV
 	
+def prepared_data(TBL, DB_ID):
+	with open(TBL) as datasets:
+		for line in datasets:
+			if DB_ID in line:
+				DB_NAME = line.split("\t")[1]
+				BLAST_DB = os.path.join(configuration.PREPARED_DATA, line.split("\t")[2])
+				CLS = os.path.join(configuration.PREPARED_DATA, line.split("\t")[3])
+				CL_ANNOTATION_TBL = os.path.join(configuration.PREPARED_DATA, line.split("\t")[4])
+				CV = float(line.split("\t")[5])
+				REF = line.split("\t")[6]
+				REF_LINK = line.split("\t")[7]
+	return DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK
 	
 def main(args):
 	
@@ -324,10 +342,30 @@ def main(args):
 	HTML_DATA = args.html_path
 	N_GFF = args.n_gff
 	CV = args.coverage
+	CN = args.copy_numbers
 	GS = args.genome_size
+	DB_ID = args.db_id
+	TBL = args.datasets_tbl
 	DB_NAME = args.db_name
-	REF = args.reference
 	
+	REF = None
+	REF_LINK = None
+	
+	if os.getenv("JBROWSE_BIN"):
+		GALAXY = True
+		CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
+		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_FB)
+		TBL = os.path.join(configuration.TOOL_DATA_DIR, LAST_FB)
+	else:
+		GALAXY = False
+	
+	# Parse prepared annotation data table
+	if TBL:
+		[DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK] = prepared_data(TBL, DB_ID)
+		
+	if not CN:
+		CV = False
+		
 	# Create new blast database of reads
 	if NEW_DB:
 		subprocess.call("makeblastdb -in {} -dbtype nucl".format(BLAST_DB), shell=True)
@@ -348,9 +386,10 @@ def main(args):
 	# Assign reads to repetitive classes
 	reads_annotations = read_annotation(CLS, cl_annotations_items)
 	
-	# Conevrt genome size to coverage
+	# Convert genome size to coverage
 	if GS:
 		CV = genome2coverage(GS, BLAST_DB)
+
 	
 	# Detect all fasta sequences in input
 	fasta_list = multifasta(QUERY)
@@ -378,7 +417,7 @@ def main(args):
 			profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
 
 			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
-			profile["all"] = sum(profile.values())
+			profile["ALL"] = sum(profile.values())
 			
 			nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CV)
 			end = start + nonzero_len
@@ -402,8 +441,8 @@ def main(args):
 	print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 	
 	# Prepare data for html output
-	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF)		
-	html_output(SEQ_INFO, total_length, headers, link, HTML, DB_NAME, REF)
+	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY)		
+	html_output(SEQ_INFO, total_length, headers, link, HTML, DB_NAME, REF, REF_LINK)
 	
 	
 if __name__ == "__main__":
@@ -411,6 +450,7 @@ if __name__ == "__main__":
     # Default values(command line usage)
     HTML = configuration.HTML
     TMP = configuration.TMP
+    DOMAINS_GFF = configuration.DOMAINS_GFF
     DOMAINS_GFF = configuration.DOMAINS_GFF
     REPEATS_GFF = configuration.REPEATS_GFF
     N_REG = configuration.N_REG
@@ -423,11 +463,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-q', '--query', type=str, required=True,
 						help='query sequence to be processed')
-    parser.add_argument('-d', '--database', type=str, required=True,
+    parser.add_argument('-d', '--database', type=str,
 						help='blast database of all reads')
-    parser.add_argument('-a', '--annotation_tbl', type=str, required=True,
+    parser.add_argument('-a', '--annotation_tbl', type=str,
 						help='clusters annotation table')
-    parser.add_argument('-c', '--cls', type=str, required=True,
+    parser.add_argument('-c', '--cls', type=str, 
 						help='cls file containing reads assigned to clusters')
     parser.add_argument('-i', '--identical', type=float, default=95,
 						help='blast filtering option: sequence indentity threshold between query and mapped read from db in %')
@@ -473,12 +513,16 @@ if __name__ == "__main__":
                         help="path to html extra files")
     parser.add_argument("-cv", "--coverage", type=float, 
                         help="coverage")
+    parser.add_argument("-cn", "--copy_numbers", type=bool, 
+                        help="convert hits to copy numbers")
     parser.add_argument("-gs", "--genome_size", type=float,
                         help="genome size")
-    parser.add_argument("-dbn", "--db_name", type=str,
+    parser.add_argument("-id", "--db_id", type=str,
                         help="annotation database name")
-    parser.add_argument("-rf", "--reference", type=str,
-                        help="annotation database reference")
+    parser.add_argument("-tbl", "--datasets_tbl", type=str,
+                        help="table with prepared anotation data")    
+    parser.add_argument("-dbn", "--db_name", type=str,
+                        help="custom database name")                
 
     args = parser.parse_args()
     main(args)
