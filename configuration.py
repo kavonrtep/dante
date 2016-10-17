@@ -13,8 +13,8 @@ LAST_DB = "proteins_all"
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA = "{}/{}".format(MAIN_DIR, "data")
 TMP = "{}/{}".format(MAIN_DIR, "tmp")
-PREPARED_DATA = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data"
-TOOL_DATA_DIR = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/"
+TOOL_DATA_DIR = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data"
+#TOOL_DATA_DIR = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/"
 
 # CONSTANTS
 N_segment = 50

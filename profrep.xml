@@ -55,10 +55,10 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
  <param name="identical" type="integer" value="95" label="Minimal % identical" help="Blast filtering option: sequence indentity threshold between query and mapped read from db" />
  <param name="align_length" type="integer" value="40" label="Minimal alignment length" help="Blast filtering option: minimal alignment length threshold in bp" />
  <param name="e_value" type="text" value="1e-15" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
- <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by blast for alignment" />  
+ <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by Blast for alignment" />  
  <param name="window" type="integer" value="5000" min="5000" label="Window size" help="Use when having a long input sequence so that it can be processed parallely" />
  <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
- <param name="threshold" type="integer" value="10" min="1" label="Threshold" help="Threshold for copy numbers at certain position to be reported as a repeat in GFF format"  />
+ <param name="threshold" type="integer" value="10" min="1" label="Threshold" help="Threshold for copy numbers (hits) at certain position to be reported as repetitive in GFF format"  />
 
 </inputs>
 
@@ -76,7 +76,7 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 	 
 **Database**
 
-List of all species in hierarchical order available `HERE`__.
+List of all annotated species in hierarchical order available `HERE`__.
 
 .. __: /static/profrep/species_list.html
 
@@ -84,9 +84,10 @@ List of all species in hierarchical order available `HERE`__.
 
 **What it does**
 
-This tool uses former clustering output from Repeat Explorer (list of clusters and belonging reads), annotation table that assign repetitive class to every cluster and list of all sequencing reads to create repetitive profile of a sequence as well as to report protein domains. At firts Blastn+ is used to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate lenght. Other parameters of blast search are also adjustable. Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be ask to provide genome size of the species so that the coverage can be calculated. 
-Protein domains search utilizes LAST tool to find hits comparing input sequence to our database of protein domains sequences. 
-External visualization tool Jbrowse has been employed to interactively visualize all output features for all sequences  
+This tool uses former clustering output(.cls) from Repeat Explorer (list of all clusters and belonging reads), annotation table that assign repetitive class to every cluster and list of all sequencing reads to create repetitive profile of a sequence as well as to report protein domains. You can either provide your own files or you can exploit our prepared datasets for certain species listed above. At firts Blast+ run similarity search to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate lenght. Other parameters of blast search are also adjustable. Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be ask to provide genome size of the species so that the sequencing coverage can be calculated. 
+Protein domains search utilizes LAST tool to find hits between input sequence and our database of protein domains. LAST aligns the input translated into protein sequence to the known domains sequences, possible frameshifts in the alignment are taken into consideration. Only the hits with the highest score are reported within overlapping regions. Domains are subsequently annotated to a repeat class which they come from according to our classification system.
+External visualization tool Jbrowse has been employed to interactively visualize all output features for all input sequences.  
+
 OUTPUTS: - table reporting copy numbers at every position for all repeats occuring in the sequence
 		 - GFF file reporting N regions in the sequence
 		 - GFF file reporting repetitive regions of a certain length and above copy numbers threshold

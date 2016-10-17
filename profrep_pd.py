@@ -91,7 +91,6 @@ def annot_profile(annotation_keys, part):
 	subprofile = {} 				
 	for key in annotation_keys:
 		subprofile[key] = np.zeros(part, dtype=int)
-	subprofile["Unknown"] = np.zeros(part, dtype=int)
 	subprofile["ALL"] = np.zeros(part, dtype=int)
 	return subprofile
 
@@ -305,9 +304,9 @@ def prepared_data(TBL, DB_ID):
 		for line in datasets:
 			if DB_ID in line:
 				DB_NAME = line.split("\t")[1]
-				BLAST_DB = os.path.join(configuration.PREPARED_DATA, line.split("\t")[2])
-				CLS = os.path.join(configuration.PREPARED_DATA, line.split("\t")[3])
-				CL_ANNOTATION_TBL = os.path.join(configuration.PREPARED_DATA, line.split("\t")[4])
+				BLAST_DB = os.path.join(configuration.TOOL_DATA_DIR, line.split("\t")[2])
+				CLS = os.path.join(configuration.TOOL_DATA_DIR, line.split("\t")[3])
+				CL_ANNOTATION_TBL = os.path.join(configuration.TOOL_DATA_DIR, line.split("\t")[4])
 				CV = float(line.split("\t")[5])
 				REF = line.split("\t")[6]
 				REF_LINK = line.split("\t")[7]
@@ -353,9 +352,9 @@ def main(args):
 	
 	if os.getenv("JBROWSE_BIN"):
 		GALAXY = True
-		CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
-		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_FB)
-		TBL = os.path.join(configuration.TOOL_DATA_DIR, LAST_FB)
+		CLASSIFICATION = os.path.join(configuration.PREPARED, CLASSIFICATION)
+		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB)
+		TBL = os.path.join(configuration.TOOL_DATA_DIR, TBL)
 	else:
 		GALAXY = False
 	
@@ -432,7 +431,7 @@ def main(args):
 	# Protein domains module
 	t_domains=time.time()
 	if DOMAINS:
-		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, HTML_DATA)	
+		[xminimal, xmaximal, domains, seq_ids_dom, dom_annotation] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, None)	
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
 		
 	t_gff_vis = time.time() 
