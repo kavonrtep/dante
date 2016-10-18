@@ -1,0 +1,28 @@
+
+<tool id="prot_domains" name="Protein Domains Finder" version="1.0.0">
+<description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
+<command>
+/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --domains_seq ${dom_dna_seq} --domains_prot_seq ${dom_prot_seq}  --protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/proteins_all --classification /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/classification.csv
+</command>
+<inputs>
+ <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input sequence must be in proper fasta format, multi-fasta allowed" />
+</inputs>
+
+<outputs>
+ <data format="gff3" name="DomGff" label="GFF3 file of protein domains from dataset ${input.hid})" />
+ <data format="fasta" name="dom_dna_seq" label="GFF3 file of protein domains from dataset ${input.hid})" />
+ <data format="fasta" name="dom_prot_seq" label="GFF3 file of protein domains from dataset ${input.hid})" />
+ 
+</outputs>
+
+ <help>
+
+**What it does**
+
+This tool utilizes LAST to find hits of given sequence which is at first translated to protein sequence and then compared to our database of protein domains and subsequently annotated. Frameshifts in the sequence and strand orientation are taken into consideration when finding and reporting hits.
+As the result the domains with the highest confidention score at a certain region are reported and classified according to the type and lineage of repetition they come from. In case of ambiguous hits, the element annotation is leveled-up in order to obtain conclusive classifictaion.
+ </help>
+
+
+</tool>
+
