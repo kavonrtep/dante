@@ -68,7 +68,7 @@ def cluster_annotation(CL_ANNOTATION_TBL):
 
 
 def read_annotation(CLS, cl_annotations_items):
-	''' dictionary of known repet. classes and related reads '''
+	''' Dictionary of known repet. classes and related reads '''
 	reads_annotations = {} 	
 	with open(CLS, "r") as cls_file:
 		count = 0
@@ -352,7 +352,7 @@ def main(args):
 	
 	if os.getenv("JBROWSE_BIN"):
 		GALAXY = True
-		CLASSIFICATION = os.path.join(configuration.PREPARED, CLASSIFICATION)
+		CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
 		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB)
 		TBL = os.path.join(configuration.TOOL_DATA_DIR, TBL)
 	else:

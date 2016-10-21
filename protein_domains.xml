@@ -2,10 +2,12 @@
 <tool id="prot_domains" name="Protein Domains Finder" version="1.0.0">
 <description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
 <command>
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --domains_seq ${dom_dna_seq} --domains_prot_seq ${dom_prot_seq}  --protein_database /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/proteins_all --classification /mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data/classification.csv
+/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --domains_seq ${dom_dna_seq} --domains_prot_seq ${dom_prot_seq} --th_identity ${identical} --th_lenght ${align_length} --protein_database proteins_all --classification classification.csv
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input sequence must be in proper fasta format, multi-fasta allowed" />
+ <param name="identical" type="integer" value="20" label="Minimal identity" help="LAST filtering option: protein sequence indentity threshold between input and mapped protein from db" />
+ <param name="align_length" type="integer" value="20" label="Minimal alignment length" help="LAST filtering option: minimal alignment length threshold in bp" />
 </inputs>
 
 <outputs>

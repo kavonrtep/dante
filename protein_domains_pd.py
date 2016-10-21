@@ -182,9 +182,16 @@ def cut_domains_seq(QUERY, DOMAINS_SEQ, DOMAINS_PROT_SEQ, xminimal, xmaximal, do
 			#header_prot_seq = ">{}:{}-{} {} {}".format(seq_ids[seq_idx], xminimal[seq_idx][count], xmaximal[seq_idx][count], dom, dom_class)
 			#dom_seq_file.write("{}\n{}\n".format(header_dom_seq, seq_cut))	
 
+def get_identity(reference_seq, alignment_seq):
+	num_ident = 0
+	for i,j in zip(reference_seq, alignment_seq):
+		if i==j:
+			num_ident += 1
+	align_len = len(reference_seq)
+	return num_ident/align_len * 100, align_len	
 
 
-def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ):		
+def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, TH_IDENTITY, TH_LENGTH):		
 	""" search for protein domains using our protein database and external tool LAST,
 	stdout is parsed in real time and hits for a single sequence undergo further processing
 	- tabular format(TAB) to get info about position, score, orientation 
@@ -210,35 +217,38 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ
 			line_maf = [maf.stdout.readline() for line_count in range(4)]
 			reference_seq = line_maf[1].decode("utf-8").rstrip().split(" ")[-1]
 			alignment_seq = line_maf[2].decode("utf-8").rstrip().split(" ")[-1]
-			line = line_tab.rstrip().split("\t")
-			line_maf = []
-			element_name = line[1]
-			if np.all(sequence_hits==0):
-				seq_id = line[6]
-				seq_ids.append(seq_id)
-			if line[6] != seq_id: 
-				[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
-				print(seq_length)
-				if reverse_strand_idx == []:
-					positions = overlapping_regions(regions_plus)
-					best_idx = best_score(sequence_hits[:,0], positions)
-					[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
-				else:
-					positions_plus = overlapping_regions(regions_plus)
-					positions_minus = overlapping_regions(regions_minus)
-					regions = regions_plus + regions_minus
-					positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
-					best_idx = best_score(sequence_hits[:,0], positions)
-					[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
-				sequence_hits = np.empty((0,9))
-				seq_id = line[6]
-				seq_ids.append(seq_id)
-				xminimal_all.append(xminimal)
-				xmaximal_all.append(xmaximal)
-				domains_all.append(domain)
-				dom_annotation_all.append(dom_annotation)
-			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq], dtype=object)
-			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
+			#############################################################
+			[percent_ident, align_len] = get_identity(reference_seq, alignment_seq)
+			if percent_ident >= TH_IDENTITY and align_len >= TH_LENGTH:
+			#############################################################
+				line = line_tab.rstrip().split("\t")
+				line_maf = []
+				element_name = line[1]
+				if np.all(sequence_hits==0):
+					seq_id = line[6]
+					seq_ids.append(seq_id)
+				if line[6] != seq_id: 
+					[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
+					if reverse_strand_idx == []:
+						positions = overlapping_regions(regions_plus)
+						best_idx = best_score(sequence_hits[:,0], positions)
+						[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
+					else:
+						positions_plus = overlapping_regions(regions_plus)
+						positions_minus = overlapping_regions(regions_minus)
+						regions = regions_plus + regions_minus
+						positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
+						best_idx = best_score(sequence_hits[:,0], positions)
+						[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
+					sequence_hits = np.empty((0,9))
+					seq_id = line[6]
+					seq_ids.append(seq_id)
+					xminimal_all.append(xminimal)
+					xmaximal_all.append(xmaximal)
+					domains_all.append(domain)
+					dom_annotation_all.append(dom_annotation)
+				line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq], dtype=object)
+				sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()
 	if not np.all(sequence_hits==0):	
@@ -270,13 +280,18 @@ def main(args):
 	NEW_PDB = args.new_pdb
 	DOMAINS_SEQ = args.domains_seq
 	DOMAIN_PROT_SEQ = args.domains_prot_seq
+	TH_IDENTITY = args.th_identity
+	TH_LENGTH = args.th_length 
 	
 	
 	if NEW_PDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
-
 	
-	[xminimal, xmaximal, domains_all, seq_ids, dom_annotation_all] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ)
+	if not os.path.exists(LAST_DB):
+		CLASSIFICATION = os.path.join(configuration.PTOOL_DATA_DIR, CLASSIFICATION)
+		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB) 
+	
+	[xminimal, xmaximal, domains_all, seq_ids, dom_annotation_all] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, TH_IDENTITY, TH_LENGTH)
 	cut_domains_seq(QUERY, DOMAINS_SEQ, DOMAIN_PROT_SEQ, xminimal, xmaximal, domains_all, seq_ids, dom_annotation_all)
 
 if __name__ == "__main__":
@@ -303,6 +318,10 @@ if __name__ == "__main__":
 						help="file containg domains nucleic acid sequences")
 	parser.add_argument("-dps","--domains_prot_seq",type=str, default=DOM_PROT_SEQ,
 						help="file containg domains protein sequences")
+	parser.add_argument("-thl","--th_length",type=int, default=20,
+						help="length threshold for alignment")
+	parser.add_argument("-thi","--th_identity",type=int, default=20,
+						help="identity threshold for alignment")
 	
 	args = parser.parse_args()
 	main(args)
