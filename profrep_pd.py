@@ -346,7 +346,7 @@ def main(args):
 	DB_ID = args.db_id
 	TBL = args.datasets_tbl
 	DB_NAME = args.db_name
-	
+
 	REF = None
 	REF_LINK = None
 	
@@ -431,7 +431,7 @@ def main(args):
 	# Protein domains module
 	t_domains=time.time()
 	if DOMAINS:
-		[xminimal, xmaximal, domains, seq_ids_dom, dom_annotation] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF, None)	
+		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF)	
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
 		
 	t_gff_vis = time.time() 
@@ -456,6 +456,7 @@ if __name__ == "__main__":
     REPEATS_TABLE = configuration.REPEATS_TABLE
     CLASSIFICATION = configuration.CLASSIFICATION
     LAST_DB = configuration.LAST_DB
+    
 
     
     # Command line arguments
@@ -521,7 +522,7 @@ if __name__ == "__main__":
     parser.add_argument("-tbl", "--datasets_tbl", type=str,
                         help="table with prepared anotation data")    
     parser.add_argument("-dbn", "--db_name", type=str,
-                        help="custom database name")                
+                        help="custom database name")           
 
     args = parser.parse_args()
     main(args)

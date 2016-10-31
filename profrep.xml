@@ -51,14 +51,18 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
    </conditional>
   </when>
  </conditional>
-
- <param name="identical" type="integer" value="95" label="Minimal % identical" help="Blast filtering option: sequence indentity threshold between query and mapped read from db" />
- <param name="align_length" type="integer" value="40" label="Minimal alignment length" help="Blast filtering option: minimal alignment length threshold in bp" />
- <param name="e_value" type="text" value="1e-15" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
- <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by Blast for alignment" />  
- <param name="window" type="integer" value="5000" min="5000" label="Window size" help="Use when having a long input sequence so that it can be processed parallely" />
- <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
- <param name="threshold" type="integer" value="10" min="1" label="Threshold" help="Threshold for copy numbers (hits) at certain position to be reported as repetitive in GFF format"  />
+ <conditional name="advanced_options" >
+  <param name="opts" type="boolean" display="checkbox" truevalue="true" falsevalue="false" checked="false" label="Advanced options"/>
+  <when value="true">
+   <param name="identical" type="integer" value="95" label="Minimal % identical" help="Blast filtering option: sequence indentity threshold between query and mapped read from db" />
+   <param name="align_length" type="integer" value="40" label="Minimal alignment length" help="Blast filtering option: minimal alignment length threshold in bp" />
+   <param name="e_value" type="text" value="1e-15" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
+   <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by Blast for alignment" />  
+   <param name="window" type="integer" value="5000" min="5000" label="Window size" help="Use when having a long input sequence so that it can be processed parallely" />
+   <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
+   <param name="threshold" type="integer" value="10" min="1" label="Threshold" help="Threshold for copy numbers (hits) at certain position to be reported as repetitive in GFF format"  />
+  </when>
+ </conditional>
 
 </inputs>
 

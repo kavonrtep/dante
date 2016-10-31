@@ -2,18 +2,20 @@
 <tool id="prot_domains" name="Protein Domains Finder" version="1.0.0">
 <description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
 <command>
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --domains_seq ${dom_dna_seq} --domains_prot_seq ${dom_prot_seq} --th_identity ${identical} --th_lenght ${align_length} --protein_database proteins_all --classification classification.csv
+/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --domains_seq ${dom_dna_seq} --domains_prot_seq ${dom_prot_seq} --th_identity ${th_identity} --th_length ${th_length} --frameshifts ${frameshifts} --protein_database proteins_all --classification classification.csv --domains_filtered ${dom_filtered}
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input sequence must be in proper fasta format, multi-fasta allowed" />
- <param name="identical" type="integer" value="20" label="Minimal identity" help="LAST filtering option: protein sequence indentity threshold between input and mapped protein from db" />
- <param name="align_length" type="integer" value="20" label="Minimal alignment length" help="LAST filtering option: minimal alignment length threshold in bp" />
+ <param name="th_identity" type="integer" value="40" label="Minimal identity" help="LAST filtering option: protein sequence indentity threshold between input and mapped protein from db" />
+ <param name="th_length" type="integer" value="0.8" label="Minimal alignment length" help="LAST filtering option: proportion of the hit length from the length of the database sequence [0-1]" />
+ <param name="frameshifts" type="integer" value="1" label="Frameshifts" help="tolerance threshold per 100 bp" />
 </inputs>
 
 <outputs>
  <data format="gff3" name="DomGff" label="GFF3 file of protein domains from dataset ${input.hid})" />
  <data format="fasta" name="dom_dna_seq" label="GFF3 file of protein domains from dataset ${input.hid})" />
  <data format="fasta" name="dom_prot_seq" label="GFF3 file of protein domains from dataset ${input.hid})" />
+ <data format="fasta" name="dom_filtered" label="Filtered GFF3 file of protein domains from dataset ${input.hid})" />
  
 </outputs>
 

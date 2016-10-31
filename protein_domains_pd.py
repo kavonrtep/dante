@@ -14,7 +14,7 @@ from tempfile import NamedTemporaryFile
 
 
 def domain_annotation(element, CLASSIFICATION):
-	""" assign protein domain to each hit from protein database  """
+	''' assign protein domain to each hit from protein database  '''
 	domain = []
 	rep_type = []
 	rep_lineage = []
@@ -37,7 +37,7 @@ def domain_annotation(element, CLASSIFICATION):
 	
 
 def hits_processing(sequence_hits):
-	""" gain hits intervals separately for forward and reverse strand """
+	''' gain hits intervals separately for forward and reverse strand '''
 	seq_length = sequence_hits[0,5]
 	reverse_strand_idx = np.where(sequence_hits[:,4] == "-")[0]
 	if not reverse_strand_idx.any():
@@ -57,7 +57,7 @@ def hits_processing(sequence_hits):
 
 
 def overlapping_regions(input_data):
-	""" join all overalapping intervals """
+	''' join all overalapping intervals '''
 	if input_data: 
 		sorted_idx, sorted_data = zip(*sorted([(index,data) for index,data in enumerate(input_data)], key=itemgetter(1)))
 		merged_ends = input_data[sorted_idx[0]][1]
@@ -79,7 +79,7 @@ def overlapping_regions(input_data):
 
 
 def best_score(scores, indices):
-	""" from overlapping intervals take the one with the highest score """
+	''' from overlapping intervals take the one with the highest score '''
 	best_scores = []
 	best_idx = []
 	for idx in indices:
@@ -88,12 +88,16 @@ def best_score(scores, indices):
 	return best_idx
 
 
-def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, DOMAINS_PROT_SEQ, CLASSIFICATION):
-	""" track format of domains found in query sequence(s)
+def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION):
+	''' Create track format of domains found in the query sequence(s)
 	- custom atributes reported:
 	Domain Name, Repet.type, Repet.lineage, 
-	Original protein sequence, Aligned sequence 
-	"""
+	Original protein sequence, Aligned sequence, %Identity, 
+	Relat.alignment lenght, Frameshifts per 100bp 
+	
+	In case of running protein domains module itself, save also reported
+	domains	sequences in fasta format 
+	'''
 	t2 = time.time()
 	
 	SOURCE = "profrep"
@@ -117,15 +121,28 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, DOMAINS_
 		scores.append(score)
 		sequence = sequence_hits[i,7]
 		alignment = sequence_hits[i,8]
-		dom_annotation = list(map(lambda rtype, rlin: "{}/{}".format(rtype, rlin), rep_type, rep_lineage))
+		#percent_ident = sequence_hits[i,9]
+		#relat_align_len = sequence_hits[i,10]
+		#relat_frameshifts = sequence_hits[i,11]
+		dom_len = sequence_hits[i,9]
+		[percent_ident, relat_align_len, relat_frameshifts] = filter_params(sequence, alignment, dom_len)
 		with open(OUTPUT_DOMAIN, "a") as gff:	
-			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Rep_type={},Rep_lineage={},Sequence={},Alignment={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], sequence, alignment))	
-		if DOMAINS_PROT_SEQ:
-			with open(DOMAINS_PROT_SEQ, "a") as domains_prot_file:
-				header_dom_seq = ">{}:{}-{} {} {}".format(seq_id, alignment_start, alignment_end, domain[count], dom_annotation[count])
-				domains_prot_file.write(("{}\n{}\n".format(header_dom_seq, sequence)))
+			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Rep_type={},Rep_lineage={},Sequence={},Alignment={},Identity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], sequence, alignment, percent_ident, relat_align_len, relat_frameshifts))
 		count += 1	
-	return xminimal, xmaximal, scores, strands, domain, dom_annotation
+	return xminimal, xmaximal, scores, strands, domain
+
+
+def filter_gff(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS):
+	with open(OUTPUT_DOMAIN, "r") as gff_all:
+		next(gff_all)
+		for line in gff_all:
+			al_identity = float(line.rstrip().split("\t")[-1].split(",")[-3].split("=")[1])
+			al_length = float(line.rstrip().split("\t")[-1].split(",")[-2].split("=")[1])
+			relat_frameshifts = float(line.rstrip().split("\t")[-1].split(",")[-1].split("=")[1])
+			if al_identity >= TH_IDENTITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS:
+				with open(FILT_DOM_GFF, "a") as gff_filtered:
+					gff_filtered.writelines(line)
+		
 
 def multifasta(QUERY):
 	''' Create single fasta temporary files to be processed sequentially '''
@@ -139,7 +156,7 @@ def multifasta(QUERY):
 				ntf = NamedTemporaryFile(delete=False)
 				ntf.write("{}{}".format(PATTERN, part).encode("utf-8"))
 				fasta_list.append(ntf.name)
-				ntf.close()
+				seq_id = part.split("\n")[0].split(" ")[0]
 			return fasta_list
 		else:
 			fasta_list.append(QUERY)
@@ -158,58 +175,77 @@ def fasta_read(subfasta):
 	sequence = "".join(sequence_lines)
 	return header, sequence
 	
-def cut_domains_seq(QUERY, DOMAINS_SEQ, DOMAINS_PROT_SEQ, xminimal, xmaximal, domains_all, seq_ids, dom_annotation_all):
+	
+def get_domains_seq(QUERY, FILT_DOM_GFF, DOMAINS_SEQ, DOMAIN_PROT_SEQ):
+	''' Get the original nucleic sequence and protein sequence of the reported domains regions'''
+	seq_data = {}
+	with open(FILT_DOM_GFF, "r") as filt_gff:
+		next(filt_gff)
+		for line in filt_gff:
+			start = int(line.rstrip().split("\t")[3])
+			end = int(line.rstrip().split("\t")[4])
+			attributes = line.rstrip().split("\t")[8]
+			dom = attributes.split(",")[0].split("=")[1]
+			dom_class = "{}/{}".format(attributes.split(",")[1].split("=")[1], attributes.split(",")[2].split("=")[1])
+			seq_id = line.rstrip().split("\t")[0]
+			alignment = line.rstrip().split("\t")[8].split(",")[4].split("=")[1]
+			header_prot_seq = ">{}:{}-{} {} {}".format(seq_id, start, end, dom, dom_class)
+			if seq_id in seq_data:
+				seq_data[seq_id].append([start, end, dom, dom_class])
+			else:
+				seq_data[seq_id] = [[start, end, dom, dom_class]]
+			# Protein sequence
+			with open(DOMAIN_PROT_SEQ, "a") as dom_prot_file:
+				dom_prot_file.write("{}\n{}\n".format(header_prot_seq, alignment))
 	fasta_list = multifasta(QUERY)
 	for subfasta in fasta_list:
 		[header, sequence] = fasta_read(subfasta)
-		if header in seq_ids:
-			seq_idx = seq_ids.index(header)
-			for count in list(range(len(domains_all[seq_idx]))):
-				seq_cut = sequence[xminimal[seq_idx][count] - 1 : xmaximal[seq_idx][count]]
-				#seq_prot =alignment[seq_idx][count]
-				dom = domains_all[seq_idx][count]
-				dom_class = dom_annotation_all[seq_idx][count]
-				header_dom_seq = ">{}:{}-{} {} {}".format(seq_ids[seq_idx], xminimal[seq_idx][count], xmaximal[seq_idx][count], dom, dom_class)
+		if seq_data[header]:
+			for record in seq_data[header]:
+				seq_cut = sequence[record[0] - 1 : record[1]]
+				header_dom_seq = ">{}:{}-{} {} {}".format(header, record[0], record[1], record[2], record[3])
+				# DNA sequence
 				with open(DOMAINS_SEQ, "a") as dom_seq_file:
-					dom_seq_file.write("{}\n{}\n".format(header_dom_seq, seq_cut))		 
-				#with open(DOMAINS_SEQ, "a") as dom_prot_file:
-					#dom_prot_file.write("{}\n{}\n".format(header_dom_seq, alignment))		 
+					dom_seq_file.write("{}\n{}\n".format(header_dom_seq, seq_cut))
+			
 
-
-
-#def domains_protein_seq(DOMAINS_PROT_SEQ, ):
-	#with open(DOMAINS_PROT_SEQ, "a") as dom_seq_file:
-			#header_prot_seq = ">{}:{}-{} {} {}".format(seq_ids[seq_idx], xminimal[seq_idx][count], xmaximal[seq_idx][count], dom, dom_class)
-			#dom_seq_file.write("{}\n{}\n".format(header_dom_seq, seq_cut))	
-
-def get_identity(reference_seq, alignment_seq):
+def filter_params(reference_seq, alignment_seq, protein_len):
+	''' Calculate basic statistics of the quality of alignment '''
 	num_ident = 0
+	count_frm = 0
+	alignment_len = 0
 	for i,j in zip(reference_seq, alignment_seq):
 		if i==j:
 			num_ident += 1
-	align_len = len(reference_seq)
-	return num_ident/align_len * 100, align_len	
+		if j == "/" or j == "\\":
+			count_frm += 1
+		if j.isalpha():
+			alignment_len += 1
+	relat_align_len = round(alignment_len/protein_len, 3) 
+	align_identity =  round(num_ident/len(alignment_seq), 2)
+	relat_frameshifts = round(count_frm/(len(alignment_seq)/100),2)
+	return align_identity, relat_align_len, relat_frameshifts	
 
 
-def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, TH_IDENTITY, TH_LENGTH):		
-	""" search for protein domains using our protein database and external tool LAST,
+def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):		
+	''' search for protein domains using our protein database and external tool LAST,
 	stdout is parsed in real time and hits for a single sequence undergo further processing
 	- tabular format(TAB) to get info about position, score, orientation 
 	- MAF format to gain alignment and original sequence
-	"""	
+	'''	
 	seq_ids = []
 	xminimal_all = []
 	xmaximal_all = []
 	domains_all = []
-	dom_annotation_all = []
 	header_gff = "##gff-version 3"
-	sequence_hits = np.empty((0,9))
+	sequence_hits = np.empty((0,10))
 	with open(QUERY, "r") as fasta:
 		seq_id = fasta.readline().strip().split(" ")[0][1:]
 	with open(OUTPUT_DOMAIN, "a") as gff:
 		gff.write("{}\n".format(header_gff))
-	tab = subprocess.Popen("lastal -F15 {} {} -f TAB ".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
-	maf = subprocess.Popen("lastal -F15 {} {} -f MAF ".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	############################################################## max_hit option 
+	tab = subprocess.Popen("lastal -F15 {} {} -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	maf = subprocess.Popen("lastal -F15 {} {} -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
 	maf.stdout.readline()
 	for line_tab in tab.stdout:
 		line_tab = line_tab.decode("utf-8")
@@ -217,62 +253,61 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ
 			line_maf = [maf.stdout.readline() for line_count in range(4)]
 			reference_seq = line_maf[1].decode("utf-8").rstrip().split(" ")[-1]
 			alignment_seq = line_maf[2].decode("utf-8").rstrip().split(" ")[-1]
-			#############################################################
-			[percent_ident, align_len] = get_identity(reference_seq, alignment_seq)
-			if percent_ident >= TH_IDENTITY and align_len >= TH_LENGTH:
-			#############################################################
-				line = line_tab.rstrip().split("\t")
-				line_maf = []
-				element_name = line[1]
-				if np.all(sequence_hits==0):
-					seq_id = line[6]
-					seq_ids.append(seq_id)
-				if line[6] != seq_id: 
-					[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
-					if reverse_strand_idx == []:
-						positions = overlapping_regions(regions_plus)
-						best_idx = best_score(sequence_hits[:,0], positions)
-						[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
-					else:
-						positions_plus = overlapping_regions(regions_plus)
-						positions_minus = overlapping_regions(regions_minus)
-						regions = regions_plus + regions_minus
-						positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
-						best_idx = best_score(sequence_hits[:,0], positions)
-						[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
-					sequence_hits = np.empty((0,9))
-					seq_id = line[6]
-					seq_ids.append(seq_id)
-					xminimal_all.append(xminimal)
-					xmaximal_all.append(xmaximal)
-					domains_all.append(domain)
-					dom_annotation_all.append(dom_annotation)
-				line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq], dtype=object)
-				sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
+			line = line_tab.rstrip().split("\t")
+			line_maf = []
+			element_name = line[1]
+			dom_len = line[5]
+			if np.all(sequence_hits==0):
+				seq_id = line[6]
+				seq_ids.append(seq_id)
+			if line[6] != seq_id: 
+				[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
+				if reverse_strand_idx == []:
+					positions = overlapping_regions(regions_plus)
+					best_idx = best_score(sequence_hits[:,0], positions)
+					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, CLASSIFICATION)
+				else:
+					positions_plus = overlapping_regions(regions_plus)
+					positions_minus = overlapping_regions(regions_minus)
+					regions = regions_plus + regions_minus
+					positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
+					best_idx = best_score(sequence_hits[:,0], positions)
+					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION)
+				sequence_hits = np.empty((0,10))
+				seq_id = line[6]
+				seq_ids.append(seq_id)
+				xminimal_all.append(xminimal)
+				xmaximal_all.append(xmaximal)
+				domains_all.append(domain)
+			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq, int(dom_len)], dtype=object)
+			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()
+	# The last (or the only one) sequence processsing
 	if not np.all(sequence_hits==0):	
 		[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
 		if reverse_strand_idx == []:
 			positions = overlapping_regions(regions_plus)
 			best_idx = best_score(sequence_hits[:,0], positions)
-			[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
+			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, CLASSIFICATION)
 		else:
 			positions_plus = overlapping_regions(regions_plus)
 			positions_minus = overlapping_regions(regions_minus)
 			regions = regions_plus + regions_minus
 			positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
 			best_idx = best_score(sequence_hits[:,0], positions)
-			[xminimal, xmaximal, scores, strands, domain, dom_annotation] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, CLASSIFICATION)
+			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION)
 		xminimal_all.append(xminimal)
 		xmaximal_all.append(xmaximal)
 		domains_all.append(domain)
-		dom_annotation_all.append(dom_annotation)
 	
-	return xminimal_all, xmaximal_all, domains_all, seq_ids, dom_annotation_all
+	return xminimal_all, xmaximal_all, domains_all, seq_ids
 	
 	
 def main(args):
+	
+	t = time.time()
+	
 	QUERY = args.query
 	LAST_DB = args.protein_database
 	CLASSIFICATION = args.classification
@@ -282,18 +317,23 @@ def main(args):
 	DOMAIN_PROT_SEQ = args.domains_prot_seq
 	TH_IDENTITY = args.th_identity
 	TH_LENGTH = args.th_length 
+	TH_FRAMESHIFTS = args.frameshifts
+	FILT_DOM_GFF = args.domains_filtered
 	
 	
 	if NEW_PDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
 	
 	if not os.path.exists(LAST_DB):
-		CLASSIFICATION = os.path.join(configuration.PTOOL_DATA_DIR, CLASSIFICATION)
+		CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
 		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB) 
 	
-	[xminimal, xmaximal, domains_all, seq_ids, dom_annotation_all] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, DOMAIN_PROT_SEQ, TH_IDENTITY, TH_LENGTH)
-	cut_domains_seq(QUERY, DOMAINS_SEQ, DOMAIN_PROT_SEQ, xminimal, xmaximal, domains_all, seq_ids, dom_annotation_all)
-
+	[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN)
+	filter_gff(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS)
+	get_domains_seq(QUERY, FILT_DOM_GFF, DOMAINS_SEQ, DOMAIN_PROT_SEQ)
+	
+	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t))
+	
 if __name__ == "__main__":
 	import argparse
 	
@@ -302,6 +342,7 @@ if __name__ == "__main__":
 	DOMAINS_GFF = configuration.DOMAINS_GFF
 	DOM_SEQ = "tmp/dom_seq.txt"
 	DOM_PROT_SEQ = "tmp/dom_prot_seq.txt"
+	FILT_DOM_GFF = "tmp/domains_filtered.gff"
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-q","--query",type=str, required=True,
@@ -316,12 +357,16 @@ if __name__ == "__main__":
 						help="create new protein database for last")
 	parser.add_argument("-ds","--domains_seq",type=str, default=DOM_SEQ,
 						help="file containg domains nucleic acid sequences")
+	parser.add_argument("-ouf","--domains_filtered",type=str, default=FILT_DOM_GFF,
+						help="filtered domains gff format") 
 	parser.add_argument("-dps","--domains_prot_seq",type=str, default=DOM_PROT_SEQ,
 						help="file containg domains protein sequences")
-	parser.add_argument("-thl","--th_length",type=int, default=20,
+	parser.add_argument("-thl","--th_length",type=float, default= 0.75,
 						help="length threshold for alignment")
-	parser.add_argument("-thi","--th_identity",type=int, default=20,
+	parser.add_argument("-thi","--th_identity",type=float, default= 0.25,
 						help="identity threshold for alignment")
+	parser.add_argument("-fr","--frameshifts",type=int, default=5,
+						help="frameshifts tolerance threshold per 100 bp")
 	
 	args = parser.parse_args()
 	main(args)
