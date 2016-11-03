@@ -291,6 +291,7 @@ def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
 	
 
 def genome2coverage(GS, BLAST_DB):
+	''' Convert genome size to coverage'''
 	nr = subprocess.Popen('''cat {} | grep '>' | wc -l'''.format(BLAST_DB), stdout=subprocess.PIPE, shell=True)
 	num_of_reads = int(nr.communicate()[0])
 	lr = subprocess.Popen('''awk -v N=2 '{print}/>/&&--N<=0{exit}' ''' + BLAST_DB + '''| awk '$0 !~">"{print}' | awk '{sum+=length($0)}END{print sum}' ''', stdout=subprocess.PIPE, shell=True)
@@ -298,8 +299,10 @@ def genome2coverage(GS, BLAST_DB):
 	CV = (num_of_reads*len_of_read)/(GS*1000000) # GS in Mbp
 	print("COVERAGE = {}".format(CV))
 	return CV
+
 	
 def prepared_data(TBL, DB_ID):
+	''' Get prepared rep. annotation data from the table based on the selected species ID '''
 	with open(TBL) as datasets:
 		for line in datasets:
 			if DB_ID in line:
@@ -311,6 +314,7 @@ def prepared_data(TBL, DB_ID):
 				REF = line.split("\t")[6]
 				REF_LINK = line.split("\t")[7]
 	return DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK
+
 	
 def main(args):
 	
@@ -361,7 +365,8 @@ def main(args):
 	# Parse prepared annotation data table
 	if TBL:
 		[DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK] = prepared_data(TBL, DB_ID)
-		
+	
+	# Calculate coverage 	
 	if not CN:
 		CV = False
 		

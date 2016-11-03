@@ -16,7 +16,7 @@ TMP = "{}/{}".format(MAIN_DIR, "tmp")
 TOOL_DATA_DIR = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data"
 #TOOL_DATA_DIR = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/"
 
-# CONSTANTS
+# CONSTANTS 
 N_segment = 50
 MAX_PIC_NUM = 50
 IMAGE_RES = 300
@@ -39,3 +39,6 @@ REPEATS_GFF = "{}/{}".format(TMP,"output_repeats.gff")
 N_REG = "{}/{}".format(TMP,"N_regions.gff")
 REPEATS_TABLE = "{}/{}".format(TMP,"output_table.csv")
 SEQ_INFO = "seq_info.csv"
+DOM_SEQ = "{}/{}".format(TMP,"dom_seq.txt")
+DOM_PROT_SEQ = "{}/{}".format(TMP,"dom_prot_seq.txt") 
+FILT_DOM_GFF = "{}/{}".format(TMP,"domains_filtered.gff")

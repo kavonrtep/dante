@@ -16,18 +16,19 @@ export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 	--threshold ${threshold} 
 	--window ${window} 
 	--overlap ${overlap} 
-
+ #end if
+ 
  #if $custom_data.options_custom_data:
-	--database ${reads}
+    --database ${reads}
     --annotation_tbl ${annotations}
     --cls ${cls}
-	--new_db True
+    --new_db True
 	#if $custom_data.cn.copy_num:
-    --genome_size ${custom_data.cn.genome_size}
+        --genome_size ${custom_data.cn.genome_size}
     #end if
  #else
-	--datasets_tbl prepared_datasets.txt
-	--db_id ${custom_data.prepared_dataset}  
+    --datasets_tbl prepared_datasets.txt
+    --db_id ${custom_data.prepared_dataset}  
     --copy_numbers $custom_data.copy_numbers
  #end if
  >> $log_file 
