@@ -8,6 +8,7 @@ import sys
 import csv
 import time
 from operator import itemgetter
+from collections import Counter
 import os
 import configuration
 from tempfile import NamedTemporaryFile
@@ -248,6 +249,15 @@ def filter_params(reference_seq, alignment_seq, protein_len):
 	relat_frameshifts = round(count_frm/(len(alignment_seq)/100),2)
 	return align_identity, relat_align_len, relat_frameshifts	
 
+def domains_stat(domains_all, seq_ids, SUMMARY):
+	with open(SUMMARY, "w") as sumfile:
+		count_seq = 0
+		for seq_id in seq_ids:
+			sumfile.write("{}\n".format(seq_id))
+			dom_in_seq = Counter(domains_all[count_seq])
+			[sumfile.write("\t{}:{}\n".format(k,v)) for k,v in dom_in_seq.items()]
+			count_seq += 1
+
 
 def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):		
 	''' search for protein domains using our protein database and external tool LAST,
@@ -342,6 +352,7 @@ def main(args):
 	TH_FRAMESHIFTS = args.frameshifts
 	FILT_DOM_GFF = args.domains_filtered
 	SELECTED_DOM = args.selected_dom
+	SUMMARY = args.summary_file
 	#QUAL_FILT = args.qual_filt
 	
 	if NEW_PDB:
@@ -352,6 +363,7 @@ def main(args):
 		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB) 
 	
 	[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN)
+	domains_stat(domains_all, seq_ids, SUMMARY)
 	
 	if SELECTED_DOM != "All":
 		filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
@@ -372,11 +384,12 @@ if __name__ == "__main__":
 	DOM_SEQ = configuration.DOM_SEQ
 	DOM_PROT_SEQ = configuration.DOM_PROT_SEQ
 	FILT_DOM_GFF = configuration.FILT_DOM_GFF
+	DOM_SUMMARY = configuration.DOM_SUMMARY
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-q","--query",type=str, required=True,
 						help="query sequence to find protein domains in")
-	parser.add_argument('-pdb', '--protein_database', type=str, default=LAST_DB, 
+	parser.add_argument('-pdb', "--protein_database", type=str, default=LAST_DB, 
                         help='protein domains database')
 	parser.add_argument('-cs', '--classification', type=str, default=CLASSIFICATION, 
                         help='protein domains classification file')
@@ -398,6 +411,8 @@ if __name__ == "__main__":
 						help="frameshifts tolerance threshold per 100 bp")
 	parser.add_argument("-sd","--selected_dom",type=str, default="All",
 						help="filter output domains based on the domain type")
+	parser.add_argument("-sum","--summary_file",type=str, default=DOM_SUMMARY,
+						help="summary file containing overview of amount of domains in individual seqs")
 	#parser.add_argument("-qf","--qual_filt",type=bool, default=False,
 						#help="filter reported domains base on quality of alignment")
 	

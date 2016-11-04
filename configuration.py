@@ -42,3 +42,4 @@ SEQ_INFO = "seq_info.csv"
 DOM_SEQ = "{}/{}".format(TMP,"dom_seq.txt")
 DOM_PROT_SEQ = "{}/{}".format(TMP,"dom_prot_seq.txt") 
 FILT_DOM_GFF = "{}/{}".format(TMP,"domains_filtered.gff")
+DOM_SUMMARY = "{}/{}".format(TMP,"dom_summary.txt")
