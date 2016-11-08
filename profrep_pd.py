@@ -116,7 +116,6 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			read = column[1]				# ID of individual aligned read
 			qstart = int(column[4])			# starting position of alignment
 			qend = int(column[5])			# ending position of alignemnt
-			# Assign repeat class to HSP
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
@@ -171,7 +170,7 @@ def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
 		np.savetxt(hits_tbl, data, delimiter= "\t", header=header, fmt="%d")
 	return nonzero_len
 
-		
+
 def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom, CV):
 	''' Process the hits table separately for each fasta, create gff file and profile picture '''
 	with open(SEQ_INFO, "r") as s_info:
@@ -393,9 +392,8 @@ def main(args):
 	# Convert genome size to coverage
 	if GS:
 		CV = genome2coverage(GS, BLAST_DB)
-
 	
-	# Detect all fasta sequences in input
+	# Detect all fasta sequences from input
 	fasta_list = multifasta(QUERY)
 	headers=[]
 	seq_count = 1
@@ -455,13 +453,11 @@ if __name__ == "__main__":
     HTML = configuration.HTML
     TMP = configuration.TMP
     DOMAINS_GFF = configuration.DOMAINS_GFF
-    DOMAINS_GFF = configuration.DOMAINS_GFF
     REPEATS_GFF = configuration.REPEATS_GFF
     N_REG = configuration.N_REG
     REPEATS_TABLE = configuration.REPEATS_TABLE
     CLASSIFICATION = configuration.CLASSIFICATION
     LAST_DB = configuration.LAST_DB
-    
 
     
     # Command line arguments

@@ -1,29 +1,16 @@
 
-<tool id="prot_domains" name="Protein Domains Finder" version="1.0.0">
-<description> Search for domains from protein database in your sequence and filter them based on the domain type or quality of alignment </description>
+<tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
+<description> Search for all domains from the protein database in your sequence </description>
 <command>
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --domains_seq ${dom_dna_seq} --domains_prot_seq ${dom_prot_seq} --protein_database proteins_all --classification classification.csv --domains_filtered ${dom_filtered} 
---selected_dom ${selected_domain} --th_identity ${th_identity} --th_length ${th_length} --frameshifts ${frameshifts} --summary_file ${sum_file}
+/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database proteins_all --summary_file ${sum_file}
 		
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input sequence must be in proper fasta format, multi-fasta allowed" />
-   <param name="selected_domain" type="select" label="Choose protein domain type" >
-    <options from_file="select_domain.txt" >
-     <column name="name" index="0"/>
-     <column name="value" index="0"/>
-	</options>
-   </param>
-	<param name="th_identity" type="float" value="0.35" min="0" max="1" label="Minimal identity" help="Protein sequence indentity threshold between input and mapped protein from db [0-1]" />
-	<param name="th_length" type="float" value="0.8" min="0" max="1" label="Minimal alignment length" help="Proportion of the hit length to the length of the database sequence [0-1]" />
-	<param name="frameshifts" type="integer" value="1" label="Frameshifts" help="tolerance threshold per 100 bp" />
 </inputs>
 
 <outputs>
  <data format="gff3" name="DomGff" label="GFF3 file of all protein domains from dataset ${input.hid}" />
- <data format="gff3" name="dom_filtered" label="Filtered GFF3 file of protein domains from dataset ${input.hid}" />
- <data format="fasta" name="dom_dna_seq" label="DNA sequences of filtered domains from dataset ${input.hid}" />
- <data format="fasta" name="dom_prot_seq" label="Protein sequences of filtered domains from dataset ${input.hid}" />
  <data format="txt" name="sum_file" label="Summary amounts of domains from dataset ${input.hid}" />
  
 
@@ -34,16 +21,10 @@
 
 **WHAT IT DOES**
 
-This tool utilizes LAST to find hits of a given sequence translated to protein sequence and then compared to our database of protein domains and subsequently annotated. Frameshifts in the sequence and strand orientation are taken into consideration when finding and reporting hits.
-As the result the domains with the highest confidention score at a certain region are reported and classified according to the type and lineage of repetition they come from. In case of ambiguous hits, the element annotation is leveled-up in order to obtain conclusive classification. Subsequently output
-domains can be filtered based on the domain type - in this case we recommend the following quality filtering thresholds:
-
-**RECOMMENDED FILTERING PARAMETERS FOR DIFFERENT TYPES OF DOMAINS**
-
-in preparation
-
+This tool utilizes LAST to find similarity hits of a given sequence which is at first translated to protein sequence and then compared to our database of protein domains and subsequently annotated. Frameshifts in the sequence and strand orientation are taken into consideration when finding and reporting hits. As the result the domains with the highest confidention score at a certain region are reported and classified according to the type and lineage of repetition they come from. There are 2 output produced: 
+				 - main GFF3 file of all domains found (with very low quality threshold set) containing information about domains positions, score, quality of alignmennt, strand, classification and protein/alignment sequences themselves
+				 - summary text file with overview of amounts of domains types in individual sequences.
+				
  </help>
-
-
 </tool>
 

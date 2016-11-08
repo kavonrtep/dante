@@ -1,0 +1,42 @@
+
+<tool id="domais_filter" name="Protein Domains Filter" version="1.0.0">
+<description> Filter protein domains output according to a certain domain type and several alignment quality criteria </description>
+<command>
+/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/domains_filtering.py --domain_gff ${DomGff} --domains_prot_seq ${dom_prot_seq} --domains_filtered ${dom_filtered} 
+--selected_dom ${selected_domain} --th_identity ${th_identity} --th_length ${th_length} --frameshifts ${frameshifts} 
+		
+</command>
+<inputs>
+ <param format="gff" type="data" name="input" label="Choose gff format of all domains" />
+   <param name="selected_domain" type="select" label="Choose protein domain type" >
+    <options from_file="select_domain.txt" >
+     <column name="name" index="0"/>
+     <column name="value" index="0"/>
+	</options>
+   </param>
+	<param name="th_identity" type="float" value="0.35" min="0" max="1" label="Minimum identity" help="Protein sequence indentity threshold between input and mapped protein from db [0-1]" />
+	<param name="th_length" type="float" value="0.8" min="0" max="1" label="Minimum alignment length" help="Proportion of the hit length to the length of the database sequence [0-1]" />
+	<param name="frameshifts" type="integer" value="1" label="Frameshifts" help="tolerance threshold per 100 bp" />
+</inputs>
+<outputs>
+ <data format="gff3" name="dom_filtered" label="Filtered GFF3 file of ${selected_domain} domains from dataset ${input.hid}" />
+ <data format="fasta" name="dom_prot_seq" label="Protein sequences of ${selected_domain} domains from dataset ${input.hid}" />
+ 
+ 
+</outputs>
+
+ <help>
+
+**WHAT IT DOES**
+
+This tool filters GFF3 domains search output based on the domain type and/or quality of alignment such as alignment sequence identity, alignment length and number of frameshifts. These parameters can be optimized for specific domain type - we recommend the quality thresholds listed below. Domains type filtering for Ty1/Copia and Ty3/Gypsy runs separately and the tool may be applied repeateously to obtain different domain types from the same similarity search GFF3 file. There are 2 outputs produced - filtered GFF3 file and fasta list of the best protein sequences that meets the criteria. Annotation to a repeat class is specified in each header of the protein fasta file.
+
+**RECOMMENDED FILTERING PARAMETERS FOR DIFFERENT TYPES OF DOMAINS**
+
+in preparation.
+
+ </help>
+
+
+</tool>
+

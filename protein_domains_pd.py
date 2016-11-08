@@ -2,10 +2,6 @@
 
 import numpy as np
 import subprocess
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-import sys
-import csv
 import time
 from operator import itemgetter
 from collections import Counter
@@ -15,7 +11,7 @@ from tempfile import NamedTemporaryFile
 
 
 def domain_annotation(element, CLASSIFICATION):
-	''' assign protein domain to each hit from protein database  '''
+	''' Assign protein domain to each hit from protein database  '''
 	domain = []
 	rep_type = []
 	rep_lineage = []
@@ -38,7 +34,7 @@ def domain_annotation(element, CLASSIFICATION):
 	
 
 def hits_processing(sequence_hits):
-	''' gain hits intervals separately for forward and reverse strand '''
+	''' Gain hits intervals separately for forward and reverse strand '''
 	seq_length = sequence_hits[0,5]
 	reverse_strand_idx = np.where(sequence_hits[:,4] == "-")[0]
 	if not reverse_strand_idx.any():
@@ -58,7 +54,7 @@ def hits_processing(sequence_hits):
 
 
 def overlapping_regions(input_data):
-	''' join all overalapping intervals '''
+	''' Join all overalapping intervals '''
 	if input_data: 
 		sorted_idx, sorted_data = zip(*sorted([(index,data) for index,data in enumerate(input_data)], key=itemgetter(1)))
 		merged_ends = input_data[sorted_idx[0]][1]
@@ -80,7 +76,7 @@ def overlapping_regions(input_data):
 
 
 def best_score(scores, indices):
-	''' from overlapping intervals take the one with the highest score '''
+	''' From overlapping intervals take the one with the highest score '''
 	best_scores = []
 	best_idx = []
 	for idx in indices:
@@ -130,108 +126,6 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFI
 	return xminimal, xmaximal, scores, strands, domain
 
 
-def filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS):
-	with open(OUTPUT_DOMAIN, "r") as gff_all:
-		next(gff_all)
-		for line in gff_all:
-			attributes = line.rstrip().split("\t")[-1]
-			al_identity = float(attributes.split(",")[-3].split("=")[1])
-			al_length = float(attributes.split(",")[-2].split("=")[1])
-			relat_frameshifts = float(attributes.split("\t")[-1].split(",")[-1].split("=")[1])
-			dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-			if al_identity >= TH_IDENTITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS :
-				with open(FILT_DOM_GFF, "a") as gff_filtered:
-					gff_filtered.writelines(line)
-
-#def filter_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, SELECTED_DOM):
-	#with open(OUTPUT_DOMAIN, "r") as gff_all:
-		#next(gff_all)
-		#for line in gff_all:
-			#attributes = line.rstrip().split("\t")[-1]
-			#dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-			#if  dom_type == SELECTED_DOM:
-				#with open(FILT_DOM_GFF, "a") as gff_filtered:
-					#gff_filtered.writelines(line)
-			
-def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM):
-	with open (FILT_DOM_GFF, "a") as gff_filtered:
-		with open(OUTPUT_DOMAIN, "r") as gff_all:
-			next(gff_all)
-			for line in gff_all:
-				attributes = line.rstrip().split("\t")[-1]
-				al_identity = float(attributes.split(",")[-3].split("=")[1])
-				al_length = float(attributes.split(",")[-2].split("=")[1])
-				relat_frameshifts = float(attributes.split("\t")[-1].split(",")[-1].split("=")[1])
-				dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-				if al_identity >= TH_IDENTITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS and dom_type == SELECTED_DOM:
-					gff_filtered.writelines(line)
-					
-
-def multifasta(QUERY):
-	''' Create single fasta temporary files to be processed sequentially '''
-	PATTERN = ">"
-	fasta_list = []
-	with open(QUERY, "r") as fasta:
-		reader = fasta.read()
-		splitter = reader.split(PATTERN)[1:]
-		if len(splitter) > 1:
-			for fasta_num, part in enumerate(splitter):
-				ntf = NamedTemporaryFile(delete=False)
-				ntf.write("{}{}".format(PATTERN, part).encode("utf-8"))
-				fasta_list.append(ntf.name)
-				seq_id = part.split("\n")[0].split(" ")[0]
-			return fasta_list
-		else:
-			fasta_list.append(QUERY)
-			return fasta_list
-
-
-def fasta_read(subfasta):
-	''' Read fasta, gain header and sequence without gaps '''
-	sequence_lines = []
-	with open(subfasta, "r") as fasta:
-		header = fasta.readline().strip().split(" ")[0][1:]
-		for line in fasta:
-			clean_line = line.strip()			
-			if clean_line:				
-				sequence_lines.append(clean_line)
-	sequence = "".join(sequence_lines)
-	return header, sequence
-	
-	
-def get_domains_seq(QUERY, FILT_DOM_GFF, DOMAINS_SEQ, DOMAIN_PROT_SEQ):
-	''' Get the original nucleic sequence and protein sequence of the reported domains regions'''
-	seq_data = {}
-	with open(FILT_DOM_GFF, "r") as filt_gff:
-		#next(filt_gff)
-		for line in filt_gff: 
-			start = int(line.rstrip().split("\t")[3])
-			end = int(line.rstrip().split("\t")[4])
-			attributes = line.rstrip().split("\t")[8]
-			dom = attributes.split(",")[0].split("=")[1]
-			dom_class = "{}/{}".format(attributes.split(",")[1].split("=")[1], attributes.split(",")[2].split("=")[1])
-			seq_id = line.rstrip().split("\t")[0]
-			prot_seq = line.rstrip().split("\t")[8].split(",")[3].split("=")[1]
-			header_prot_seq = ">{}:{}-{} {} {}".format(seq_id, start, end, dom, dom_class)
-			if seq_id in seq_data:
-				seq_data[seq_id].append([start, end, dom, dom_class])
-			else:
-				seq_data[seq_id] = [[start, end, dom, dom_class]]
-			# Protein sequence
-			with open(DOMAIN_PROT_SEQ, "a") as dom_prot_file:
-				dom_prot_file.write("{}\n{}\n".format(header_prot_seq, prot_seq))
-	fasta_list = multifasta(QUERY)
-	for subfasta in fasta_list:
-		[header, sequence] = fasta_read(subfasta)
-		if header in seq_data.keys():
-			for record in seq_data[header]:
-				seq_cut = sequence[record[0] - 1 : record[1]]
-				header_dom_seq = ">{}:{}-{} {} {}".format(header, record[0], record[1], record[2], record[3])
-				# DNA sequence
-				with open(DOMAINS_SEQ, "a") as dom_seq_file:
-					dom_seq_file.write("{}\n{}\n".format(header_dom_seq, seq_cut))
-			
-
 def filter_params(reference_seq, alignment_seq, protein_len):
 	''' Calculate basic statistics of the quality of alignment '''
 	num_ident = 0
@@ -245,11 +139,13 @@ def filter_params(reference_seq, alignment_seq, protein_len):
 		if i.isalpha():
 			alignment_len += 1
 	relat_align_len = round(alignment_len/protein_len, 3) 
-	align_identity =  round(num_ident/len(alignment_seq), 2)
+	align_identity = round(num_ident/len(alignment_seq), 2)
 	relat_frameshifts = round(count_frm/(len(alignment_seq)/100),2)
 	return align_identity, relat_align_len, relat_frameshifts	
 
+
 def domains_stat(domains_all, seq_ids, SUMMARY):
+	'''  Create a file containing amounts of individual domains types'''
 	with open(SUMMARY, "w") as sumfile:
 		count_seq = 0
 		for seq_id in seq_ids:
@@ -260,7 +156,7 @@ def domains_stat(domains_all, seq_ids, SUMMARY):
 
 
 def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):		
-	''' search for protein domains using our protein database and external tool LAST,
+	''' Search for protein domains using our protein database and external tool LAST,
 	stdout is parsed in real time and hits for a single sequence undergo further processing
 	- tabular format(TAB) to get info about position, score, orientation 
 	- MAF format to gain alignment and original sequence
@@ -275,7 +171,6 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 		seq_id = fasta.readline().strip().split(" ")[0][1:]
 	with open(OUTPUT_DOMAIN, "a") as gff:
 		gff.write("{}\n".format(header_gff))
-	############################################################## max_hit option 
 	tab = subprocess.Popen("lastal -F15 {} {} -n 100 -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
 	maf = subprocess.Popen("lastal -F15 {} {} -n 100 -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
 	maf.stdout.readline()
@@ -316,7 +211,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 		else:
 			maf.stdout.readline()
 	# The last (or the only one) sequence domains search
-	if not np.all(sequence_hits==0):	
+	if not np.all(sequence_hits==0):
 		[reverse_strand_idx, regions_plus, regions_minus, seq_length] = hits_processing(sequence_hits)
 		if reverse_strand_idx == []:
 			positions = overlapping_regions(regions_plus)
@@ -345,15 +240,7 @@ def main(args):
 	CLASSIFICATION = args.classification
 	OUTPUT_DOMAIN = args.domain_gff
 	NEW_PDB = args.new_pdb
-	DOMAINS_SEQ = args.domains_seq
-	DOMAIN_PROT_SEQ = args.domains_prot_seq
-	TH_IDENTITY = args.th_identity
-	TH_LENGTH = args.th_length 
-	TH_FRAMESHIFTS = args.frameshifts
-	FILT_DOM_GFF = args.domains_filtered
-	SELECTED_DOM = args.selected_dom
 	SUMMARY = args.summary_file
-	#QUAL_FILT = args.qual_filt
 	
 	if NEW_PDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
@@ -365,13 +252,6 @@ def main(args):
 	[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN)
 	domains_stat(domains_all, seq_ids, SUMMARY)
 	
-	if SELECTED_DOM != "All":
-		filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
-	else:
-		filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS)
-	get_domains_seq(QUERY, FILT_DOM_GFF, DOMAINS_SEQ, DOMAIN_PROT_SEQ)
-	
-	
 	
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t))
 	
@@ -381,9 +261,6 @@ if __name__ == "__main__":
 	LAST_DB = configuration.LAST_DB
 	CLASSIFICATION = configuration.CLASSIFICATION
 	DOMAINS_GFF = configuration.DOMAINS_GFF
-	DOM_SEQ = configuration.DOM_SEQ
-	DOM_PROT_SEQ = configuration.DOM_PROT_SEQ
-	FILT_DOM_GFF = configuration.FILT_DOM_GFF
 	DOM_SUMMARY = configuration.DOM_SUMMARY
 
 	parser = argparse.ArgumentParser()
@@ -397,25 +274,8 @@ if __name__ == "__main__":
 						help="output domains gff format")
 	parser.add_argument("-npd","--new_pdb",type=bool, default=False,
 						help="create new protein database for last")
-	parser.add_argument("-ds","--domains_seq",type=str, default=DOM_SEQ,
-						help="file containg domains nucleic acid sequences")
-	parser.add_argument("-ouf","--domains_filtered",type=str, default=FILT_DOM_GFF,
-						help="filtered domains gff format") 
-	parser.add_argument("-dps","--domains_prot_seq",type=str, default=DOM_PROT_SEQ,
-						help="file containg domains protein sequences")
-	parser.add_argument("-thl","--th_length",type=float, default= 0.8,
-						help="length threshold for alignment")
-	parser.add_argument("-thi","--th_identity",type=float, default= 0.35,
-						help="identity threshold for alignment")
-	parser.add_argument("-fr","--frameshifts",type=int, default=1,
-						help="frameshifts tolerance threshold per 100 bp")
-	parser.add_argument("-sd","--selected_dom",type=str, default="All",
-						help="filter output domains based on the domain type")
 	parser.add_argument("-sum","--summary_file",type=str, default=DOM_SUMMARY,
 						help="summary file containing overview of amount of domains in individual seqs")
-	#parser.add_argument("-qf","--qual_filt",type=bool, default=False,
-						#help="filter reported domains base on quality of alignment")
-	
 	
 	args = parser.parse_args()
 	main(args)
