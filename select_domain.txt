@@ -5,7 +5,7 @@ Ty1-PROT
 Ty1-RH
 Ty1-RT
 Ty3-GAG
-Ty3-INY
+Ty3-INT
 Ty3-PROT
 Ty3-RT
 Ty3-gRH

@@ -7,7 +7,7 @@
 		
 </command>
 <inputs>
- <param format="gff" type="data" name="input" label="Choose gff format of all domains" />
+ <param format="gff" type="data" name="DomGff" label="Choose gff format of all domains" />
    <param name="selected_domain" type="select" label="Choose protein domain type" >
     <options from_file="select_domain.txt" >
      <column name="name" index="0"/>
@@ -19,8 +19,8 @@
 	<param name="frameshifts" type="integer" value="1" label="Frameshifts" help="tolerance threshold per 100 bp" />
 </inputs>
 <outputs>
- <data format="gff3" name="dom_filtered" label="Filtered GFF3 file of ${selected_domain} domains from dataset ${input.hid}" />
- <data format="fasta" name="dom_prot_seq" label="Protein sequences of ${selected_domain} domains from dataset ${input.hid}" />
+ <data format="gff3" name="dom_filtered" label="Filtered GFF3 file of ${selected_domain} domains from dataset ${DomGff.hid}" />
+ <data format="fasta" name="dom_prot_seq" label="Protein sequences of ${selected_domain} domains from dataset ${DomGff.hid}" />
  
  
 </outputs>

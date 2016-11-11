@@ -116,31 +116,29 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFI
 		strands.append(strand)
 		score = sequence_hits[i,0]
 		scores.append(score)
-		sequence = sequence_hits[i,7]
-		alignment = sequence_hits[i,8]
+		db = sequence_hits[i,7]
+		seq = sequence_hits[i,8]
 		dom_len = sequence_hits[i,9]
-		[percent_ident, relat_align_len, relat_frameshifts] = filter_params(sequence, alignment, dom_len)
+		[percent_ident, relat_align_len, relat_frameshifts] = filter_params(db, seq, dom_len)
 		with open(OUTPUT_DOMAIN, "a") as gff:	
-			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Rep_type={},Rep_lineage={},Sequence={},Alignment={},Identity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], sequence, alignment, percent_ident, relat_align_len, relat_frameshifts))
+			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Rep_type={},Rep_lineage={},DB={},Sequence={},Identity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], db, seq, percent_ident, relat_align_len, relat_frameshifts))
 		count += 1	
 	return xminimal, xmaximal, scores, strands, domain
 
 
-def filter_params(reference_seq, alignment_seq, protein_len):
+def filter_params(db, seq, protein_len):
 	''' Calculate basic statistics of the quality of alignment '''
 	num_ident = 0
 	count_frm = 0
 	alignment_len = 0
-	for i,j in zip(reference_seq, alignment_seq):
+	for i,j in zip(db, seq):
 		if i==j:
 			num_ident += 1
 		if j == "/" or j == "\\":
 			count_frm += 1
-		if i.isalpha():
-			alignment_len += 1
-	relat_align_len = round(alignment_len/protein_len, 3) 
-	align_identity = round(num_ident/len(alignment_seq), 2)
-	relat_frameshifts = round(count_frm/(len(alignment_seq)/100),2)
+	relat_align_len = round(len(db)/protein_len, 3) 
+	align_identity = round(num_ident/len(seq), 2)
+	relat_frameshifts = round(count_frm/(len(seq)/100),2)
 	return align_identity, relat_align_len, relat_frameshifts	
 
 
@@ -241,9 +239,18 @@ def main(args):
 	OUTPUT_DOMAIN = args.domain_gff
 	NEW_PDB = args.new_pdb
 	SUMMARY = args.summary_file
+	OUTPUT_DIR = args.output_dir
 	
 	if NEW_PDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
+		
+	if not os.path.exists(OUTPUT_DIR) and not os.path.exists(OUTPUT_DOMAIN):
+		os.makedirs(OUTPUT_DIR)
+		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
+		SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
+	elif os.path.exists(OUTPUT_DIR) and not os.path.exists(OUTPUT_DOMAIN):
+		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
+		SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
 	
 	if not os.path.exists(LAST_DB):
 		CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
@@ -265,17 +272,19 @@ if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-q","--query",type=str, required=True,
-						help="query sequence to find protein domains in")
+						help="reference sequence to find protein domains")
 	parser.add_argument('-pdb', "--protein_database", type=str, default=LAST_DB, 
-                        help='protein domains database')
+                        help='protein domains database file')
 	parser.add_argument('-cs', '--classification', type=str, default=CLASSIFICATION, 
                         help='protein domains classification file')
 	parser.add_argument("-oug", "--domain_gff",type=str, default=DOMAINS_GFF,
 						help="output domains gff format")
-	parser.add_argument("-npd","--new_pdb",type=bool, default=False,
-						help="create new protein database for last")
+	parser.add_argument("-npd","--new_pdb",type=str, default=False,
+						help="create new protein database for lastal")
 	parser.add_argument("-sum","--summary_file",type=str, default=DOM_SUMMARY,
-						help="summary file containing overview of amount of domains in individual seqs")
+						help=" output summary file containing overview of amount of domains in individual seqs")
+	parser.add_argument("-dir","--output_dir",type=str, default=configuration.TMP,
+						help="specify if you want to change the output directory")
 	
 	args = parser.parse_args()
 	main(args)

@@ -2,7 +2,7 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
 <description> Search for all domains from the protein database in your sequence </description>
 <command>
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database proteins_all --summary_file ${sum_file}
+/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database proteins_all --classification classification.csv --summary_file ${sum_file}
 		
 </command>
 <inputs>
