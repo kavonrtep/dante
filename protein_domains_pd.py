@@ -38,15 +38,15 @@ def hits_processing(sequence_hits):
 	seq_length = sequence_hits[0,5]
 	reverse_strand_idx = np.where(sequence_hits[:,4] == "-")[0]
 	if not reverse_strand_idx.any():
-		start_pos_plus = sequence_hits[:,2]
+		start_pos_plus = sequence_hits[:,2] + 1
 		end_pos_plus = sequence_hits[:,3]
 		regions_plus = list(zip(start_pos_plus, end_pos_plus))
 		regions_minus = []
 	else:
 		reverse_strand_idx = reverse_strand_idx[0]
-		start_pos_plus = sequence_hits[0:reverse_strand_idx,2]
+		start_pos_plus = sequence_hits[0:reverse_strand_idx,2] + 1
 		end_pos_plus = sequence_hits[0:reverse_strand_idx,3]
-		start_pos_minus = seq_length - sequence_hits[reverse_strand_idx:,3]
+		start_pos_minus = seq_length - sequence_hits[reverse_strand_idx:,3] + 1
 		end_pos_minus = seq_length - sequence_hits[reverse_strand_idx:,2]
 		regions_plus= list(zip(start_pos_plus, end_pos_plus))
 		regions_minus = list(zip(start_pos_minus, end_pos_minus))
@@ -204,7 +204,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 				xminimal_all.append(xminimal)
 				xmaximal_all.append(xmaximal)
 				domains_all.append(domain)
-			line_parsed = np.array([int(line[0]), seq_id, int(line[7]) + 1, int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq, int(dom_len)], dtype=object)
+			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq, int(dom_len)], dtype=object)
 			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()

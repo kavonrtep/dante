@@ -29,7 +29,7 @@
 
 **WHAT IT DOES**
 
-This tool filters GFF3 domains search output based on the domain type and/or quality of alignment such as alignment sequence identity, alignment length and number of frameshifts. These parameters can be optimized for specific domain type - we recommend the quality thresholds listed below. Domains type filtering for Ty1/Copia and Ty3/Gypsy runs separately and the tool may be applied repeateously to obtain different domain types from the same similarity search GFF3 file. There are 2 outputs produced - filtered GFF3 file and fasta list of the best protein sequences that meets the criteria. Annotation to a repeat class is specified in each header of the protein fasta file.
+This tool filters GFF3 domains search output based on the domain type and/or quality of alignment such as alignment sequence identity, alignment length and number of frameshifts. These parameters can be optimized for specific domain type - we recommend the quality thresholds listed below. Domains type filtering for Ty1/Copia and Ty3/Gypsy runs separately and the tool may be applied repeateously to obtain different domain types from the same similarity search GFF3 file. There are 2 outputs produced - filtered GFF3 file and fasta list of the best protein sequences that meet the criteria. Annotation to a repeat class is specified in each header of the protein fasta file.
 
 **RECOMMENDED FILTERING PARAMETERS FOR DIFFERENT TYPES OF DOMAINS**
 
