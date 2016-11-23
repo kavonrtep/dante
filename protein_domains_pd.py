@@ -204,7 +204,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 				xminimal_all.append(xminimal)
 				xmaximal_all.append(xmaximal)
 				domains_all.append(domain)
-			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq, int(dom_len)], dtype=object)
+			line_parsed = np.array([int(line[0]), seq_id, int(line[7]) + 1, int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq, int(dom_len)], dtype=object)
 			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()

@@ -2,7 +2,7 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
 <description> Search for all domains from the protein database in your sequence </description>
 <command>
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database proteins_all --classification classification.csv --summary_file ${sum_file}
+/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database proteins_all_new --classification classification_new --summary_file ${sum_file}
 		
 </command>
 <inputs>
@@ -21,9 +21,17 @@
 
 **WHAT IT DOES**
 
+This tool exploits external aligning programme`LAST`__.
+
+.. __: http://last.cbrc.jp/  
+to find similarity hits of a given DNA sequence against our database of protein domains from LTR retrotransposons. According to this hits are subsequently annotated with repeat class and lineage they come from. Frameshifts in the translated sequence and strand orientation are taken into consideration when finding and reporting hits. As the result only the domains with the highest alignment score within non overlapping regions are reported. There are 2 outputs produced:
+	
+	 - main GFF3 file of all domains found (with very low quality threshold set) containing information about domains positions, score, quality of alignmennt, strand, classification and reference/alignment sequences - this file can undergo further filtering using Protein Domain Filter
+	- summary text file with overview of amounts of domains types in individual sequences.
+
 This tool utilizes LAST to find similarity hits of a given sequence which is at first translated to protein sequence and then compared to our database of protein domains and subsequently annotated. Frameshifts in the sequence and strand orientation are taken into consideration when finding and reporting hits. As the result the domains with the highest confidention score at a certain region are reported and classified according to the type and lineage of repetition they come from. There are 2 output produced: 
-				 - main GFF3 file of all domains found (with very low quality threshold set) containing information about domains positions, score, quality of alignmennt, strand, classification and protein/alignment sequences themselves
-				 - summary text file with overview of amounts of domains types in individual sequences.
+
+				
 				
  </help>
 </tool>
