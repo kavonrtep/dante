@@ -68,7 +68,7 @@ def cluster_annotation(CL_ANNOTATION_TBL):
 
 
 def read_annotation(CLS, cl_annotations_items):
-	''' Dictionary of known repet. classes and related reads '''
+	''' Dictionary of known repeat classes and related reads '''
 	reads_annotations = {} 	
 	with open(CLS, "r") as cls_file:
 		count = 0

@@ -252,6 +252,7 @@ def main(args):
 		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
 		SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
 	
+	
 	if not os.path.exists(LAST_DB):
 		CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
 		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB) 

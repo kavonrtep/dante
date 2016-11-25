@@ -10,7 +10,7 @@ jbrowse_link_to_galaxy = "data/galaxy_files"
 LINK_PART1 = "http://nod6/JBrowse-1.12.1/index.html?data="
 LINK_PART1_PC = "http://nina/JBrowse-1.12.1/index.html?data="
 LAST_DB = "proteins_all"
-MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
+MAIN_DIR = os.getcwd()
 DATA = "{}/{}".format(MAIN_DIR, "data")
 TMP = "{}/{}".format(MAIN_DIR, "tmp")
 TOOL_DATA_DIR = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data"

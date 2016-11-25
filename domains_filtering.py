@@ -58,7 +58,7 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAM
 def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
 	''' Get the original nucleic sequence and protein sequence of the reported domains regions '''
 	with open(FILT_DOM_GFF, "r") as filt_gff:
-		#next(filt_gff)
+		next(filt_gff)
 		for line in filt_gff: 
 			start = int(line.rstrip().split("\t")[3])
 			end = int(line.rstrip().split("\t")[4])
@@ -112,6 +112,9 @@ def main(args):
 			FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
 		if not(os.path.dirname(DOMAIN_PROT_SEQ)):
 			DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
+			
+	with open (FILT_DOM_GFF, "a") as gff_filtered:
+		gff_filtered.write("##gff-version 3")
 	
 	if SELECTED_DOM != "All":
 		filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
@@ -119,7 +122,7 @@ def main(args):
 		filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS)
 	get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ)
 	
-	
+
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t))
 	
 if __name__ == "__main__":
