@@ -169,8 +169,8 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 		seq_id = fasta.readline().strip().split(" ")[0][1:]
 	with open(OUTPUT_DOMAIN, "a") as gff:
 		gff.write("{}\n".format(header_gff))
-	tab = subprocess.Popen("lastal -F15 {} {} -n 100 -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
-	maf = subprocess.Popen("lastal -F15 {} {} -n 100 -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	tab = subprocess.Popen("lastal -F15 {} {} -m 100 -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	maf = subprocess.Popen("lastal -F15 {} {} -m 100 -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
 	maf.stdout.readline()
 	for line_tab in tab.stdout:
 		line_tab = line_tab.decode("utf-8")
