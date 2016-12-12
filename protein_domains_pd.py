@@ -2,6 +2,7 @@
 
 import numpy as np
 import subprocess
+import math
 import time
 from operator import itemgetter
 from collections import Counter
@@ -102,8 +103,6 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFI
 	PHASE = "."
 	xminimal = []
 	xmaximal = []
-	scores = []
-	strands = []
 	domains = []
 	count = 0
 	[domain, rep_type, rep_lineage] = domain_annotation(sequence_hits[:,6][best_idx], CLASSIFICATION)
@@ -113,17 +112,16 @@ def create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFI
 		alignment_end = regions[i][1]
 		xmaximal.append(alignment_end)
 		strand = sequence_hits[i,4]
-		strands.append(strand)
 		score = sequence_hits[i,0]
-		scores.append(score)
 		db = sequence_hits[i,7]
 		seq = sequence_hits[i,8]
 		dom_len = sequence_hits[i,9]
+		original_db_name = sequence_hits[i,10]
 		[percent_ident, relat_align_len, relat_frameshifts] = filter_params(db, seq, dom_len)
 		with open(OUTPUT_DOMAIN, "a") as gff:	
-			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Rep_type={},Rep_lineage={},DB={},Sequence={},Identity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], db, seq, percent_ident, relat_align_len, relat_frameshifts))
+			gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Rep_type={},Rep_lineage={}, DB_Name={}, DB_Seq={},HIT_Seq={},Identity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, SOURCE, FEATURE, alignment_start, alignment_end, score, strand, PHASE, domain[count], rep_type[count], rep_lineage[count], original_db_name, db, seq, percent_ident, relat_align_len, relat_frameshifts))
 		count += 1	
-	return xminimal, xmaximal, scores, strands, domain
+	return xminimal, xmaximal, domain
 
 
 def filter_params(db, seq, protein_len):
@@ -138,7 +136,7 @@ def filter_params(db, seq, protein_len):
 			count_frm += 1
 	relat_align_len = round(len(db)/protein_len, 3) 
 	align_identity = round(num_ident/len(seq), 2)
-	relat_frameshifts = round(count_frm/(len(seq)/100),2)
+	relat_frameshifts = round(count_frm/math.ceil((len(seq)/100)),2)
 	return align_identity, relat_align_len, relat_frameshifts	
 
 
@@ -164,7 +162,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 	xmaximal_all = []
 	domains_all = []
 	header_gff = "##gff-version 3"
-	sequence_hits = np.empty((0,10))
+	sequence_hits = np.empty((0,11))
 	with open(QUERY, "r") as fasta:
 		seq_id = fasta.readline().strip().split(" ")[0][1:]
 	with open(OUTPUT_DOMAIN, "a") as gff:
@@ -190,21 +188,21 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 				if reverse_strand_idx == []:
 					positions = overlapping_regions(regions_plus)
 					best_idx = best_score(sequence_hits[:,0], positions)
-					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, CLASSIFICATION)
+					[xminimal, xmaximal, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, CLASSIFICATION)
 				else:
 					positions_plus = overlapping_regions(regions_plus)
 					positions_minus = overlapping_regions(regions_minus)
 					regions = regions_plus + regions_minus
 					positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
 					best_idx = best_score(sequence_hits[:,0], positions)
-					[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION)
-				sequence_hits = np.empty((0,10))
+					[xminimal, xmaximal, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION)
+				sequence_hits = np.empty((0,11))
 				seq_id = line[6]
 				seq_ids.append(seq_id)
 				xminimal_all.append(xminimal)
 				xmaximal_all.append(xmaximal)
 				domains_all.append(domain)
-			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq, int(dom_len)], dtype=object)
+			line_parsed = np.array([int(line[0]), seq_id, int(line[7]), int(line[7]) + int(line[8]), line[9], int(line[10]), element_name, reference_seq, alignment_seq, int(dom_len), line[1]], dtype=object)
 			sequence_hits = np.append(sequence_hits, [line_parsed], axis=0)
 		else:
 			maf.stdout.readline()
@@ -214,14 +212,14 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 		if reverse_strand_idx == []:
 			positions = overlapping_regions(regions_plus)
 			best_idx = best_score(sequence_hits[:,0], positions)
-			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, CLASSIFICATION)
+			[xminimal, xmaximal, domain] = create_gff(sequence_hits, best_idx, seq_id, regions_plus, OUTPUT_DOMAIN, CLASSIFICATION)
 		else:
 			positions_plus = overlapping_regions(regions_plus)
 			positions_minus = overlapping_regions(regions_minus)
 			regions = regions_plus + regions_minus
 			positions = positions_plus + [x + reverse_strand_idx for x in positions_minus]
 			best_idx = best_score(sequence_hits[:,0], positions)
-			[xminimal, xmaximal, scores, strands, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION)
+			[xminimal, xmaximal, domain] = create_gff(sequence_hits, best_idx, seq_id, regions, OUTPUT_DOMAIN, CLASSIFICATION)
 		xminimal_all.append(xminimal)
 		xmaximal_all.append(xmaximal)
 		domains_all.append(domain)

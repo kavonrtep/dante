@@ -32,8 +32,8 @@ JSON_CONF_R = """{"hooks" : {"modify": "function( track, f, fdiv ) {fdiv.style.b
 JSON_CONF_N = """{"hooks" : {"modify": "function( track, f, fdiv ) {fdiv.style.background = '#474747'}"}}"""
 
 # OUPUTS
-#DOMAINS_GFF = "{}/{}".format(TMP,"output_domains.gff")
-DOMAINS_GFF = "output_domains.gff"
+DOMAINS_GFF = "{}/{}".format(TMP,"output_domains.gff")
+#DOMAINS_GFF = "output_domains.gff"
 INPUT_DOMAINS_GFF = "{}/{}".format(TMP, "output_domains.gff")
 HTML = "{}/{}".format(TMP,"output.html")
 REPEATS_GFF = "{}/{}".format(TMP,"output_repeats.gff")

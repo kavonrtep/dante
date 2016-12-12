@@ -114,7 +114,7 @@ def main(args):
 			DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
 			
 	with open (FILT_DOM_GFF, "a") as gff_filtered:
-		gff_filtered.write("##gff-version 3")
+		gff_filtered.write("##gff-version 3\n")
 	
 	if SELECTED_DOM != "All":
 		filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
