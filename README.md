@@ -3,9 +3,18 @@
 
 ## PROFREP ##
 
-This tool uses former clustering output (.cls files) from Repeat Explorer (list of all clusters and belonging reads), annotation table that assigns repetitive class to every cluster and list of all sequencing reads to create repetitive profile of a sequence as well as to report protein domains. You can either provide your own files or you can exploit our prepared datasets for certain species listed above. At firts Blast+ run similarity search to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate lenght. Other parameters of blast search are also adjustable. Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be asked to provide genome size of the species so that the sequencing coverage can be calculated. 
+This tool uses former clustering output (.cls files) from Repeat Explorer (list of all clusters and belonging reads), annotation table that assigns repetitive class to every cluster and list of all sequencing reads to create repetitive profile of a sequence as well as to report protein domains. You can either provide your own files or you can exploit our prepared datasets for certain species listed above. At first Blast+ run similarity search to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate length. Other parameters of blast search are also adjustable. Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. Be careful to set the overlap between windows at least of the length of reads so that hits on the border of windows can be found and of course the window size must be greater than overlap itself. 
+When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be asked to provide genome size of the species so that the sequencing coverage can be calculated. 
 
 Protein domains search utilizes LAST tool to find hits between input sequence and our database of protein domains - this is accomplished using protein_domains_pd.py [SEE BELLOW] which also serves as a module for PROFREP.
+
+OUTPUT:		
+	
+* table reporting copy numbers/hits at every position for all repeats occuring in the sequence
+* GFF file reporting N regions in the sequence
+* GFF file reporting repetitive regions of a certain length and above copy numbers/hits threshold
+* GFF file reporting protein domains, classification of domain, chain orientation and alignment sequence
+* HTML reporting domains and profiles summary visualization that can be further explored using a link to JBrowse
 
 ### Dependencies ###
 
@@ -14,6 +23,7 @@ Protein domains search utilizes LAST tool to find hits between input sequence an
 	* numpy
 	* matplotlib
 * [BLAST 2.2.28+] (https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
+* [JBrowse 1.12.1] (http://jbrowse.org/) or higher
 * protein_domains_pd.py
 * gff.py
 * visualization.py

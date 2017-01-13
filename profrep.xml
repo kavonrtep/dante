@@ -102,7 +102,7 @@ External visualization tool Jbrowse has been employed to interactively visualize
 
 **OUTPUTS** 
 
-	- table reporting copy numbers at every position for all repeats occuring in the sequence
+	- table reporting hits/copy numbers at every position for all repeats occuring in the sequence
 	- GFF file reporting N regions in the sequence
 	- GFF file reporting repetitive regions of a certain length and above copy numbers/hits threshold
 	- GFF file reporting protein domains, classification of domain, chain orientation and alignment sequence

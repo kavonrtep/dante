@@ -18,13 +18,13 @@ def domain_annotation(element, CLASSIFICATION):
 	rep_lineage = []
 	with open(CLASSIFICATION, "r") as cl_tbl:
 		annotation = {}
-		header_classification = cl_tbl.readline().strip().split("\t")
+		#header_classification = cl_tbl.readline().strip().split("\t")
 		for line in cl_tbl:
 			record = line.rstrip().split("\t")
 			annotation[record[0]] = [record[1],record[2]]		
 	for i in range(len(element)):
 		domain.append(element[i].split("__")[0].split("-")[1])
-		element_name = element[i].split("__")[1]
+		element_name = "__".join(element[i].split("__")[1:])
 		if element_name in annotation.keys():			
 			rep_type.append(annotation[element_name][0])
 			rep_lineage.append(annotation[element_name][1])
@@ -129,8 +129,8 @@ def filter_params(db, seq, protein_len):
 	num_ident = 0
 	count_frm = 0
 	alignment_len = 0
-	for i,j in zip(db, seq):
-		if i==j:
+	for i,j in zip(db.upper(), seq):
+		if i == j:
 			num_ident += 1
 		if j == "/" or j == "\\":
 			count_frm += 1
@@ -167,8 +167,8 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 		seq_id = fasta.readline().strip().split(" ")[0][1:]
 	with open(OUTPUT_DOMAIN, "a") as gff:
 		gff.write("{}\n".format(header_gff))
-	tab = subprocess.Popen("lastal -F15 {} {} -m 100 -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
-	maf = subprocess.Popen("lastal -F15 {} {} -m 100 -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	tab = subprocess.Popen("lastal -F15 {} {} -L 50 -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	maf = subprocess.Popen("lastal -F15 {} {} -L 50 -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
 	maf.stdout.readline()
 	for line_tab in tab.stdout:
 		line_tab = line_tab.decode("utf-8")

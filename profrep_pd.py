@@ -255,8 +255,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GF
 	# Local usage
 	else: 
 		JBROWSE_BIN = configuration.JBROWSE_BIN_PC
-		jbrowse_link_to_profrep = "data/profrep_data"
-		link_part2 = os.path.join(jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
+		link_part2 = os.path.join(configuration.jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
 		link = configuration.LINK_PART1_PC + link_part2
 	subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
 	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
@@ -402,7 +401,7 @@ def main(args):
 	# Create file to record info about fasta sequences
 	SEQ_INFO = "{}/{}".format(HTML_DATA, configuration.SEQ_INFO)
 	with open(SEQ_INFO, "a") as s_info:
-		s_info.write("seq_id\tseq_legth\tseq_count\tfile_start_pos\tfile_end_pos\n")
+		s_info.write(configuration.s_info_header)
 		# Find hits for each fasta sequence separetely
 		for subfasta in fasta_list:
 			[header, sequence] = fasta_read(subfasta)

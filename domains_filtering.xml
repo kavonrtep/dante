@@ -1,5 +1,5 @@
 
-<tool id="domais_filter" name="Protein Domains Filter" version="1.0.0">
+<tool id="domains_filter" name="Protein Domains Filter" version="1.0.0">
 <description> Filter protein domains output according to a certain domain type and several alignment quality criteria </description>
 <command>
 /mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/domains_filtering.py --domain_gff ${DomGff} --domains_prot_seq ${dom_prot_seq} --domains_filtered ${dom_filtered} 
