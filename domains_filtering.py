@@ -31,13 +31,15 @@ def filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHI
 		next(gff_all)
 		for line in gff_all:
 			attributes = line.rstrip().split("\t")[-1]
-			al_identity = float(attributes.split(",")[-3].split("=")[1])
-			al_length = float(attributes.split(",")[-2].split("=")[1])
-			relat_frameshifts = float(attributes.split("\t")[-1].split(",")[-1].split("=")[1])
-			dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-			if al_identity >= TH_IDENTITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS :
-				with open(FILT_DOM_GFF, "a") as gff_filtered:
-					gff_filtered.writelines(line)
+			truncated = attributes.split(",")[1]
+			if truncated != "Classification=Ambiguous":
+				al_identity = float(attributes.split(",")[-3].split("=")[1])
+				al_length = float(attributes.split(",")[-2].split("=")[1])
+				relat_frameshifts = float(attributes.split(",")[-1].split("=")[1])
+				dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
+				if al_identity >= TH_IDENTITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS :
+					with open(FILT_DOM_GFF, "a") as gff_filtered:
+						gff_filtered.writelines(line)
 					
 			
 def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM):
@@ -103,15 +105,13 @@ def main(args):
 	SELECTED_DOM = args.selected_dom
 	OUTPUT_DIR = args.output_dir
 	
-	if not os.path.exists(OUTPUT_DIR) and not os.path.exists(FILT_DOM_GFF):
-		os.makedirs(OUTPUT_DIR)
-		FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
-		DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
-	elif os.path.exists(OUTPUT_DIR) and not os.path.exists(FILT_DOM_GFF):
-		if not(os.path.dirname(FILT_DOM_GFF)):
-			FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
-		if not(os.path.dirname(DOMAIN_PROT_SEQ)):
-			DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
+
+	if OUTPUT_DIR is None:
+		OUTPUT_DIR = '/'.join(OUTPUT_DOMAIN.split('/')[0:-1])
+	if not os.path.exists(OUTPUT_DIR):
+		os.makedirs(OUTPUT_DIR)		
+	FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
+	DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
 			
 	with open (FILT_DOM_GFF, "a") as gff_filtered:
 		gff_filtered.write("##gff-version 3\n")
@@ -128,12 +128,11 @@ def main(args):
 if __name__ == "__main__":
 	import argparse
 
-	INPUT_DOMAINS_GFF = configuration.INPUT_DOMAINS_GFF
 	DOM_PROT_SEQ = configuration.DOM_PROT_SEQ
 	FILT_DOM_GFF = configuration.FILT_DOM_GFF
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-dom_gff", "--domain_gff",type=str, default=INPUT_DOMAINS_GFF,
+	parser.add_argument("-dom_gff", "--domain_gff",type=str, required=True,
 						help="basic unfiltered gff file of all domains")
 	parser.add_argument("-ouf","--domains_filtered",type=str, default=FILT_DOM_GFF,
 						help="output filtered domains gff file") 
@@ -162,7 +161,9 @@ if __name__ == "__main__":
 						"Ty3-CHDCR"
 						],
 						help="filter output domains based on the domain type")
-	parser.add_argument("-dir","--output_dir",type=str, default=configuration.TMP,
+	parser.add_argument("-dir","--output_dir",type=str, 
+						help="specify if you want to change the output directory")
+	parser.add_argument("-dir","--output_dir",type=str,
 						help="specify if you want to change the output directory")
 	args = parser.parse_args()
 	main(args)
