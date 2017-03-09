@@ -91,20 +91,15 @@ def annotations_dict(annotations):
 	# hash table based on unique annotations of the hits, each annotation has serial number assigned which indexes the row in the score_table
 	classes_dict = {classes: idx for idx, classes in enumerate(set(annotations))}
 	return classes_dict
-	
-	
-def score_table(mins, maxs, data, db_names, scores, CLASSIFICATION):
-	
-	annotations = domain_annotation(db_names, CLASSIFICATION)
+
+def score_table(mins, maxs, data, annotations, scores, CLASSIFICATION):
 	classes_dict = annotations_dict(annotations)
 	score_matrix = np.zeros((len(classes_dict),maxs-mins + 1), dtype=int)
-	if len(db_names) == 1:
-		db_names = [db_names]
 	count = 0
-	for item in db_names:
-		saved_scores = score_matrix[classes_dict[annotations[count]], data[count][0]-mins : data[count][1]-mins + 1]
+	for item in annotations:
+		saved_scores = score_matrix[classes_dict[item], data[count][0]-mins : data[count][1]-mins + 1]
 		new_scores = [scores[count]]*len(saved_scores)
-		score_matrix[classes_dict[annotations[count]], data[count][0]-mins : data[count][1]-mins + 1] = [max(*pos_score) for pos_score in zip(saved_scores, new_scores)]	
+		score_matrix[classes_dict[item], data[count][0]-mins : data[count][1]-mins + 1] = [max(*pos_score) for pos_score in zip(saved_scores, new_scores)]	
 		count += 1
 	return score_matrix, classes_dict
 
@@ -126,22 +121,22 @@ def group_annot_regs(ann_per_reg, mins, maxs):
 	# tranform list of lists (potential multiple annotations for every position ) to flat list of all annotations
 	unique_annotations = list(set([item for sublist in ann_per_reg for item in sublist]))
 	domain_type = list(set([annotation.split("/")[0] for annotation in unique_annotations]))
-	classification_list = ["/".join(annotation.split("/")[1:]) for annotation in unique_annotations]
-	ann_substring = os.path.commonprefix(classification_list).rpartition("/")[0] 
-	#ann_groups = [list(data) for index,data in groupby(zip(ann_per_reg,range(mins,maxs+1)),itemgetter(0))]
-	#dom_names = [y[0][0] for y in ann_groups]
-	#dom_ranges = [[x[1] for x in y ] for y in ann_groups]
-	#dom_names2 = ["&".join(interval) if len(interval) > 1 else interval[0] for interval in dom_names]
+	#classification_list = [("/".join(annotation.split("/")[1:]) for annotation in unique_annotations]
+	classification_list = [os.path.join(annotation,"") for annotation in unique_annotations]
+	ann_substring = os.path.commonprefix(classification_list).rpartition("/")[0]
+	#ann_substring = os.path.commonprefix(classification_list)
+	domain_type = "/".join(domain_type) 
 	return domain_type, ann_substring, unique_annotations
 	
 def best_score(scores, region):
 	''' From overlapping intervals take the one with the highest score '''
 	# if more hits have the same best score take only the first one
 	best_idx = region[np.where(scores == max(scores))[0][0]]
-	return best_idx
+	best_idx_reg = np.where(scores == max(scores))[0][0]
+	return best_idx, best_idx_reg
 
 	
-def create_gff3(domain_type, ann_substring, unique_annotations, dom_start, dom_end, best_idx, strand, score, seq_id, db_seq, query_seq, domain_size, positions, OUTPUT_DOMAIN):
+def create_gff3(domain_type, ann_substring, unique_annotations, dom_start, dom_end, best_idx, annotation_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, OUTPUT_DOMAIN):
 	with open(OUTPUT_DOMAIN, "a") as gff:	
 			best_start = positions[best_idx][0]
 			best_end = positions[best_idx][1]
@@ -152,12 +147,14 @@ def create_gff3(domain_type, ann_substring, unique_annotations, dom_start, dom_e
 			query_seq_best = query_seq[best_idx]
 			domain_size_best = domain_size[best_idx]
 			[percent_ident, relat_align_len, relat_frameshifts] = filter_params(db_seq_best, query_seq_best, domain_size_best)
-			domain_type = "/".join(domain_type)
+			ann_substring = "/".join(ann_substring.split("/")[1:])
+			if ann_substring is '':
+				ann_substring = "NONE(Annotations from different classes)"
 			unique_annotations = ";".join(unique_annotations)
 			if "/" in domain_type:
-				gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={},Classification=Ambiguous,Region_Annotations={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
+				gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={},Classification=Ambiguous_domain,Region_Annotations={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
 			else:
-				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Classification={},Region_Annotations={},Best_HIT={}-{}[{}%],DB_Seq={},HIT_Seq={},Identity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, best_start, best_end, length_proportion, query_seq_best, db_seq_best, percent_ident, relat_align_len, relat_frameshifts))
+				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Classification={},Region_Annotations={},Best_HIT={}-{}[{}%],Best_annotation={},DB_Seq={},HIT_Seq={},Identity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, best_start, best_end, length_proportion, annotation_best, query_seq_best, db_seq_best, percent_ident, relat_align_len, relat_frameshifts))
 				
 
 def filter_params(db, seq, protein_len):
@@ -224,8 +221,8 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 	'''	
 	
 	#### samostatna funkcia
-	tab = subprocess.Popen("lastal -F15 {} {} -L 50 -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
-	maf = subprocess.Popen("lastal -F15 {} {} -L 50 -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	tab = subprocess.Popen("lastal -F15 {} {} -L 10 -m 70 -f TAB".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
+	maf = subprocess.Popen("lastal -F15 {} {} -L 10 -m 70 -f MAF".format(LAST_DB, QUERY), stdout=subprocess.PIPE, shell=True)
 
 	tab_pipe = tab.stdout
 	maf_pipe = maf.stdout
@@ -278,19 +275,21 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN):
 		for region in indices_overal:
 			db_names = domain_db[np.array(region)]
 			scores = score[np.array(region)]
-			[score_matrix, classes_dict] = score_table(mins[count_region], maxs[count_region], data[count_region], db_names, scores, CLASSIFICATION)	
+			annotations = domain_annotation(db_names, CLASSIFICATION)
+			[score_matrix, classes_dict] = score_table(mins[count_region], maxs[count_region], data[count_region], annotations, scores, CLASSIFICATION)	
 			[ann_per_reg, max_scores_reg] = score_matrix_evaluation(score_matrix, classes_dict)
 			[domain_type, ann_substring, unique_annotations] = group_annot_regs(ann_per_reg, mins[count_region], maxs[count_region])
-			best_idx = best_score(scores, region)
+			[best_idx, best_idx_reg] = best_score(scores, region)
+			annotation_best = annotations[best_idx_reg]
 			if count_region == len(indices_plus):
 				strand_gff = "-"
-			create_gff3(domain_type, ann_substring, unique_annotations, mins[count_region], maxs[count_region], best_idx, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, OUTPUT_DOMAIN)
+			create_gff3(domain_type, ann_substring, unique_annotations, mins[count_region], maxs[count_region], best_idx, annotation_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, OUTPUT_DOMAIN)
 			count_region += 1
-			domain_reg.extend(domain_type)
+			domain_reg.append(domain_type)
 		xminimal_all.append(mins)
 		xmaximal_all.append(maxs)
 		domains_all.append(domain_reg)
-		domains_reg = []
+		domain_reg = []
 		seq_ids.append(seq_id)
 	return xminimal_all, xmaximal_all, domains_all, seq_ids
 	
