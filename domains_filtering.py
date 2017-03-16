@@ -159,7 +159,31 @@ if __name__ == "__main__":
 						"Ty3-gRH",
 						"Ty3-aRH",
 						"Ty3-CHDII",
-						"Ty3-CHDCR"
+						"Ty3-CHDCR",
+						"CACTA-TPase"
+						"DIRS-RH"
+						"DIRS-RT"
+						"DIRS-YR"
+						"Harbinger-TPase"
+						"hAT-TPase"
+						"Helitron-HEL1"
+						"Helitron-HEL2"
+						"Kolobok-TPase"
+						"LINE-ENDO"
+						"LINE-RH"
+						"LINE-RT"
+						"Mariner-TPase"
+						"Merlin-TPase"
+						"MuDR-TPase"
+						"Novosib-TPase"
+						"PARA-PROT",
+						"PARA-RH",
+						"PARA-RT",
+						"Penelope-RT",
+						"PiggyBac-TPase",
+						"P-TPase",
+						"Sola1-TPase",
+						"Sola2-TPase"
 						],
 						help="filter output domains based on the domain type")
 	parser.add_argument("-dir","--output_dir",type=str, default=None,
