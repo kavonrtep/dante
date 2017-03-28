@@ -69,7 +69,7 @@ def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
 			dom = attributes.split(",")[0].split("=")[1]
 			dom_class = "/".join(attributes.split(",")[4].split("=")[1].split("/")[1:])
 			seq_id = line.rstrip().split("\t")[0]
-			prot_seq = line.rstrip().split("\t")[8].split(",")[5].split("=")[1]
+			prot_seq = line.rstrip().split("\t")[8].split(",")[6].split("=")[1]
 			header_prot_seq = ">{}:{} {} {}".format(seq_id, positions, dom, dom_class)
 			with open(DOMAIN_PROT_SEQ, "a") as dom_prot_file:
 				dom_prot_file.write("{}\n{}\n".format(header_prot_seq, textwrap.fill(prot_seq, configuration.FASTA_LINE)))
@@ -108,7 +108,7 @@ def main(args):
 	
 
 	if OUTPUT_DIR is None:
-		OUTPUT_DIR = '/'.join(os.path.abspath(OUTPUT_DOMAIN).split('/')[0:-1])
+		OUTPUT_DIR = os.path.dirname(os.path.abspath(OUTPUT_DOMAIN))
 	if not os.path.exists(OUTPUT_DIR):
 		os.makedirs(OUTPUT_DIR)		
 	FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
