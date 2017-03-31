@@ -15,6 +15,9 @@ MAIN_DIR = os.getcwd()
 DATA = "{}/{}".format(MAIN_DIR, "data")
 TMP = "{}/{}".format(MAIN_DIR, "tmp")
 TOOL_DATA_DIR = "/mnt/raid/users/galaxy/galaxy-dist2/tool-data/profrep_data"
+############
+GIT_REPOSITORY = "/mnt/raid/users/ninah/profrep_git"
+SC_MATRIX = "{}/{}".format(GIT_REPOSITORY, "blosum80.txt")
 
 # CONSTANTS 
 N_segment = 50

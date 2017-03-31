@@ -3,7 +3,6 @@
 import time
 import configuration
 import os
-from tempfile import NamedTemporaryFile
 import textwrap
 
 
@@ -25,37 +24,40 @@ class Range():
     def __repr__(self):
         return "float range {}..{}".format(self.start, self.end)
 
-def filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS):
+
+def filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS):
 	''' Filter gff only based on quality of alignment without domain type considering '''
 	with open(OUTPUT_DOMAIN, "r") as gff_all:
 		next(gff_all)
 		for line in gff_all:
 			attributes = line.rstrip().split("\t")[-1]
-			truncated = attributes.split(",")[1]
-			if truncated != "Classification=Ambiguous_domain":
-				al_identity = float(attributes.split(",")[-3].split("=")[1])
+			classification = attributes.split(",")[1]
+			if classification != "Classification=Ambiguous_domain":
+				al_identity = float(attributes.split(",")[-4].split("=")[1])
+				al_similarity = float(attributes.split(",")[-3].split("=")[1])
 				al_length = float(attributes.split(",")[-2].split("=")[1])
 				relat_frameshifts = float(attributes.split(",")[-1].split("=")[1])
 				dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-				if al_identity >= TH_IDENTITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS :
+				if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS :
 					with open(FILT_DOM_GFF, "a") as gff_filtered:
 						gff_filtered.writelines(line)
 					
 			
-def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM):
+def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM):
 	''' Filter gff output based on domain and quality of alignment '''
 	with open (FILT_DOM_GFF, "a") as gff_filtered:
 		with open(OUTPUT_DOMAIN, "r") as gff_all:
 			next(gff_all)
 			for line in gff_all:
 				attributes = line.rstrip().split("\t")[-1]
-				truncated = attributes.split(",")[1]
-				if truncated != "Classification=Ambiguous_domain":
-					al_identity = float(attributes.split(",")[-3].split("=")[1])
+				classification = attributes.split(",")[1]
+				if classification != "Classification=Ambiguous_domain":
+					al_identity = float(attributes.split(",")[-4].split("=")[1])
+					al_similarity = float(attributes.split(",")[-3].split("=")[1])
 					al_length = float(attributes.split(",")[-2].split("=")[1])
 					relat_frameshifts = float(attributes.split("\t")[-1].split(",")[-1].split("=")[1])
 					dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-					if al_identity >= TH_IDENTITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS and dom_type == SELECTED_DOM:
+					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS and dom_type == SELECTED_DOM:
 						gff_filtered.writelines(line)
 					
 	
@@ -102,6 +104,7 @@ def main(args):
 	TH_IDENTITY = args.th_identity
 	TH_LENGTH = args.th_length 
 	TH_FRAMESHIFTS = args.frameshifts
+	TH_SIMILARITY = args.th_similarity
 	FILT_DOM_GFF = args.domains_filtered
 	SELECTED_DOM = args.selected_dom
 	OUTPUT_DIR = args.output_dir
@@ -118,9 +121,9 @@ def main(args):
 		gff_filtered.write("##gff-version 3\n")
 	
 	if SELECTED_DOM != "All":
-		filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
+		filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
 	else:
-		filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_LENGTH, TH_FRAMESHIFTS)
+		filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS)
 	get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ)
 	
 
@@ -128,12 +131,32 @@ def main(args):
 	
 if __name__ == "__main__":
 	import argparse
-
+	from argparse import RawDescriptionHelpFormatter
+	
+	class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+		pass
+    
 	DOM_PROT_SEQ = configuration.DOM_PROT_SEQ
 	FILT_DOM_GFF = configuration.FILT_DOM_GFF
+	
+	parser = argparse.ArgumentParser(
+		description='''Script performs filtering of gff output which is result of protein_domains_pd.py and contains all types of domains 
+		without quality filtering. The script enables to obtain results for specific kind of domain separately for individual types of repetitive elements and/or filter out domains that do not reach appropriate length, similarity or have more frameshifts per 100 bp than set by threshold. Records for ambiguous domain type (e.g. INT/RH) are filtered out automatically. Based on filtered gff file protein sequences are reported in separate file - these translations of original DNA sequence are taken from the LASTAL output . NOTE -  foundscanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database. Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. Domains searching is accomplished engaging LASTAL search tool.
+		
+	DEPENDANCIES:
+		- python 3.4 or higher
+		- configuration.py module
 
-	parser = argparse.ArgumentParser()
-	parser.add_argument("-dom_gff", "--domain_gff",type=str, required=True,
+	EXAMPLE OF USAGE:
+		
+		./protein_domains_pd.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
+
+	
+		''',
+		epilog="""""",
+		formatter_class=CustomFormatter)
+	requiredNamed = parser.add_argument_group('required named arguments')
+	requiredNamed.add_argument("-dom_gff", "--domain_gff",type=str, required=True,
 						help="basic unfiltered gff file of all domains")
 	parser.add_argument("-ouf","--domains_filtered",type=str, default=FILT_DOM_GFF,
 						help="output filtered domains gff file") 
@@ -143,6 +166,8 @@ if __name__ == "__main__":
 						default= 0.8, help="proportion of alignment length threshold")
 	parser.add_argument("-thi","--th_identity",type=float, choices=[Range(0.0, 1.0)],
 						default= 0.35, help="proportion of alignment identity threshold")
+	parser.add_argument("-ths","--th_similarity",type=float, choices=[Range(0.0, 1.0)],
+						default= 0, help="threshold for alignment proportional similarity")
 	parser.add_argument("-fr","--frameshifts",type=int, default=1,
 						help="frameshifts tolerance threshold per 100 bp")
 	parser.add_argument("-sd","--selected_dom",type=str, default="All", choices=[
