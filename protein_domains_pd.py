@@ -70,7 +70,13 @@ def characterize_fasta(QUERY, WIN_DOM):
 		fasta_lengths.append(fasta_chunk_len)
 		fasta_lengths = fasta_lengths[1:]
 		print(headers)
+		print(set([header.split(" ")[0] for header in headers]))
+		if len(headers) > len(set([header.split(" ")[0] for header in headers])):
+			raise NameError('''Sequences in multifasta format are not named correctly:
+							seq IDs(before the first space) are the same''')
 		print(fasta_lengths)
+		print(seq_starts)
+		print(seq_ends)
 
 	above_win = [idx for idx, value in enumerate(fasta_lengths) if value > WIN_DOM]
 	below_win = [idx for idx, value in enumerate(fasta_lengths) if value <= WIN_DOM]
@@ -105,9 +111,9 @@ def split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_
 				for start_part, end_part in zip(windows_starts, windows_ends):
 					seq_part = whole_seq[start_part:end_part]
 					if count_part == len(windows_starts):
-						ntf.write("{}_PART{}_LAST:{}-{}\n{}\n".format(line, count_part, start_part + 1, end_part, "\n".join([seq_part[i:i+row_length] for i in range(0, len(seq_part), row_length)])).encode("utf-8"))
+						ntf.write("{}_PART{}_LAST:{}-{}\n{}\n".format(line.split(" ")[0], count_part, start_part + 1, end_part, "\n".join([seq_part[i:i+row_length] for i in range(0, len(seq_part), row_length)])).encode("utf-8"))
 					else:
-						ntf.write("{}_PART{}:{}-{}\n{}\n".format(line, count_part, start_part + 1, end_part, "\n".join([seq_part[i:i+row_length] for i in range(0, len(seq_part), row_length)])).encode("utf-8"))
+						ntf.write("{}_PART{}:{}-{}\n{}\n".format(line.split(" ")[0], count_part, start_part + 1, end_part, "\n".join([seq_part[i:i+row_length] for i in range(0, len(seq_part), row_length)])).encode("utf-8"))
 					count_part += 1
 				count_fasta_divided += 1
 			elif line.startswith(">") and line not in divided:
@@ -135,8 +141,6 @@ def domain_annotation(elements, CLASSIFICATION):
 		if element_name in annotation.keys():			
 			annotations.append("/".join([elements[i].split("__")[0].split("-")[1],("/".join(annotation[element_name]))]))
 		else:
-			rep_type.append(" ")
-			rep_lineage.append(" ")
 			annotations.append("unknown/unknown")
 	return annotations
 	
@@ -283,14 +287,14 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 			if ann_substring is '':
 				ann_substring = "NONE(Annotations from different classes)"
 			if len(unique_annotations) > 1:
-				unique_annotations = ";".join(["{}[pos_count:{}]".format(ann, pos) for ann, pos in zip(unique_annotations, ann_pos_counts)])
+				unique_annotations = ";".join(["{}[{}bp]".format(ann, pos) for ann, pos in zip(unique_annotations, ann_pos_counts)])
 			else:
 				unique_annotations = unique_annotations[0]
 			#unique_annotations = ";".join(unique_annotations)
 			if "/" in domain_type:
 				gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={},Classification=Ambiguous_domain,Region_Annotations={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
 			else:
-				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Classification={},Region_Annotations={},Best_HIT={}-{}[{}%],Best_annotation={},DB_Seq={},HIT_Seq={},Identity={},Similarity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, best_start, best_end, length_proportion, annotation_best, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
+				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Classification={},Region_Annotations={},Best_HIT={}:{}-{}[{}%],DB_Seq={},Query_Seq={},Identity={},Similarity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
 				
 
 def filter_params(db, query, protein_len):
@@ -322,7 +326,9 @@ def filter_params(db, query, protein_len):
 def domains_stat(domains_all, seq_ids, SUMMARY):
 	'''  Create a file containing amounts of individual domains types'''
 	with open(SUMMARY, "w") as sumfile:
-		count_seq = 0
+		count_seq = 0 
+		if seq_ids == []:
+			sumfile.write("NO DOMAINS")
 		for seq_id in seq_ids:
 			sumfile.write("{}\n".format(seq_id))
 			dom_in_seq = Counter(domains_all[count_seq])
@@ -399,6 +405,10 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				dtype=None)
 		except RuntimeError:
 			break
+		if sequence_hits.size is 0:
+			with open(OUTPUT_DOMAIN, "w") as gff:
+				gff.write("NO DOMAINS")
+			return [],[],[],[]
 		
 		############ PARSING LAST OUTPUT ############################
 		score = sequence_hits['score'].astype("int")
@@ -420,7 +430,6 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		indices_overal = indices_plus + [x + reverse_strand_idx for x in indices_minus]
 		mins = mins_plus + mins_minus
 		maxs = maxs_plus + maxs_minus
-		# tuples dvojice min-max usekov ktore sa prekryvaju v ramci jedneho regionu=clustru
 		data = data_plus + data_minus
 		## process every region (cluster) of overlapping hits sequentially
 		count_region = 0
@@ -554,8 +563,8 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 	xminimal_all.append(xminimal)
 	xmaximal_all.append(xmaximal)
 	dom_all.append(dom)
-	#os.remove(OUTPUT_DOMAIN)
-	#os.rename(adjusted_file, OUTPUT_DOMAIN)
+	os.remove(OUTPUT_DOMAIN)
+	os.rename(adjusted_file, OUTPUT_DOMAIN)
 	return xminimal_all, xmaximal_all, dom_all, seq_id_all 		
 	
 	

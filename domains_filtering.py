@@ -67,11 +67,11 @@ def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
 		next(filt_gff)
 		for line in filt_gff: 
 			attributes = line.rstrip().split("\t")[8]
-			positions = attributes.split(",")[3].split("=")[1]
+			positions = attributes.split(",")[3].split("=")[1].split(":")[1]
 			dom = attributes.split(",")[0].split("=")[1]
-			dom_class = "/".join(attributes.split(",")[4].split("=")[1].split("/")[1:])
+			dom_class = "/".join(attributes.split(",")[3].split("=")[1].split(":")[0].split("/")[1:])
 			seq_id = line.rstrip().split("\t")[0]
-			prot_seq = line.rstrip().split("\t")[8].split(",")[6].split("=")[1]
+			prot_seq = line.rstrip().split("\t")[8].split(",")[5].split("=")[1]
 			header_prot_seq = ">{}:{} {} {}".format(seq_id, positions, dom, dom_class)
 			with open(DOMAIN_PROT_SEQ, "a") as dom_prot_file:
 				dom_prot_file.write("{}\n{}\n".format(header_prot_seq, textwrap.fill(prot_seq, configuration.FASTA_LINE)))
@@ -185,22 +185,22 @@ if __name__ == "__main__":
 						"Ty3-aRH",
 						"Ty3-CHDII",
 						"Ty3-CHDCR",
-						"CACTA-TPase"
-						"DIRS-RH"
-						"DIRS-RT"
-						"DIRS-YR"
-						"Harbinger-TPase"
-						"hAT-TPase"
-						"Helitron-HEL1"
-						"Helitron-HEL2"
-						"Kolobok-TPase"
-						"LINE-ENDO"
-						"LINE-RH"
-						"LINE-RT"
-						"Mariner-TPase"
-						"Merlin-TPase"
-						"MuDR-TPase"
-						"Novosib-TPase"
+						"CACTA-TPase",
+						"DIRS-RH",
+						"DIRS-RT",
+						"DIRS-YR",
+						"Harbinger-TPase",
+						"hAT-TPase",
+						"Helitron-HEL1",
+						"Helitron-HEL2",
+						"Kolobok-TPase",
+						"LINE-ENDO",
+						"LINE-RH",
+						"LINE-RT",
+						"Mariner-TPase",
+						"Merlin-TPase",
+						"MuDR-TPase",
+						"Novosib-TPase",
 						"PARA-PROT",
 						"PARA-RH",
 						"PARA-RT",

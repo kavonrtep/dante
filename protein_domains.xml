@@ -1,12 +1,12 @@
 
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
-<description> Search for all domains from the protein database in your sequence </description>
+<description> Find and classify all protein domains in your DNA sequence based on the database of repetitive elements protein domains </description>
 <command>
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database proteins_all_new --classification classification_new --summary_file ${sum_file}
-		
+python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database /mnt/raid/users/ninah/profrep_git/data/new_classification/ALL_protein-domains_03.fasta --classification  /mnt/raid/users/ninah/profrep_git/data/new_classification/ALL.classification_conversed --summary_file ${sum_file};
+
 </command>
 <inputs>
- <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input sequence must be in proper fasta format, multi-fasta allowed" />
+ <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format with uniform number of bases per line, multi-fasta containing more sequences is allowed" />
 </inputs>
 
 <outputs>
@@ -25,11 +25,52 @@ This tool exploits external aligning programme `LAST`_
 
 .. _LAST: http://last.cbrc.jp/  
 
-to find similarity hits of a given DNA sequence against our database of protein domains from LTR retrotransposons. According to this hits are subsequently annotated with repeat class and lineage they come from. Frameshifts in the translated sequence and strand orientation are taken into consideration when finding and reporting hits. As the result only the domains with the highest alignment score within non overlapping regions are reported. There are 2 outputs produced:
+*Lastal* runs similarity search to find hits between query DNA sequence and our database of protein domains from all repetitive elements. Hits with positions that are overlapping in a sequence (even trough other hits) forms a cluster which represents one protein domain. Strand orientation is taken into consideration when forming the clusters which means each cluster is built from forward or reverse stranded hits exclusively. The clusters are subsequently processed separately; within one cluster positions are scanned base-by-base and repetitive anotations are assigned for each of them based on the database sequences which were mapped on that place. Annotation consists of a domain type as well as class and lineage of the repetitive element where the database protein comes from. Every hit is scored according to the scoring matrix used for DNA-protein alignment (BLOSUM80). For single position only the annotations reaching certain percentage (adjustable) of the overall best score within the whole cluster are reported. One cluster is recorded as one line in the resulting gff file. Regarding the annotations there are three situations that can occur:
+
+	1. There is a single annotation for each position as well as annotations along all the positions in the cluster are mutually uniform, in this case domain is classified according to this annotation.
+	2. There are multiple annotations for one cluster, i.e. one domain, which leads to classification to the common (less specific) level of all the annotations
+	3. There is a conflict at the domain type level, domains are reported with slash (e.g. RT/INT) and the classification is in this case ambiguous
 	
-	- main GFF3 file of all domains found (with very low quality threshold set) containing information about domains positions, score, quality of alignmennt, strand, classification and reference/alignment sequences - this file can undergo further filtering using Protein Domain Filter
-	 
-	- summary text file with overview of amounts of domains types in individual sequences.
+**There are 2 outputs produced by this tool:**
+	
+1. table formatted as GFF3 file of all domains found. Single domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool.
+
+- Attributes reported always:
+
+	Name
+		type of domain; if ambiguous reported with slash 
+		
+	Classification 
+		definite classification based on all annotations or 
+		"Ambiguous" when there is an ambiguous domain type 
+		
+	Region_annotations
+		all annotations from certain domain region that reach the set score threshold; in case of multiple annotations the square brackets indicate the number of bases having this particular annotation	
+		
+- Attributes only reported in case of distinct domain type (all the attributes including quality information, which allows further filtering, are related to the best hit of the region):
+
+	Best_HIT  
+		annotatation and positions of the best hit with the highest score within the region; in the square brackets is the percentage of the whole domain range that this best hit covers
+		
+	DB_Seq 
+		database protein sequence of the best hit mapped to the query DNA
+		
+	HIT_Seq 
+		tranlasted protein sequence of the query DNA of the best hit	
+		
+	Identity
+		ratio of identical amino acids in alignment sequences to the length of alignment
+		
+	Similarity
+		ratio of alignment positions with positive score (according to the scoring matrix) to the length of alignment
+		
+	Relat_length
+		ratio of gapless length of the aligned protein sequence to the whole length of the database protein 
+		
+	Relat_frameshifts
+		number of the frameshifts in translated query sequence per each starting 100 bps
+	
+2. summary text file with overview of amounts of domains types in individual sequences
 
 
  </help>

@@ -2,13 +2,13 @@
 <tool id="domains_filter" name="Protein Domains Filter" version="1.0.0">
 <description> Filter protein domains output according to a certain domain type and several alignment quality criteria </description>
 <command>
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/domains_filtering.py --domain_gff ${DomGff} --domains_prot_seq ${dom_prot_seq} --domains_filtered ${dom_filtered} 
+python3 ${__tool_directory__}/domains_filtering.py --domain_gff ${DomGff} --domains_prot_seq ${dom_prot_seq} --domains_filtered ${dom_filtered} 
 --selected_dom ${selected_domain} --th_identity ${th_identity} --th_length ${th_length} --frameshifts ${frameshifts} 
 		
 </command>
 <inputs>
- <param format="gff" type="data" name="DomGff" label="Choose gff format of all domains" />
-   <param name="selected_domain" type="select" label="Choose protein domain type" >
+ <param format="gff" type="data" name="DomGff" label="Choose primary GFF3 file of all domains from Protein Domain Finder" />
+   <param name="selected_domain" type="select" label="Select protein domain type" >
     <options from_file="select_domain.txt" >
      <column name="name" index="0"/>
      <column name="value" index="0"/>
@@ -16,7 +16,7 @@
    </param>
 	<param name="th_identity" type="float" value="0.35" min="0" max="1" label="Minimum identity" help="Protein sequence indentity threshold between input and mapped protein from db [0-1]" />
 	<param name="th_length" type="float" value="0.8" min="0" max="1" label="Minimum alignment length" help="Proportion of the hit length to the length of the database sequence [0-1]" />
-	<param name="frameshifts" type="integer" value="1" label="Frameshifts" help="tolerance threshold per 100 bp" />
+	<param name="frameshifts" type="integer" value="1" label="Frameshifts" help="Frameshifts tolerance threshold per 100 bps" />
 </inputs>
 <outputs>
  <data format="gff3" name="dom_filtered" label="Filtered GFF3 file of ${selected_domain} domains from dataset ${DomGff.hid}" />
@@ -29,7 +29,14 @@
 
 **WHAT IT DOES**
 
-This tool filters GFF3 domains search output based on the domain type and/or quality of alignment such as alignment sequence identity, alignment length and number of frameshifts. These parameters can be optimized for specific domain type - we recommend the quality thresholds listed below. Domains type filtering for Ty1/Copia and Ty3/Gypsy runs separately and the tool may be applied repeateously to obtain different domain types from the same similarity search GFF3 file. There are 2 outputs produced - filtered GFF3 file and fasta list of the best protein sequences that meet the criteria. Annotation to a repeat class is specified in each header of the protein fasta file.
+This tool runs filtering on primary GFF3 file containing all protein domains found in a given query sequence(s) which is the output of *Protein Domains Finder* tool. Filtering can by based on protein domain type and/or quality of alignment such as alignment sequence identity, alignment similarity, alignment length and number of frameshifts. In case of choosing "ALL" option in domain type selection menu, all types of domains are reported. However, records containing ambiguous domain type (e.g. RH/INT) are filtered out automatically. They do not take place in filetered gff file as well as no protein sequence is derived from such kind of potentially chimeric domains. Quality parameters can be optimized for specific domain type - we recommend the thresholds listed below. 
+
+**There are 2 outputs produced by this tool:**
+
+	1.	filtered GFF3 file
+	2.	fasta file of translated protein sequences of the filtered domain regions in fasta format
+	
+	!NOTE - translated sequences are taken from the best hit within a certain domain region, however this hit does not necessarily have to cover the whole region reported as a domain in gff file.
 
 **RECOMMENDED FILTERING PARAMETERS FOR DIFFERENT TYPES OF DOMAINS**
 
