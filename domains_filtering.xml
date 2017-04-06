@@ -1,6 +1,6 @@
 
 <tool id="domains_filter" name="Protein Domains Filter" version="1.0.0">
-<description> Filter protein domains output according to a certain domain type and several alignment quality criteria </description>
+<description> Filter Protein Domains Finder output according to a certain domain type and several alignment quality criteria </description>
 <command>
 python3 ${__tool_directory__}/domains_filtering.py --domain_gff ${DomGff} --domains_prot_seq ${dom_prot_seq} --domains_filtered ${dom_filtered} 
 --selected_dom ${selected_domain} --th_identity ${th_identity} --th_length ${th_length} --frameshifts ${frameshifts} 
@@ -34,9 +34,10 @@ This tool runs filtering on primary GFF3 file containing all protein domains fou
 **There are 2 outputs produced by this tool:**
 
 	1.	filtered GFF3 file
-	2.	fasta file of translated protein sequences of the filtered domain regions in fasta format
+	2.	translated protein sequences of the filtered domain regions of original DNA in fasta format
+
 	
-	!NOTE - translated sequences are taken from the best hit within a certain domain region, however this hit does not necessarily have to cover the whole region reported as a domain in gff file.
+	!NOTE - translated sequences are taken from the best hit within a potential domain region, however this hit does not necessarily have to cover the whole cluster reported as a domain in gff file.
 
 **RECOMMENDED FILTERING PARAMETERS FOR DIFFERENT TYPES OF DOMAINS**
 

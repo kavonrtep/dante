@@ -6,7 +6,7 @@ python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gf
 
 </command>
 <inputs>
- <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format with uniform number of bases per line, multi-fasta containing more sequences is allowed" />
+ <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
 </inputs>
 
 <outputs>
@@ -33,7 +33,7 @@ This tool exploits external aligning programme `LAST`_
 	
 **There are 2 outputs produced by this tool:**
 	
-1. table formatted as GFF3 file of all domains found. Single domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool.
+1. table formatted as GFF3 file of all domains found. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool.
 
 - Attributes reported always:
 
@@ -50,7 +50,7 @@ This tool exploits external aligning programme `LAST`_
 - Attributes only reported in case of distinct domain type (all the attributes including quality information, which allows further filtering, are related to the best hit of the region):
 
 	Best_HIT  
-		annotatation and positions of the best hit with the highest score within the region; in the square brackets is the percentage of the whole domain range that this best hit covers
+		annotatation and positions of the best hit with the highest score within the cluster; in the square brackets is the percentage of the whole cluster range that this best hit covers
 		
 	DB_Seq 
 		database protein sequence of the best hit mapped to the query DNA

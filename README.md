@@ -32,22 +32,25 @@ OUTPUT:
 * configuration.py 
 
 ## 2. PROTEIN DOMAINS TOOLS ##
-Two tools are available to explore protein domains in your sequence:
+Two tools are available to explore protein domains in your DNA sequence:
 * Protein Domains Finder [protein_domains_pd.py]
-	* makes overall scan of a sequence and finds all domains using our protein domains database 
-	* classifies each domain with a certain repetitive annotation
+	* Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database.
+	* Domains searching is accomplished engaging LASTAL alignment tool.
+	* Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. 
 		
 		OUTPUT:		
 		
-		* GFF3 format reporting positions of domains, type, repeat class and lineage, chain orientation, protein sequence and alignment with quality of alignment parameters
-		* summary txt of all domains amounts	
+		* table formatted as GFF3 file of all domains found. Single domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using Protein Domain Filter tool.
+		* summary text file with overview of amounts of domains types in individual sequences
+
+			
 * Proteins Domains Filter [domains_filtering.py]
-	* filters GFF3 output from previous step to obtain certain kind of domain and allows to adjust quality filtering  
+	* filters GFF3 output from previous step to obtain certain kind of domain and/or allows to adjust quality filtering  
 	
 		OUTPUT:
 	
-		* filtered GFF3 format 
-		* list of protein sequences of the filtered domains in fasta format
+		* filtered GFF3 file
+		* translated protein sequences of the filtered domain regions of original DNA in fasta format
 
 Both are implemented on galaxy web enviroment or can be used as standalone python
 scripts from the command line   
@@ -74,18 +77,16 @@ scripts from the command line
 		optional arguments:
 		  -h, --help            show this help message and exit
 		  -oug DOMAIN_GFF, --domain_gff DOMAIN_GFF
-								output domains gff format (default:
-								output_domains.gff)
+								output domains gff format (default: None)
 		  -nld NEW_LDB, --new_ldb NEW_LDB
 								create indexed database files for lastal in case of
 								working with new protein db (default: False)
 		  -sum SUMMARY_FILE, --summary_file SUMMARY_FILE
 								output summary file containing overview of amount of
-								domains in individual seqs (default:
-								/mnt/raid/users/ninah/profrep_git/tmp/dom_summary.txt)
+								domains in individual seqs (default: None)
 		  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
 								specify if you want to change the output directory
-								(default: /mnt/raid/users/ninah/profrep_git/tmp)
+								(default: None)
 		  -thsc THRESHOLD_SCORE, --threshold_score THRESHOLD_SCORE
 								percentage of the best score in the cluster to be
 								tolerated when assigning annotations per base
@@ -99,9 +100,9 @@ scripts from the command line
 
 		required named arguments:
 		  -q QUERY, --query QUERY
-								input DNA sequence to search for protein domains.
-								Multifasta format with THE SAME NUMBER OF BP PER ROW
-								allowed. (default: None)
+								input DNA sequence to search for protein domains in a
+								fasta format. Multifasta format allowed. (default:
+								None)
 		  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
 								protein domains database file (default: None)
 		  -cs CLASSIFICATION, --classification CLASSIFICATION
@@ -137,12 +138,10 @@ scripts from the command line
 		optional arguments:
 		  -h, --help            show this help message and exit
 		  -ouf DOMAINS_FILTERED, --domains_filtered DOMAINS_FILTERED
-								output filtered domains gff file (default: /mnt/raid/u
-								sers/ninah/profrep_git/tmp/domains_filtered.gff)
+								output filtered domains gff file (default: None)
 		  -dps DOMAINS_PROT_SEQ, --domains_prot_seq DOMAINS_PROT_SEQ
 								output file containg domains protein sequences
-								(default: /mnt/raid/users/ninah/profrep_git/tmp/dom_pr
-								ot_seq.txt)
+								(default: None)
 		  -thl {float range 0.0..1.0}, --th_length {float range 0.0..1.0}
 								proportion of alignment length threshold (default:
 								0.8)
@@ -155,7 +154,7 @@ scripts from the command line
 		  -fr FRAMESHIFTS, --frameshifts FRAMESHIFTS
 								frameshifts tolerance threshold per 100 bp (default:
 								1)
-		  -sd {All,Ty1-GAG,Ty1-INT,Ty1-PROT,Ty1-RH,Ty1-RT,Ty3-GAG,Ty3-INT,Ty3-PROT,Ty3-RT,Ty3-gRH,Ty3-aRH,Ty3-CHDII,Ty3-CHDCR,CACTA-TPaseDIRS-RHDIRS-RTDIRS-YRHarbinger-TPasehAT-TPaseHelitron-HEL1Helitron-HEL2Kolobok-TPaseLINE-ENDOLINE-RHLINE-RTMariner-TPaseMerlin-TPaseMuDR-TPaseNovosib-TPasePARA-PROT,PARA-RH,PARA-RT,Penelope-RT,PiggyBac-TPase,P-TPase,Sola1-TPase,Sola2-TPase}, --selected_dom {All,Ty1-GAG,Ty1-INT,Ty1-PROT,Ty1-RH,Ty1-RT,Ty3-GAG,Ty3-INT,Ty3-PROT,Ty3-RT,Ty3-gRH,Ty3-aRH,Ty3-CHDII,Ty3-CHDCR,CACTA-TPaseDIRS-RHDIRS-RTDIRS-YRHarbinger-TPasehAT-TPaseHelitron-HEL1Helitron-HEL2Kolobok-TPaseLINE-ENDOLINE-RHLINE-RTMariner-TPaseMerlin-TPaseMuDR-TPaseNovosib-TPasePARA-PROT,PARA-RH,PARA-RT,Penelope-RT,PiggyBac-TPase,P-TPase,Sola1-TPase,Sola2-TPase}
+		  -sd {All,Ty1-GAG,Ty1-INT,Ty1-PROT,Ty1-RH,Ty1-RT,Ty3-GAG,Ty3-INT,Ty3-PROT,Ty3-RT,Ty3-gRH,Ty3-aRH,Ty3-CHDII,Ty3-CHDCR,CACTA-TPase,DIRS-RH,DIRS-RT,DIRS-YR,Harbinger-TPase,hAT-TPase,Helitron-HEL1,Helitron-HEL2,Kolobok-TPase,LINE-ENDO,LINE-RH,LINE-RT,Mariner-TPase,Merlin-TPase,MuDR-TPase,Novosib-TPase,PARA-PROT,PARA-RH,PARA-RT,Penelope-RT,PiggyBac-TPase,P-TPase,Sola1-TPase,Sola2-TPase}, --selected_dom {All,Ty1-GAG,Ty1-INT,Ty1-PROT,Ty1-RH,Ty1-RT,Ty3-GAG,Ty3-INT,Ty3-PROT,Ty3-RT,Ty3-gRH,Ty3-aRH,Ty3-CHDII,Ty3-CHDCR,CACTA-TPase,DIRS-RH,DIRS-RT,DIRS-YR,Harbinger-TPase,hAT-TPase,Helitron-HEL1,Helitron-HEL2,Kolobok-TPase,LINE-ENDO,LINE-RH,LINE-RT,Mariner-TPase,Merlin-TPase,MuDR-TPase,Novosib-TPase,PARA-PROT,PARA-RH,PARA-RT,Penelope-RT,PiggyBac-TPase,P-TPase,Sola1-TPase,Sola2-TPase}
 								filter output domains based on the domain type
 								(default: All)
 		  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR

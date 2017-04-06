@@ -14,8 +14,10 @@ import sys
 
 np.set_printoptions(threshold=np.nan)
 
-
 def sc_hash():
+	''' Create hash table for alignment similarity counting: for every 
+	combination of aminoacids in alignment assign score from protein 
+	scoring matrix defined in configuration file  '''
 	sc_dict = {}
 	with open(configuration.SC_MATRIX) as smatrix:
 		count = 1
@@ -31,17 +33,6 @@ def sc_hash():
 						count_aa += 1
 				count += 1
 	return sc_dict
-				
-
-def check_row_length(QUERY):
-	''' Find out number of bps per row in fasta - MUST BE UNIFORM in 
-	the whole file! '''
-	with open(QUERY) as query:
-		for line in query:
-			if not line.startswith(">"):
-				row_length = len(line.rstrip())
-				break
-	return row_length
 	
 	
 def characterize_fasta(QUERY, WIN_DOM):
@@ -69,14 +60,10 @@ def characterize_fasta(QUERY, WIN_DOM):
 		seq_ends = seq_ends[1:]
 		fasta_lengths.append(fasta_chunk_len)
 		fasta_lengths = fasta_lengths[1:]
-		print(headers)
-		print(set([header.split(" ")[0] for header in headers]))
+		# control if there are correct (unique) names for individual seqs
 		if len(headers) > len(set([header.split(" ")[0] for header in headers])):
 			raise NameError('''Sequences in multifasta format are not named correctly:
 							seq IDs(before the first space) are the same''')
-		print(fasta_lengths)
-		print(seq_starts)
-		print(seq_ends)
 
 	above_win = [idx for idx, value in enumerate(fasta_lengths) if value > WIN_DOM]
 	below_win = [idx for idx, value in enumerate(fasta_lengths) if value <= WIN_DOM]
@@ -84,14 +71,15 @@ def characterize_fasta(QUERY, WIN_DOM):
 	return headers, above_win, below_win, lens_above_win, seq_starts, seq_ends
 
 
-def split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_win, seq_starts, seq_ends, row_length):
+def split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_win, seq_starts, seq_ends):
 	''' Create temporary file containing all sequences - the ones that exceed 
-	the window are cut with a set overlap(greater than domain size) '''
+	the window are cut with a set overlap (greater than domain size with a reserve) '''
 	with open(QUERY, "r") as query:
 		count_fasta_divided = 0 
 		count_fasta_not_divided = 0 
 		ntf = NamedTemporaryFile(delete=False)
 		divided = np.array(headers)[above_win]
+		row_length = configuration.FASTA_LINE
 		for line in query:
 			line = line.rstrip()
 			if line.startswith(">") and line in divided:
@@ -165,7 +153,10 @@ def hits_processing(seq_len, start, end, strand):
 
 
 def overlapping_regions(input_data):
-	''' Join all overalapping intervals, get list of minimums and maximus of, '''
+	''' Join all overlapping intervals(hits) to clusters (potential domains),
+	get list of start-end positions of individual hits within the interval, 
+	list of minimus and maximums as well as the indices in the original 
+	sequence_hits structure for the hits belonging to the same clusters '''
 	if input_data: 
 		sorted_idx, sorted_data = zip(*sorted([(index,data) for index,data in enumerate(input_data)], key=itemgetter(1)))
 		merged_ends = input_data[sorted_idx[0]][1]
@@ -225,30 +216,27 @@ def score_table(mins, maxs, data, annotations, scores, CLASSIFICATION):
 	
 def score_matrix_evaluation(score_matrix, classes_dict, THRESHOLD_SCORE):
 	''' Score matrix is evaluated based on each position.
-	For every position the list of annotations with the '''
+	For every position the list of annotations with a score which reaches 
+	certain percentage of the overal best score of the cluster are stored '''
 	ann_per_reg = []
-	max_scores_reg = []
 	overal_best_score_reg = max((score_matrix.max(axis=1)))
 	for position in score_matrix.T:
-		max_scores_reg.append(max(position))
-		# score threshold calculated as a percentage of the OVERALL best score in the cluster
+		## score threshold calculated as a percentage of the OVERALL best score in the cluster
 		threshold = overal_best_score_reg * THRESHOLD_SCORE/100
 		above_th = [idx for idx, score in enumerate(position) if position[idx] >= threshold]
-		# select unique annotations in one position that are above threshold
+		## select unique annotations in one position that are above threshold
 		ann_per_pos = list(set([key for key, value in classes_dict.items() if value in above_th]))
 		ann_per_reg.append(ann_per_pos)
-	return ann_per_reg, max_scores_reg
+	return ann_per_reg
 	
 	
 def group_annot_regs(ann_per_reg):
-	''' Get list of domains, annotations, longest common annotations and counts
-	of positions with certain annotation per regions '''
-	# tranform list of lists (potential multiple annotations for every position ) to flat list of all annotations
+	''' Get list of domains, annotations, longest common annotations and 
+	counts of positions with certain annotation per regions '''
+	## tranform list of lists (potential multiple annotations for every position ) to flat list of all annotations
 	all_annotations = [item for sublist in ann_per_reg for item in sublist]
 	unique_annotations = list(set(all_annotations))
-	############# TESTING MODE
 	ann_pos_counts = [all_annotations.count(x) for x in unique_annotations]
-	#############
 	unique_annotations = list(set([item for sublist in ann_per_reg for item in sublist]))
 	domain_type = list(set([annotation.split("/")[0] for annotation in unique_annotations]))
 	classification_list = [os.path.join(annotation,"") for annotation in unique_annotations]
@@ -259,46 +247,44 @@ def group_annot_regs(ann_per_reg):
 	
 def best_score(scores, region):
 	''' From overlapping intervals take the one with the highest score '''
-	# if more hits have the same best score take only the first one
+	## if more hits have the same best score take only the first one
 	best_idx = region[np.where(scores == max(scores))[0][0]]
 	best_idx_reg = np.where(scores == max(scores))[0][0]
 	return best_idx, best_idx_reg
 
 	
-def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, OUTPUT_DOMAIN):
+def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, gff):
 	''' Record obtained information about domain corresponding to individual cluster to common gff file '''
-	with open(OUTPUT_DOMAIN, "a") as gff:
-			best_start = positions[best_idx][0]
-			best_end = positions[best_idx][1]
-			best_score = score[best_idx]
-			# proportion of length of the best hit to the whole region length found by base
-			length_proportion = int((best_end - best_start + 1)/(dom_end - dom_start + 1)*100)
-			db_seq_best = db_seq[best_idx]
-			query_seq_best = query_seq[best_idx]
-			domain_size_best = domain_size[best_idx]
-			[percent_ident, align_similarity, relat_align_len, relat_frameshifts] = filter_params(db_seq_best, query_seq_best, domain_size_best)
-			ann_substring = "/".join(ann_substring.split("/")[1:])
-			if "PART" in seq_id:
-				part = int(seq_id.split("PART")[1].split(":")[0].split("_")[0])
-				dom_start = dom_start + (part-1)*step
-				dom_end = dom_end + (part-1)*step
-				best_start = best_start + (part-1)*step
-				best_end = best_end + (part-1)*step
-			if ann_substring is '':
-				ann_substring = "NONE(Annotations from different classes)"
-			if len(unique_annotations) > 1:
-				unique_annotations = ";".join(["{}[{}bp]".format(ann, pos) for ann, pos in zip(unique_annotations, ann_pos_counts)])
-			else:
-				unique_annotations = unique_annotations[0]
-			#unique_annotations = ";".join(unique_annotations)
-			if "/" in domain_type:
-				gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={},Classification=Ambiguous_domain,Region_Annotations={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
-			else:
-				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Classification={},Region_Annotations={},Best_HIT={}:{}-{}[{}%],DB_Seq={},Query_Seq={},Identity={},Similarity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
-				
+	best_start = positions[best_idx][0]
+	best_end = positions[best_idx][1]
+	best_score = score[best_idx]
+	## proportion of length of the best hit to the whole region length found by base
+	length_proportion = int((best_end - best_start + 1)/(dom_end - dom_start + 1)*100)
+	db_seq_best = db_seq[best_idx]
+	query_seq_best = query_seq[best_idx]
+	domain_size_best = domain_size[best_idx]
+	[percent_ident, align_similarity, relat_align_len, relat_frameshifts] = filter_params(db_seq_best, query_seq_best, domain_size_best)
+	ann_substring = "/".join(ann_substring.split("/")[1:])
+	if "PART" in seq_id:
+		part = int(seq_id.split("PART")[1].split(":")[0].split("_")[0])
+		dom_start = dom_start + (part-1)*step
+		dom_end = dom_end + (part-1)*step
+		best_start = best_start + (part-1)*step
+		best_end = best_end + (part-1)*step
+	if ann_substring is '':
+		ann_substring = "NONE(Annotations from different classes)"
+	if len(unique_annotations) > 1:
+		unique_annotations = ";".join(["{}[{}bp]".format(ann, pos) for ann, pos in zip(unique_annotations, ann_pos_counts)])
+	else:
+		unique_annotations = unique_annotations[0]
+	if "/" in domain_type:
+		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={},Classification=Ambiguous_domain,Region_Annotations={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
+	else:
+		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Classification={},Region_Annotations={},Best_HIT={}:{}-{}[{}%],DB_Seq={},Query_Seq={},Identity={},Similarity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
+			
 
 def filter_params(db, query, protein_len):
-	''' Calculate basic statistics of the quality of alignment '''
+	''' Calculate basic statistics of the quality of the alignment '''
 	sc_dict = sc_hash()
 	num_ident = 0
 	count_frm = 0
@@ -375,11 +361,9 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 	'''		
 	
 	step = WIN_DOM - OVERLAP_DOM
-	row_length = check_row_length(QUERY)
 	[headers, above_win, below_win, lens_above_win, seq_starts, seq_ends] = characterize_fasta(QUERY, WIN_DOM)
-	query_temp = split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_win, seq_starts, seq_ends, row_length)
-	
-	#### samostatna funkcia
+	query_temp = split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_win, seq_starts, seq_ends)
+
 	tab = subprocess.Popen("lastal -F15 {} {} -L 10 -m 70 -p BL80 -f TAB".format(LAST_DB, query_temp), stdout=subprocess.PIPE, shell=True)
 	maf = subprocess.Popen("lastal -F15 {} {} -L 10 -m 70 -p BL80 -f MAF".format(LAST_DB, query_temp), stdout=subprocess.PIPE, shell=True)
 
@@ -395,7 +379,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 	header_gff = "##gff-version 3"
 	with open(OUTPUT_DOMAIN, "w") as gff:
 		gff.write("{}\n".format(header_gff))
-	
+	gff = open(OUTPUT_DOMAIN,"a")
 	start = True
 	while True:	
 		try:
@@ -405,12 +389,13 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				dtype=None)
 		except RuntimeError:
 			break
+		## if there are no domains found
 		if sequence_hits.size is 0:
 			with open(OUTPUT_DOMAIN, "w") as gff:
 				gff.write("NO DOMAINS")
 			return [],[],[],[]
 		
-		############ PARSING LAST OUTPUT ############################
+		############# PARSING LASTAL OUTPUT ############################
 		score = sequence_hits['score'].astype("int")
 		seq_id = sequence_hits['name_q'][0].astype("str")
 		start_hit = sequence_hits['start_q'].astype("int")
@@ -438,13 +423,13 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 			scores = score[np.array(region)]
 			annotations = domain_annotation(db_names, CLASSIFICATION)
 			[score_matrix, classes_dict] = score_table(mins[count_region], maxs[count_region], data[count_region], annotations, scores, CLASSIFICATION)	
-			[ann_per_reg, max_scores_reg] = score_matrix_evaluation(score_matrix, classes_dict, THRESHOLD_SCORE)
+			ann_per_reg = score_matrix_evaluation(score_matrix, classes_dict, THRESHOLD_SCORE)
 			[domain_type, ann_substring, unique_annotations, ann_pos_counts] = group_annot_regs(ann_per_reg)
 			[best_idx, best_idx_reg] = best_score(scores, region)
 			annotation_best = annotations[best_idx_reg]
 			if count_region == len(indices_plus):
 				strand_gff = "-"
-			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, OUTPUT_DOMAIN)
+			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
 			count_region += 1
 			domain_reg.append(domain_type)
 		xminimal_all.append(mins)
@@ -453,6 +438,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		domain_reg = []
 		seq_ids.append(seq_id)
 	os.unlink(query_temp)
+	gff.close()
 	if any("PART" in x for x in seq_ids):
 		[xminimal_all, xmaximal_all, domains_all, seq_ids] = adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step)
 	return xminimal_all, xmaximal_all, domains_all, seq_ids
@@ -583,6 +569,14 @@ def main(args):
 	WIN_DOM = args.win_dom
 	OVERLAP_DOM = args.overlap_dom
 	
+	if OUTPUT_DIR is None:
+		OUTPUT_DIR = configuration.TMP
+	if SUMMARY is None:
+		SUMMARY = configuration.DOM_SUMMARY
+	if OUTPUT_DOMAIN is None:
+		OUTPUT_DOMAIN = configuration.DOMAINS_GFF
+	
+	
 	if NEW_LDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
 		
@@ -613,14 +607,9 @@ if __name__ == "__main__":
 	
 	class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
 		pass
-	
-	#LAST_DB = configuration.LAST_DB
-	#CLASSIFICATION = configuration.CLASSIFICATION
-	DOMAINS_GFF = configuration.DOMAINS_GFF
-	DOM_SUMMARY = configuration.DOM_SUMMARY
 
 	parser = argparse.ArgumentParser(
-		description='''Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database. Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. Domains searching is accomplished engaging LASTAL search tool.
+		description='''Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database. Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. Domains searching is accomplished engaging LASTAL alignment tool.
 		
 	DEPENDANCIES:
 		- python 3.4 or higher
@@ -641,18 +630,18 @@ if __name__ == "__main__":
 		formatter_class=CustomFormatter)
 	requiredNamed = parser.add_argument_group('required named arguments')
 	requiredNamed.add_argument("-q","--query", type=str, required=True,
-						help='input DNA sequence to search for protein domains. Multifasta format with THE SAME NUMBER OF BP PER ROW allowed.')
+						help='input DNA sequence to search for protein domains in a fasta format. Multifasta format allowed.')
 	requiredNamed.add_argument('-pdb', "--protein_database", type=str, required=True, 
                         help='protein domains database file')
 	requiredNamed.add_argument('-cs', '--classification', type=str, required=True, 
                         help='protein domains classification file')
-	parser.add_argument("-oug", "--domain_gff", type=str, default=DOMAINS_GFF,
+	parser.add_argument("-oug", "--domain_gff", type=str,
 						help="output domains gff format")
 	parser.add_argument("-nld","--new_ldb", type=str, default=False,
 						help="create indexed database files for lastal in case of working with new protein db")
-	parser.add_argument("-sum","--summary_file", type=str, default=DOM_SUMMARY,
+	parser.add_argument("-sum","--summary_file", type=str,
 						help=" output summary file containing overview of amount of domains in individual seqs")
-	parser.add_argument("-dir","--output_dir", type=str, default=configuration.TMP,
+	parser.add_argument("-dir","--output_dir", type=str,
 						help="specify if you want to change the output directory")
 	parser.add_argument("-thsc","--threshold_score", type=int, default=80,
 						help="percentage of the best score in the cluster to be tolerated when assigning annotations per base")
