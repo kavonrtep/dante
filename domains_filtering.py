@@ -24,27 +24,15 @@ class Range():
     def __repr__(self):
         return "float range {}..{}".format(self.start, self.end)
 
-
-#def filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS):
-	#''' Filter gff only based on quality of alignment without domain type considering '''
-	#with open(OUTPUT_DOMAIN, "r") as gff_all:
-		#next(gff_all)
-		#for line in gff_all:
-			#attributes = line.rstrip().split("\t")[-1]
-			#classification = attributes.split(",")[1]
-			#if classification != "Classification=Ambiguous_domain":
-				#al_identity = float(attributes.split(",")[-4].split("=")[1])
-				#al_similarity = float(attributes.split(",")[-3].split("=")[1])
-				#al_length = float(attributes.split(",")[-2].split("=")[1])
-				#relat_frameshifts = float(attributes.split(",")[-1].split("=")[1])
-				#dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-				#if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS :
-					#with open(FILT_DOM_GFF, "a") as gff_filtered:
-						#gff_filtered.writelines(line)
-					
 			
 def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM):
 	''' Filter gff output based on domain and quality of alignment '''
+	if SELECTED_DOM is not "All":
+		selected_dom_type = SELECTED_DOM.split("-")[1]
+		element_type = SELECTED_DOM.split("-")[0]
+	else:
+		selected_dom_type = None
+		element_type = None
 	with open(OUTPUT_DOMAIN, "r") as gff_all:
 		next(gff_all)
 		with open (FILT_DOM_GFF, "w") as gff_filtered:
@@ -57,8 +45,8 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 					al_similarity = float(attributes.split(",")[-3].split("=")[1])
 					al_length = float(attributes.split(",")[-2].split("=")[1])
 					relat_frameshifts = float(attributes.split("\t")[-1].split(",")[-1].split("=")[1])
-					dom_type = "-".join([attributes.split(",")[1].split("=")[1].split("/")[0], attributes.split(",")[0].split("=")[1]])
-					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS and (dom_type == SELECTED_DOM or SELECTED_DOM == "All"):
+					dom_type = attributes.split(",")[0].split("=")[1]
+					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS and ((dom_type == selected_dom_type and element_type in classification) or SELECTED_DOM == "All"):
 						gff_filtered.writelines(line)
 					
 	
@@ -105,9 +93,13 @@ def main(args):
 	FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
 	DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
 	
-	filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
+	#if SELECTED_DOM is not "All":
+		#selected_dom_type = SELECTED_DOM.split("-")[1]
+		#element_type = SELECTED_DOM.split("-")[0]
 	#else:
-		#filter_qual(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS)
+		#selected_dom_type = None
+		#element_type = None
+	filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM)
 	get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ)
 	
 
@@ -120,8 +112,7 @@ if __name__ == "__main__":
 	class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
 		pass
     
-	#DOM_PROT_SEQ = configuration.DOM_PROT_SEQ
-	#FILT_DOM_GFF = configuration.FILT_DOM_GFF
+	
 	
 	parser = argparse.ArgumentParser(
 		description='''Script performs filtering of gff output which is result of protein_domains_pd.py and contains all types of domains 

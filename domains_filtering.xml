@@ -7,7 +7,7 @@ python3 ${__tool_directory__}/domains_filtering.py --domain_gff ${DomGff} --doma
 		
 </command>
 <inputs>
- <param format="gff" type="data" name="DomGff" label="Choose primary GFF3 file of all domains from Protein Domain Finder" />
+ <param format="gff" type="data" name="DomGff" label="Choose primary GFF3 file of all domains from Protein Domains Finder" />
    <param name="selected_domain" type="select" label="Select protein domain type" >
     <options from_file="select_domain.txt" >
      <column name="name" index="0"/>
@@ -15,7 +15,7 @@ python3 ${__tool_directory__}/domains_filtering.py --domain_gff ${DomGff} --doma
 	</options>
    </param>
 	<param name="th_identity" type="float" value="0.35" min="0" max="1" label="Minimum identity" help="Protein sequence indentity threshold between input and mapped protein from db [0-1]" />
-	<param name="th_length" type="float" value="0.8" min="0" max="1" label="Minimum alignment length" help="Proportion of the hit length to the length of the database sequence [0-1]" />
+	<param name="th_length" type="float" value="0.8" min="0" max="1" label="Minimum alignment length" help="Proportion of the hit length without gaps to the length of the database sequence [0-1]" />
 	<param name="frameshifts" type="integer" value="1" label="Frameshifts" help="Frameshifts tolerance threshold per 100 bps" />
 </inputs>
 <outputs>
@@ -36,7 +36,6 @@ This tool runs filtering on primary GFF3 file containing all protein domains fou
 	1.	filtered GFF3 file
 	2.	translated protein sequences of the filtered domain regions of original DNA in fasta format
 
-	
 	!NOTE - translated sequences are taken from the best hit within a potential domain region, however this hit does not necessarily have to cover the whole cluster reported as a domain in gff file.
 
 **RECOMMENDED FILTERING PARAMETERS FOR DIFFERENT TYPES OF DOMAINS**

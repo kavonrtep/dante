@@ -173,9 +173,28 @@ scripts from the command line
 
 
 ### GALAXY implementation ###
-section: 
 
-#### Protein Domains Tools ####
+#### Dependencies ####
+
+* python3.4 or higher with packages:	
+	* numpy
+* [lastal](http://last.cbrc.jp/doc/last.html) 744 or higher:
+	* [download](http://last.cbrc.jp/)
+	* [install](http://last.cbrc.jp/doc/last.html)
+
+#### Configuration #####
+
+To config/tool_conf.xml add:
+
+	<section name="Protein Domains Tools" id="domains">
+		<tool file="profrep/protein_domains.xml" />
+		<tool file="profrep/protein_domains/domains_filtering.xml" />
+	</section>
+	
+Clone GIT repository to /tools/profrep
+Switch branch to "protein_domains_base_by_base"
+
+##### Protein Domains Tools #####
 
 tools:
 

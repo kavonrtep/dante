@@ -68,6 +68,8 @@ def characterize_fasta(QUERY, WIN_DOM):
 	above_win = [idx for idx, value in enumerate(fasta_lengths) if value > WIN_DOM]
 	below_win = [idx for idx, value in enumerate(fasta_lengths) if value <= WIN_DOM]
 	lens_above_win = np.array(fasta_lengths)[above_win]
+	print(above_win)
+	print(headers)
 	return headers, above_win, below_win, lens_above_win, seq_starts, seq_ends
 
 
@@ -84,17 +86,25 @@ def split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_
 			line = line.rstrip()
 			if line.startswith(">") and line in divided:
 				stop_line = seq_ends[above_win[count_fasta_divided]] - seq_starts[above_win[count_fasta_divided]] + 1
+				print(stop_line)
 				count_line = 0
-				whole_seq = ""
+				whole_seq = []
 				for line2 in query:
-					whole_seq = "".join([whole_seq, line2.rstrip()])
+					whole_seq.append(line2.rstrip())
+					#whole_seq = "".join([whole_seq, line2.rstrip()])
+					#print(count_line)
 					count_line += 1
+					#print(count_line)
 					if count_line == stop_line:
 						break
+				whole_seq = "".join(whole_seq)
+				print("sequence loaded")
 				## create list of starting positions for individual parts of a seq with a step given by a window and overlap
 				windows_starts = list(range(0, lens_above_win[count_fasta_divided], step))
 				## create list of ending positions (starting pos + window), the last element is the whole seq length
 				windows_ends = [x + WIN_DOM if x + WIN_DOM < lens_above_win[count_fasta_divided] else  lens_above_win[count_fasta_divided] for x in windows_starts]
+				print(windows_starts)
+				print(windows_ends)
 				count_part = 1
 				for start_part, end_part in zip(windows_starts, windows_ends):
 					seq_part = whole_seq[start_part:end_part]
@@ -104,6 +114,7 @@ def split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_
 						ntf.write("{}_PART{}:{}-{}\n{}\n".format(line.split(" ")[0], count_part, start_part + 1, end_part, "\n".join([seq_part[i:i+row_length] for i in range(0, len(seq_part), row_length)])).encode("utf-8"))
 					count_part += 1
 				count_fasta_divided += 1
+				print("sekvencia rozdelene")
 			elif line.startswith(">") and line not in divided:
 				length_seq = seq_ends[below_win[count_fasta_not_divided]] - seq_starts[below_win[count_fasta_not_divided]] + 1
 				ntf.write("{}\n{}".format(line, "".join([query.readline() for x in range(length_seq)])).encode("utf-8"))
@@ -437,6 +448,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		domains_all.append(domain_reg)
 		domain_reg = []
 		seq_ids.append(seq_id)
+		print(sequence_hits.shape)
 	os.unlink(query_temp)
 	gff.close()
 	if any("PART" in x for x in seq_ids):
