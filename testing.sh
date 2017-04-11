@@ -3,8 +3,8 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo $DIR
 test_data="$DIR/test_data"
-classification_tbl='/mnt/raid/users/ninah/profrep_git/data/new_classification/ALL.classification_conversed'
-pdb='/mnt/raid/users/ninah/profrep_git/data/new_classification/ALL_protein-domains_03.fasta'
+classification_tbl='!!!! set up the path !!!!!'
+pdb='!!! set up the path'
 
 ######## Protein Domais Finder
 ## single_seq, for/rev strand of mapping
