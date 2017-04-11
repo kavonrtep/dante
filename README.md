@@ -178,50 +178,37 @@ scripts from the command line
 
 * python3.4 or higher with packages:	
 	* numpy
-* [lastal](http://last.cbrc.jp/doc/last.html) 744 or higher:
+* [LAST](http://last.cbrc.jp/doc/last.html) 744 or higher:
 	* [download](http://last.cbrc.jp/)
 	* [install](http://last.cbrc.jp/doc/last.html)
 
 #### Configuration #####
 
-To config/tool_conf.xml add:
+To GALAXY_DIR/config/tool_conf.xml add:
 
-	<section name="Protein Domains Tools" id="domains">
-		<tool file="profrep/protein_domains.xml" />
-		<tool file="profrep/protein_domains/domains_filtering.xml" />
+	<section id="domains" name="Protein Domains Tools">
+        <tool file="profrep/protein_domains.xml" />
+        <tool file="profrep/domains_filtering.xml" />
 	</section>
 	
-Clone GIT repository to /tools/profrep
-Switch branch to "protein_domains_base_by_base"
+Clone Profrep GIT repository to "profrep" tool directory
 
-##### Protein Domains Tools #####
+	git clone https://nina_h@bitbucket.org/nina_h/profrep.git  GALAXY_DIR/tools/profrep
 
-tools:
+Switch branch to "protein_domains_base_by_base":
 
-* Protein Domains Finder 
+	git checkout protein_domains_base_by_base
+
+Link the following files:
+
+	 GALAXY_DIR/tools/profrep/domains_data/select_domain.txt
+	 indexed database files for LASTAL
+	 classification table
 	
-	main script: 
+into GALAXY_DIR/tool-data/domains_data/
 
-		protein_domains_pd.py
+! Replace the uppercase by real path of GALAXY main directory
 
-	configuration file:
-
-		protein_domains.xml
-
-
-* Protein Domains Filter 
-	
-	main script: 
-
-		domains_filtering.py
-
-	configuration file:
-
-		domains_filtering.xml
-
-files to copy into tool-data directory:
-
-	domains_data/select_domain.txt
 
 
 

@@ -18,8 +18,9 @@ MAIN_RESULTS_DIR = os.getcwd()
 DOMAINS_DATA = os.path.join(MAIN_GIT_DIR, "domains_data")
 TMP = os.path.join(MAIN_RESULTS_DIR, "tmp")
 SC_MATRIX = os.path.join(DOMAINS_DATA, "blosum80.txt")
-#CLASSIFICATION = os.path.join(DOMAINS_DATA, "classification.csv")
-#LAST_DB = os.path.join(DATA, "proteins_all")
+# FILE_NAMES
+CLASS_FILE = "ALL.classification_conversed"
+LAST_DB_FILE = "ALL_protein-domains_03.fasta"
 
 # CONSTANTS 
 N_segment = 50

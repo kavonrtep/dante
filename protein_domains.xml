@@ -2,7 +2,7 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
 <description> Find and classify all protein domains in your DNA sequence based on the database of repetitive elements protein domains </description>
 <command>
-python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database /mnt/raid/users/ninah/profrep_git/data/new_classification/ALL_protein-domains_03.fasta --classification  /mnt/raid/users/ninah/profrep_git/data/new_classification/ALL.classification_conversed --summary_file ${sum_file};
+python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database ${__tool_data_path__ }/protein_domains --classification ${__tool_data_path__ }/protein_domains --summary_file ${sum_file};
 
 </command>
 <inputs>
@@ -12,9 +12,6 @@ python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gf
 <outputs>
  <data format="gff3" name="DomGff" label="GFF3 file of all protein domains from dataset ${input.hid}" />
  <data format="txt" name="sum_file" label="Summary amounts of domains from dataset ${input.hid}" />
- 
-
- 
 </outputs>
 
  <help>

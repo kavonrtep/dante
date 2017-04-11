@@ -587,7 +587,10 @@ def main(args):
 		SUMMARY = configuration.DOM_SUMMARY
 	if OUTPUT_DOMAIN is None:
 		OUTPUT_DOMAIN = configuration.DOMAINS_GFF
-	
+	if os.path.isdir(LAST_DB):
+		LAST_DB = os.path.join(LAST_DB, configuration.LAST_DB_FILE)
+	if os.path.isdir(CLASSIFICATION):
+		CLASSIFICATION = os.path.join(CLASSIFICATION, configuration.CLASS_FILE)
 	
 	if NEW_LDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
