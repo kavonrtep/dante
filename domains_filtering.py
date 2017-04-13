@@ -27,7 +27,7 @@ class Range():
 			
 def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM):
 	''' Filter gff output based on domain and quality of alignment '''
-	if SELECTED_DOM is not "All":
+	if SELECTED_DOM != "All":
 		selected_dom_type = SELECTED_DOM.split("-")[1]
 		element_type = SELECTED_DOM.split("-")[0]
 	else:

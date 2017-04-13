@@ -18,7 +18,7 @@ python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gf
 
 **WHAT IT DOES**
 
-This tool exploits external aligning programme `LAST`_
+This tool uses external aligning programme `LAST`_
 
 .. _LAST: http://last.cbrc.jp/  
 
@@ -30,7 +30,7 @@ This tool exploits external aligning programme `LAST`_
 	
 **There are 2 outputs produced by this tool:**
 	
-1. table formatted as GFF3 file of all domains found. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool.
+1. table formatted as GFF3 file of all domains found. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool
 
 - Attributes reported always:
 
@@ -42,17 +42,17 @@ This tool exploits external aligning programme `LAST`_
 		"Ambiguous" when there is an ambiguous domain type 
 		
 	Region_annotations
-		all annotations from certain domain region that reach the set score threshold; in case of multiple annotations the square brackets indicate the number of bases having this particular annotation	
-		
+		all annotations from certain domain region that reach the set score threshold; in case of multiple annotations the square brackets indicate the number of bases having this particular annotation		
+			
 - Attributes only reported in case of distinct domain type (all the attributes including quality information, which allows further filtering, are related to the best hit of the region):
-
+	
 	Best_HIT  
 		annotatation and positions of the best hit with the highest score within the cluster; in the square brackets is the percentage of the whole cluster range that this best hit covers
 		
 	DB_Seq 
 		database protein sequence of the best hit mapped to the query DNA
 		
-	HIT_Seq 
+	Query_Seq 
 		tranlasted protein sequence of the query DNA of the best hit	
 		
 	Identity
@@ -66,7 +66,7 @@ This tool exploits external aligning programme `LAST`_
 		
 	Relat_frameshifts
 		number of the frameshifts in translated query sequence per each starting 100 bps
-	
+
 2. summary text file with overview of amounts of domains types in individual sequences
 
 

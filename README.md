@@ -24,8 +24,8 @@ OUTPUT:
 * python packages:
 	* numpy
 	* matplotlib
-* [BLAST 2.2.28+] (https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
-* [JBrowse 1.12.1] (http://jbrowse.org/) or higher
+* [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
+* [JBrowse 1.12.1](http://jbrowse.org/) or higher
 * protein_domains_pd.py
 * gff.py
 * visualization.py
@@ -59,7 +59,7 @@ scripts from the command line
 
 * python3.4 or higher with packages:	
 	* numpy
-* [lastal] (http://last.cbrc.jp/doc/last.html) 744 or higher
+* [lastal](http://last.cbrc.jp/doc/last.html) 744 or higher
 * configuration.py 
 
 
@@ -184,7 +184,7 @@ scripts from the command line
 
 #### Configuration #####
 
-To GALAXY_DIR/config/tool_conf.xml add:
+To *GALAXY_DIR/config/tool_conf.xml add:
 
 	<section id="domains" name="Protein Domains Tools">
         <tool file="profrep/protein_domains.xml" />
@@ -195,19 +195,27 @@ Clone Profrep GIT repository to "profrep" tool directory
 
 	git clone https://nina_h@bitbucket.org/nina_h/profrep.git  GALAXY_DIR/tools/profrep
 
-Switch branch to "protein_domains_base_by_base":
+Go to GIT repository and switch branch to "protein_domains_base_by_base"
 
 	git checkout protein_domains_base_by_base
 
-Link the following files:
+Link the following file into galaxy tool-data dir
 
-	 GALAXY_DIR/tools/profrep/domains_data/select_domain.txt
-	 indexed database files for LASTAL
-	 classification table
+	ln -s GALAXY_DIR/tools/profrep/domains_data/select_domain.txt GALAXY_DIR/tool-data/ 
+
+Create directory
 	
-into GALAXY_DIR/tool-data/domains_data/
+	mkdir GALAXY_DIR/tool-data/protein_domains
+	
+and copy the following files (will be handed separately) into it
 
-! Replace the uppercase by real path of GALAXY main directory
+	 Indexed database files for LASTAL
+	 
+	 Classification table
+	
+
+
+*! Replace the uppercase by real path of GALAXY main directory
 
 
 

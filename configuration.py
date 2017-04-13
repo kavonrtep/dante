@@ -7,11 +7,10 @@ import os
 JBROWSE_BIN = "/home/galaxy/bin/JBrowse-1.12.1/bin"
 JBROWSE_BIN_PC = "/var/www/html/JBrowse-1.12.1/bin"
 jbrowse_data_dir = "jbrowse"
-jbrowse_link_to_galaxy = "data/galaxy_files"
+jbrowse_link_to_galaxy = "data/galaxy_profrep_files"
 jbrowse_link_to_profrep = "data/profrep_data"
-LINK_PART1 = "http://nod6/JBrowse-1.12.1/index.html?data="
+LINK_PART1 = "http://nina/JBrowse-1.12.1/index.html?data="
 LINK_PART1_PC = "http://nina/JBrowse-1.12.1/index.html?data="
-TOOL_DATA_DIR = "/tool-data/profrep_data"
 ######### DOMAINS
 MAIN_GIT_DIR = os.path.dirname(os.path.realpath(__file__)) 
 MAIN_RESULTS_DIR = os.getcwd()
