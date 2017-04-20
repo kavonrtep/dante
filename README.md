@@ -182,6 +182,19 @@ scripts from the command line
 	* [download](http://last.cbrc.jp/)
 	* [install](http://last.cbrc.jp/doc/last.html)
 
+	
+#### Source #####
+
+Clone Profrep GIT repository to "profrep" tool directory
+
+	git clone https://nina_h@bitbucket.org/nina_h/profrep.git  GALAXY_DIR/tools/profrep
+
+Go to GIT repository and switch branch to "protein_domains_base_by_base"
+
+	git checkout protein_domains_base_by_base
+	
+
+
 #### Configuration #####
 
 To *GALAXY_DIR/config/tool_conf.xml add:
@@ -191,17 +204,11 @@ To *GALAXY_DIR/config/tool_conf.xml add:
         <tool file="profrep/domains_filtering.xml" />
 	</section>
 	
-Clone Profrep GIT repository to "profrep" tool directory
 
-	git clone https://nina_h@bitbucket.org/nina_h/profrep.git  GALAXY_DIR/tools/profrep
-
-Go to GIT repository and switch branch to "protein_domains_base_by_base"
-
-	git checkout protein_domains_base_by_base
 
 Link the following file into galaxy tool-data dir
 
-	ln -s GALAXY_DIR/tools/profrep/domains_data/select_domain.txt GALAXY_DIR/tool-data/ 
+	ln -s GALAXY_DIR/tools/profrep/domains_data/select_domain.txt GALAXY_DIR/tool-data
 
 Create directory
 	
