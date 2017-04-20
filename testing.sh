@@ -1,7 +1,6 @@
 #!/bin/bash
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-echo $DIR
 test_data="$DIR/test_data"
 classification_tbl='!!!! set up the path !!!!!'
 pdb='!!! set up the path'

@@ -96,8 +96,6 @@ def split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_
 				windows_starts = list(range(0, lens_above_win[count_fasta_divided], step))
 				## create list of ending positions (starting pos + window), the last element is the whole seq length
 				windows_ends = [x + WIN_DOM if x + WIN_DOM < lens_above_win[count_fasta_divided] else  lens_above_win[count_fasta_divided] for x in windows_starts]
-				print(windows_starts)
-				print(windows_ends)
 				count_part = 1
 				for start_part, end_part in zip(windows_starts, windows_ends):
 					seq_part = whole_seq[start_part:end_part]

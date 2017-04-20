@@ -187,12 +187,11 @@ scripts from the command line
 
 Clone Profrep GIT repository to "profrep" tool directory
 
-	git clone https://nina_h@bitbucket.org/nina_h/profrep.git  GALAXY_DIR/tools/profrep
+	git clone https://bitbucket.org/nina_h/profrep.git
 
 Go to GIT repository and switch branch to "protein_domains_base_by_base"
 
 	git checkout protein_domains_base_by_base
-	
 
 
 #### Configuration #####
@@ -214,14 +213,15 @@ Create directory
 	
 	mkdir GALAXY_DIR/tool-data/protein_domains
 	
-and copy the following files (will be handed separately) into it
+and copy the indexed db files for LASTAL and classification table (will be handed separately) into it
 
-	 Indexed database files for LASTAL
-	 
-	 Classification table
-	
+#### Testing #####
 
+Testing data are taking place in profrep/test_data
 
+Use "vyber-Ty1_01.fasta" to test Protein Domains Finder tool and then its GFF output to test Protein Domains Filter tool 
+
+--------------------------------------------------------------
 *! Replace the uppercase by real path of GALAXY main directory
 
 
