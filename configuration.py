@@ -18,7 +18,7 @@ DOMAINS_DATA = os.path.join(MAIN_GIT_DIR, "domains_data")
 TMP = os.path.join(MAIN_RESULTS_DIR, "tmp")
 SC_MATRIX = os.path.join(DOMAINS_DATA, "blosum80.txt")
 # FILE_NAMES
-CLASS_FILE = "ALL.classification05_conversed"
+CLASS_FILE = "ALL.classification-new"
 LAST_DB_FILE = "ALL_protein-domains_05.fasta"
 
 # CONSTANTS 
@@ -60,9 +60,14 @@ REPEATS_GFF = os.path.join(TMP,"output_repeats.gff")
 N_REG = os.path.join(TMP,"N_regions.gff")
 REPEATS_TABLE = os.path.join(TMP,"output_table.csv")
 SEQ_INFO = "seq_info.csv"
-DOM_PROT_SEQ = os.path.join(TMP,"dom_prot_seq.txt") 
-FILT_DOM_GFF = os.path.join(TMP,"domains_filtered.gff")
-DOM_SUMMARY = os.path.join(TMP,"dom_summary.txt")
+#DOM_PROT_SEQ = os.path.join(TMP,"dom_prot_seq.txt") 
+DOM_PROT_SEQ = "dom_prot_seq.txt" 
+#FILT_DOM_GFF = os.path.join(TMP,"domains_filtered.gff")
+FILT_DOM_GFF = "domains_filtered.gff"
+#DOM_SUMMARY = os.path.join(TMP,"dom_summary.txt")
+DOM_SUMMARY = "dom_summary.txt"
+#ELEM_TABLE = os.path.join(TMP,"elements_table.txt")
+ELEM_TABLE = "elements_table.txt"
 
 
 

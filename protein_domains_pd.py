@@ -127,9 +127,9 @@ def domain_annotation(elements, CLASSIFICATION):
 		domains.append(elements[i].split("__")[0].split("-")[1])
 		element_name = "__".join(elements[i].split("__")[1:])
 		if element_name in annotation.keys():			
-			annotations.append("/".join([elements[i].split("__")[0].split("-")[1],("/".join(annotation[element_name]))]))
+			annotations.append("|".join([elements[i].split("__")[0].split("-")[1],("|".join(annotation[element_name]))]))
 		else:
-			annotations.append("unknown/unknown")
+			annotations.append("unknown|unknown")
 	return annotations
 	
 
@@ -238,9 +238,9 @@ def group_annot_regs(ann_per_reg):
 	unique_annotations = list(set(all_annotations))
 	ann_pos_counts = [all_annotations.count(x) for x in unique_annotations]
 	unique_annotations = list(set([item for sublist in ann_per_reg for item in sublist]))
-	domain_type = list(set([annotation.split("/")[0] for annotation in unique_annotations]))
-	classification_list = [os.path.join(annotation,"") for annotation in unique_annotations]
-	ann_substring = os.path.commonprefix(classification_list).rpartition("/")[0]
+	domain_type = list(set([annotation.split("|")[0] for annotation in unique_annotations]))
+	classification_list = [annotation.split("|") for annotation in unique_annotations]
+	ann_substring = "|".join(os.path.commonprefix(classification_list))
 	domain_type = "/".join(domain_type) 
 	return domain_type, ann_substring, unique_annotations, ann_pos_counts
 	
@@ -253,7 +253,7 @@ def best_score(scores, region):
 	return best_idx, best_idx_reg
 
 	
-def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, gff):
+def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, db_name_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, gff):
 	''' Record obtained information about domain corresponding to individual cluster to common gff file '''
 	best_start = positions[best_idx][0]
 	best_end = positions[best_idx][1]
@@ -264,7 +264,8 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	query_seq_best = query_seq[best_idx]
 	domain_size_best = domain_size[best_idx]
 	[percent_ident, align_similarity, relat_align_len, relat_frameshifts] = filter_params(db_seq_best, query_seq_best, domain_size_best)
-	ann_substring = "/".join(ann_substring.split("/")[1:])
+	ann_substring = "|".join(ann_substring.split("|")[1:])
+	annotation_best = "|".join([db_name_best] + annotation_best.split("|")[1:])
 	if "PART" in seq_id:
 		part = int(seq_id.split("PART")[1].split(":")[0].split("_")[0])
 		dom_start = dom_start + (part-1)*step
@@ -274,13 +275,13 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	if ann_substring is '':
 		ann_substring = "NONE(Annotations from different classes)"
 	if len(unique_annotations) > 1:
-		unique_annotations = ";".join(["{}[{}bp]".format(ann, pos) for ann, pos in zip(unique_annotations, ann_pos_counts)])
+		unique_annotations = ",".join(["{}[{}bp]".format(ann, pos) for ann, pos in zip(unique_annotations, ann_pos_counts)])
 	else:
 		unique_annotations = unique_annotations[0]
 	if "/" in domain_type:
-		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={},Classification=Ambiguous_domain,Region_Annotations={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
+		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={};Classification=Ambiguous_domain;Region_Hits={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
 	else:
-		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Classification={},Region_Annotations={},Best_HIT={}:{}-{}[{}%],DB_Seq={},Query_Seq={},Identity={},Similarity={},Relat_length={},Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
+		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Classification={};Region_Hits={};Best_Hit={}:{}-{}[{}%];DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_length={};Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
 			
 
 def filter_params(db, query, protein_len):
@@ -396,6 +397,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 			return [],[],[],[]
 		
 		############# PARSING LASTAL OUTPUT ############################
+		sequence_hits = np.atleast_1d(sequence_hits)
 		score = sequence_hits['score'].astype("int")
 		seq_id = sequence_hits['name_q'][0].astype("str")
 		start_hit = sequence_hits['start_q'].astype("int")
@@ -427,9 +429,10 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 			[domain_type, ann_substring, unique_annotations, ann_pos_counts] = group_annot_regs(ann_per_reg)
 			[best_idx, best_idx_reg] = best_score(scores, region)
 			annotation_best = annotations[best_idx_reg]
+			db_name_best = db_names[best_idx_reg]
 			if count_region == len(indices_plus):
 				strand_gff = "-"
-			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
+			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
 			count_region += 1
 			domain_reg.append(domain_type)
 		xminimal_all.append(mins)
@@ -569,8 +572,8 @@ def main(args):
 	WIN_DOM = args.win_dom
 	OVERLAP_DOM = args.overlap_dom
 	
-	if OUTPUT_DIR is None:
-		OUTPUT_DIR = configuration.TMP
+	#if OUTPUT_DIR is None:
+		#OUTPUT_DIR = configuration.TMP
 	if SUMMARY is None:
 		SUMMARY = configuration.DOM_SUMMARY
 	if OUTPUT_DOMAIN is None:
@@ -583,15 +586,25 @@ def main(args):
 	if NEW_LDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
 		
-	if not os.path.exists(OUTPUT_DIR) and not os.path.isabs(OUTPUT_DOMAIN):
+	#if not os.path.exists(OUTPUT_DIR) and not os.path.isabs(OUTPUT_DOMAIN):
+		#os.makedirs(OUTPUT_DIR)
+		#OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
+		#SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
+	#elif os.path.exists(OUTPUT_DIR) and not os.path.isabs(OUTPUT_DOMAIN):
+		#OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
+		#SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
+		
+	if OUTPUT_DIR and not os.path.exists(OUTPUT_DIR):
 		os.makedirs(OUTPUT_DIR)
-		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
-		SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
-	elif os.path.exists(OUTPUT_DIR) and not os.path.isabs(OUTPUT_DOMAIN):
+	
+	if not os.path.isabs(OUTPUT_DOMAIN):
+		if OUTPUT_DIR is None:
+			OUTPUT_DIR = configuration.TMP
+			if not os.path.exists(OUTPUT_DIR): 
+				os.makedirs(OUTPUT_DIR)
 		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
 		SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
 
-	
 	[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 	
 	domains_stat(domains_all, seq_ids, SUMMARY)

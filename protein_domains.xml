@@ -30,7 +30,7 @@ This tool uses external aligning programme `LAST`_
 	
 **There are 2 outputs produced by this tool:**
 	
-1. table formatted as GFF3 file of all domains found. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool
+1. table formatted as GFF3 file of all domains found. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several semicolon-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool
 
 - Attributes reported always:
 
