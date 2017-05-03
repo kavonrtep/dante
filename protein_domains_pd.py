@@ -279,9 +279,9 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	else:
 		unique_annotations = unique_annotations[0]
 	if "/" in domain_type:
-		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={};Classification=Ambiguous_domain;Region_Hits={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
+		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={};Final_Classification=Ambiguous_domain;Region_Hits_Classifications_={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
 	else:
-		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Classification={};Region_Hits={};Best_Hit={}:{}-{}[{}%];DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_length={};Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
+		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}%];DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_length={};Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
 			
 
 def filter_params(db, query, protein_len):

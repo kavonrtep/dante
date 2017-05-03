@@ -7,7 +7,7 @@ python3 ${__tool_directory__}/domains_filtering.py --domain_gff ${DomGff} --doma
 </command>
 <inputs>
  <param format="gff" type="data" name="DomGff" label="Choose primary GFF3 file of all domains from Protein Domains Finder" />
-	<param name="th_identity" type="float" value="0.3" min="0" max="1" label="Minimum identity" help="Protein sequence indentity threshold between input and mapped protein from db [0-1]" />
+	<param name="th_identity" type="float" value="0.35" min="0" max="1" label="Minimum identity" help="Protein sequence indentity threshold between input and mapped protein from db [0-1]" />
 	<param name="th_similarity" type="float" value="0.45" min="0" max="1" label="Minimum similarity" help="Protein sequence similarity threshold between input and mapped protein from db [0-1]" />
 	<param name="th_length" type="float" value="0.8" min="0" max="1" label="Minimum alignment length" help="Proportion of the hit length without gaps to the length of the database sequence [0-1]" />
 	<param name="frameshifts" type="integer" value="1" label="Frameshifts" help="Frameshifts tolerance threshold per 100 bps" />
@@ -36,15 +36,34 @@ python3 ${__tool_directory__}/domains_filtering.py --domain_gff ${DomGff} --doma
 
 **WHAT IT DOES**
 
-This tool runs filtering on primary GFF3 file containing all protein domains found in a given query sequence(s) which is the output of *Protein Domains Finder* tool. Filtering can by based on protein domain type and/or quality of alignment such as alignment sequence identity, alignment similarity, alignment length and number of frameshifts. In case of choosing "ALL" option in domain type selection menu, all types of domains are reported. However, records containing ambiguous domain type (e.g. RH/INT) are filtered out automatically. They do not take place in filetered gff file as well as no protein sequence is derived from such kind of potentially chimeric domains. Quality parameters should work for all kinds of protein domains. 
+This tool runs filtering on primary GFF3 file containing all protein domains found in a given query sequence(s), i.e. output of *Protein Domains Finder* tool or already filtered GFF3 file. Domains can be filtered based on:
 
-**There are 2 outputs produced by this tool:**
+**Quality of alignment such as**:
+	- alignment sequence identity
+	- alignment similarity
+	- alignment proportion length
+	- number of frameshifts
+		
+**Protein domain type**
+	This filtration is based on "Name" attribute of GFF3 file
+	
+**Repetitive element classification**
+	In the text field you can specify classification string that you wish to filter. This filtration is based on "Final_Classification" attribute of GFF file, so it must be in a proper form (classification levels are separated by "|"). You can see which classifications occurs in your data taking a look into Classification summary table output. If you leave the filed blank, domains of all classifications will be reported
+	
+Filtering can by based on protein domain type and/or quality of alignment such as alignment sequence identity, alignment similarity, alignment length and number of frameshifts. In case of choosing "ALL" option in domain type selection menu, all types of domains are reported. However, records containing ambiguous domain type (e.g. RH/INT) are filtered out automatically. They do not take place in filetered gff file as well as no protein sequence is derived from such kind of potentially chimeric domains. Quality parameters should work for all kinds of protein domains. 
 
+**OUTPUTS PRODUCED:**
 	1.	filtered GFF3 file
-	2.	translated protein sequences of the filtered domain regions of original DNA in fasta format
-
-	!NOTE - translated sequences are taken from the best hit within a potential domain region, however this hit does not necessarily have to cover the whole cluster reported as a domain in gff file.
-
+	2.	translated protein sequences of the filtered domain regions of original DNA sequence in fasta format
+	
+		Translated sequences are taken from the best hit within a potential domain region, however this hit does not necessarily have to cover the whole region reported as a domain in gff file.		
+		
+	3.	table containing all domains repetive classifications of any level reported for both input and filtered GFF file
+	
+!NOTE if you are working with non-Virdiplanate eukayrotic organisms hte reaults are not going to be optimal as the database is based on Virirdiplantae organisms, default filtering parameters should be adjusted:
+We recommend:
+Minimum silmilarity: 0,3
+MInimum similarity: 0,4
 
  </help>
 

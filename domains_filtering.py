@@ -175,7 +175,7 @@ if __name__ == "__main__":
 	parser.add_argument("-thl","--th_length",type=float, choices=[Range(0.0, 1.0)],
 						default= 0.8, help="proportion of alignment length threshold")
 	parser.add_argument("-thi","--th_identity",type=float, choices=[Range(0.0, 1.0)],
-						default= 0.3, help="proportion of alignment identity threshold")
+						default= 0.35, help="proportion of alignment identity threshold")
 	parser.add_argument("-ths","--th_similarity",type=float, choices=[Range(0.0, 1.0)],
 						default= 0.45, help="threshold for alignment proportional similarity")
 	parser.add_argument("-fr","--frameshifts",type=int, default=1,
