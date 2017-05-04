@@ -197,7 +197,7 @@ if __name__ == "__main__":
 						"ENDO"
 						],
 						help="filter output domains based on the domain type")
-	parser.add_argument("-el","--element_type",type=str, default="All",
+	parser.add_argument("-el","--element_type",type=str, default="",
 						help="filter output domains by typing substring from classification")
 	parser.add_argument("-dir","--output_dir",type=str, default=None,
 						help="specify if you want to change the output directory")

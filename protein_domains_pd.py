@@ -334,8 +334,9 @@ def line_generator(tab_pipe, maf_pipe, start):
 		line_tab = line_tab.decode("utf-8")
 		if not line_tab.startswith('#'):
 				if start:
-					seq_id = line_tab.split("\t")[6]
-					start = False
+					if not ('seq_id' in locals() and seq_id != line_tab.split("\t")[6]):
+						seq_id = line_tab.split("\t")[6]
+						start = False
 				line_maf = [maf_pipe.readline() for line_count in range(4)]
 				db_seq = line_maf[1].decode("utf-8").rstrip().split(" ")[-1]
 				alignment_seq = line_maf[2].decode("utf-8").rstrip().split(" ")[-1]
@@ -398,6 +399,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		
 		############# PARSING LASTAL OUTPUT ############################
 		sequence_hits = np.atleast_1d(sequence_hits)
+		#print(sequence_hits)
 		score = sequence_hits['score'].astype("int")
 		seq_id = sequence_hits['name_q'][0].astype("str")
 		start_hit = sequence_hits['start_q'].astype("int")
