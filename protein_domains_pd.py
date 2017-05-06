@@ -263,7 +263,7 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	db_seq_best = db_seq[best_idx]
 	query_seq_best = query_seq[best_idx]
 	domain_size_best = domain_size[best_idx]
-	[percent_ident, align_similarity, relat_align_len, relat_frameshifts] = filter_params(db_seq_best, query_seq_best, domain_size_best)
+	[percent_ident, align_similarity, relat_align_len, relat_interrupt] = filter_params(db_seq_best, query_seq_best, domain_size_best)
 	ann_substring = "|".join(ann_substring.split("|")[1:])
 	annotation_best = "|".join([db_name_best] + annotation_best.split("|")[1:])
 	if "PART" in seq_id:
@@ -281,21 +281,21 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	if "/" in domain_type:
 		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={};Final_Classification=Ambiguous_domain;Region_Hits_Classifications_={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
 	else:
-		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}%];DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_length={};Relat_frameshifts={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_frameshifts))
+		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}%];DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_Length={};Relat_Interruptions={}\n".format(seq_id, configuration.SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_interrupt))
 			
 
 def filter_params(db, query, protein_len):
 	''' Calculate basic statistics of the quality of the alignment '''
 	sc_dict = sc_hash()
 	num_ident = 0
-	count_frm = 0
+	count_interrupt = 0
 	count_similarity = 0 
 	alignment_len = 0
 	for i,j in zip(db.upper(), query.upper()):
 		if i == j and i != "X":
 			num_ident += 1
-		if j == "/" or j == "\\":
-			count_frm += 1
+		if j == "/" or j == "\\" or j == "*":
+			count_interrupt += 1
 		if (i.isalpha() or i == "*") and (j.isalpha() or j == "*"):
 			if int(sc_dict["{}{}".format(i,j)]) > 0:
 				count_similarity += 1
@@ -305,9 +305,9 @@ def filter_params(db, query, protein_len):
 	align_identity = round(num_ident/len(db), 2)
 	## proportional count of positive scores from scoring matrix to al. length 
 	align_similarity = round(count_similarity/len(db),2)
-	## number of frameshifts per 100 bp
-	relat_frameshifts = round(count_frm/math.ceil((len(query)/100)),2)
-	return align_identity, align_similarity, relat_align_len, relat_frameshifts, 	
+	## number of interruptions per 100 bp
+	relat_interrupt = round(count_interrupt/math.ceil((len(query)/100)),2)
+	return align_identity, align_similarity, relat_align_len, relat_interrupt, 	
 
 
 def domains_stat(domains_all, seq_ids, SUMMARY):
@@ -574,8 +574,7 @@ def main(args):
 	WIN_DOM = args.win_dom
 	OVERLAP_DOM = args.overlap_dom
 	
-	#if OUTPUT_DIR is None:
-		#OUTPUT_DIR = configuration.TMP
+
 	if SUMMARY is None:
 		SUMMARY = configuration.DOM_SUMMARY
 	if OUTPUT_DOMAIN is None:
@@ -587,14 +586,6 @@ def main(args):
 	
 	if NEW_LDB:
 		subprocess.call("lastdb -p -cR01 {} {}".format(LAST_DB, LAST_DB), shell=True)
-		
-	#if not os.path.exists(OUTPUT_DIR) and not os.path.isabs(OUTPUT_DOMAIN):
-		#os.makedirs(OUTPUT_DIR)
-		#OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
-		#SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
-	#elif os.path.exists(OUTPUT_DIR) and not os.path.isabs(OUTPUT_DOMAIN):
-		#OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
-		#SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
 		
 	if OUTPUT_DIR and not os.path.exists(OUTPUT_DIR):
 		os.makedirs(OUTPUT_DIR)

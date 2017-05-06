@@ -25,7 +25,7 @@ class Range():
         return "float range {}..{}".format(self.start, self.end)
 
 			
-def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM, ELEMENT):
+def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT):
 	''' Filter gff output based on domain and quality of alignment '''
 	with open(OUTPUT_DOMAIN, "r") as gff_all:
 		next(gff_all)
@@ -38,9 +38,9 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 					al_identity = float(attributes.split(";")[-4].split("=")[1])
 					al_similarity = float(attributes.split(";")[-3].split("=")[1])
 					al_length = float(attributes.split(";")[-2].split("=")[1])
-					relat_frameshifts = float(attributes.split("\t")[-1].split(";")[-1].split("=")[1])
+					relat_interrupt = float(attributes.split("\t")[-1].split(";")[-1].split("=")[1])
 					dom_type = attributes.split(";")[0].split("=")[1]		
-					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_frameshifts <= TH_FRAMESHIFTS and (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and (ELEMENT in classification):			
+					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and (ELEMENT in classification):			
 						gff_filtered.writelines(line)
 					
 	
@@ -51,8 +51,8 @@ def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
 		with open(DOMAIN_PROT_SEQ, "w") as dom_prot_file:
 			for line in filt_gff: 
 				attributes = line.rstrip().split("\t")[8]
-				positions = attributes.split(";")[3].split("=")[1].split(":")[1].split("[")[0]
-				len_percent = attributes.split(";")[3].split("=")[1].split(":")[1].split("[")[1].split("]")[0]
+				positions = attributes.split(";")[3].split("=")[1].split(":")[-1].split("[")[0]
+				#len_percent = attributes.split(";")[3].split("=")[1].split(":")[1].split("[")[1].split("]")[0]
 				dom = attributes.split(";")[0].split("=")[1]
 				#dom_class = "/".join(attributes.split(",")[3].split("=")[1].split(":")[0].split("/")[1:])
 				dom_class = attributes.split(";")[1].split("=")[1]
@@ -102,7 +102,7 @@ def main(args):
 	ELEM_TABLE = args.element_table
 	TH_IDENTITY = args.th_identity
 	TH_LENGTH = args.th_length 
-	TH_FRAMESHIFTS = args.frameshifts
+	TH_INTERRUPT = args.interruptions
 	TH_SIMILARITY = args.th_similarity
 	FILT_DOM_GFF = args.domains_filtered
 	SELECTED_DOM = args.selected_dom
@@ -125,14 +125,8 @@ def main(args):
 		FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
 		DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
 		ELEM_TABLE = os.path.join(OUTPUT_DIR, os.path.basename(ELEM_TABLE))
-	
-	#if SELECTED_DOM is not "All":
-		#selected_dom_type = SELECTED_DOM.split("-")[1]
-		#element_type = SELECTED_DOM.split("-")[0]
-	#else:
-		#selected_dom_type = None
-		#element_type = None
-	filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_FRAMESHIFTS, SELECTED_DOM, ELEMENT)
+
+	filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT)
 	get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ)
 	elements_table(OUTPUT_DOMAIN, FILT_DOM_GFF, ELEM_TABLE)
 
@@ -148,8 +142,7 @@ if __name__ == "__main__":
 	
 	
 	parser = argparse.ArgumentParser(
-		description='''Script performs filtering of gff output which is result of protein_domains_pd.py and contains all types of domains 
-		without quality filtering. The script enables to obtain results for specific kind of domain separately for individual types of repetitive elements and/or filter out domains that do not reach appropriate length, similarity or have more frameshifts per 100 bp than set by threshold. Records for ambiguous domain type (e.g. INT/RH) are filtered out automatically. Based on filtered gff file protein sequences are reported in separate file - these translations of original DNA sequence are taken from the LASTAL output . NOTE -  foundscanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database. Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. Domains searching is accomplished engaging LASTAL search tool.
+		description='''The script performs filtering of GFF3 file; either output of protein_domains_pd.py (contains all types of domains with basically no quality filtering) or file already filtered by this skript. The filtered output is again a GFF3 format. The script enables to obtain results for specific kinds of domains separately and/or filter out domains that do not reach appropriate length, similarity or have more interruptions(frameshifts or stop codons) per 100 bp than set by threshold. Filtering based on an arbitrary substring of repetitive element classification is posisible as well. Records for ambiguous domain type (e.g. INT/RH) are filtered out automatically. Based on filtered gff file protein sequences are reported in separate file - these translations of original DNA sequence are taken from the LASTAL alignment sequence of the best hit. For this reason it does not have to necessarily cover the whole reported are in GFF3 file. The script also produces a table with representation of all repetive element classifications (Final_Classification attribute) in the input GFF file as well as the filtered one. This can help you to get an overview which kind of elements your sequence might contain and which classifications you can filter.
 		
 	DEPENDANCIES:
 		- python 3.4 or higher
@@ -178,8 +171,8 @@ if __name__ == "__main__":
 						default= 0.35, help="proportion of alignment identity threshold")
 	parser.add_argument("-ths","--th_similarity",type=float, choices=[Range(0.0, 1.0)],
 						default= 0.45, help="threshold for alignment proportional similarity")
-	parser.add_argument("-fr","--frameshifts",type=int, default=1,
-						help="frameshifts tolerance threshold per 100 bp")
+	parser.add_argument("-ir","--interruptions",type=int, default=1,
+						help="interruptions (frameshifts + stop codons) tolerance threshold per 100 bp")
 	parser.add_argument("-sd","--selected_dom",type=str, default="All", choices=[
 						"All",
 						"GAG",

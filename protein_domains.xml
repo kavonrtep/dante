@@ -22,15 +22,15 @@ This tool uses external aligning programme `LAST`_
 
 .. _LAST: http://last.cbrc.jp/  
 
-*Lastal* runs similarity search to find hits between query DNA sequence and our database of protein domains from all Viridiplantae repetitive elements. Hits with positions that are overlapped in a sequence (even trough other hits) forms a cluster which represents one potential protein domain. Strand orientation is taken into consideration when forming the clusters which means each cluster is built from forward or reverse stranded hits exclusively. The clusters are subsequently processed separately; within one cluster positions are scanned base-by-base and classification strings are assigned for each of them based on the database sequences which were mapped on that place. These asigned classification strings consist of a domain type as well as class and lineage of the repetitive element where the database protein comes from. Different classification levels are separated by "|" character. Every hit is scored according to the scoring matrix used for DNA-protein alignment (BLOSUM80). For single position only the hits reaching certain percentage (80% by default) of the overall best score within the whole cluster are reported. One cluster of overlapping hits is recorded as one line in the resulting gff file. Regarding the classition strings assigned to one region (cluster) there are three situations that can occur:
+*Lastal* runs similarity search to find hits between query DNA sequence and our database of protein domains from all Viridiplantae repetitive elements. Hits with overlapping positions in the sequence (even through other hits) forms a cluster which represents one potential protein domain. Strand orientation is taken into consideration when forming the clusters which means each cluster is built from forward or reverse stranded hits exclusively. The clusters are subsequently processed separately; within one cluster positions are scanned base-by-base and classification strings are assigned for each of them based on the database sequences which were mapped on that place. These asigned classification strings consist of a domain type as well as class and lineage of the repetitive element where the database protein comes from. Different classification levels are separated by "|" character. Every hit is scored according to the scoring matrix used for DNA-protein alignment (BLOSUM80). For single position only the hits reaching certain percentage (80% by default) of the overall best score within the whole cluster are reported. One cluster of overlapping hits represents one domain region and is recorded as one line in the resulting GFF3 file. Regarding the classition strings assigned to one region (cluster) there are three situations that can occur:
 
-	1. There is a single classification string assigned to each position as well as classifications along all the positions in the region (cluster) are mutually uniform, in this case domain's final classification is equivalent to this unique classification.
+	1. There is a single classification string assigned to each position as well as classifications along all the positions in the region are mutually uniform, in this case domain's final classification is equivalent to this unique classification.
 	2. There are multiple classification strings assigned to one cluster, i.e. one domain, which leads to classification to the common (less specific) level of all the strings
 	3. There is a conflict at the domain type level, domains are reported with slash (e.g. RT/INT) and the classification is in this case ambiguous
 	
 **There are 2 outputs produced by this tool:**
 	
-1. table formatted as GFF3 file of all domains found. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several semicolon-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool
+1. GFF3 file of all proteins domains built from all hits found by LAST. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID, alignment score and strand orientation. The last "Attributes" column contains several semicolon-separated information related to annotation, repetitive classification, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool
 
 - Attributes reported always:
 
@@ -38,34 +38,34 @@ This tool uses external aligning programme `LAST`_
 		type of domain; if ambiguous reported with slash 
 		
 	Final_classification 
-		definite classification based on all partial hits annotations of Region_hits attribute or 
-		"Ambiguous" when there is an ambiguous domain type 
+		definite classification based on all partial classifications of Region_hits_classifications attribute or 
+		"Ambiguous_domain" when there is an ambiguous domain type 
 		
 	Region_hits_classifications
-		all hits classifications (comma separated) from certain domain region that reach the set score threshold; in case of multiple annotations the square brackets indicate the number of bases having this particular annotation		
+		all hits classifications (comma separated) from a certain domain region that reach the set score threshold; in case of multiple annotations the square brackets indicate the number of bases having this particular classification		
 			
-- Attributes only reported in case of distinct domain type (all the attributes including quality information, which allows further filtering, are related to the best hit of the region):
+- Attributes only reported in case of distinct domain type (all the attributes including quality information, which allows further filtering, are related to the Best_Hit of the region):
 	
 	Best_hit  
-		classification and position of the best hit with the highest score within the cluster; in the square brackets is the percentage of the whole cluster range that this best hit covers
+		classification and position of the best alignment with the highest score within the cluster; in the square brackets is the percentage of the whole cluster range that this best hit covers
 		
 	DB_Seq 
 		database protein sequence of the best hit mapped to the query DNA
 		
 	Query_Seq 
-		tranlasted protein sequence of the query DNA of the best hit	
+		alignment sequence of the query DNA for the best hit	
 		
 	Identity
-		ratio of identical amino acids in alignment sequences to the length of alignment
+		ratio of identical amino acids in alignment sequence to the length of alignment
 		
 	Similarity
 		ratio of alignment positions with positive score (according to the scoring matrix) to the length of alignment
 		
-	Relat_length
+	Relat_Length
 		ratio of gapless length of the aligned protein sequence to the whole length of the database protein 
 		
-	Relat_frameshifts
-		number of the frameshifts in translated query sequence per each starting 100 bp
+	Relat_interruptions
+		number of the interruptions (frameshifts + stop codons) in aligned translated query sequence per each starting 100 bp
 
 2. summary text file with overview of amounts of domains types in individual sequences
 
