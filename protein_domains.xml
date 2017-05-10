@@ -65,7 +65,7 @@ This tool uses external aligning programme `LAST`_
 		ratio of gapless length of the aligned protein sequence to the whole length of the database protein 
 		
 	Relat_interruptions
-		number of the interruptions (frameshifts + stop codons) in aligned translated query sequence per each starting 100 bp
+		number of the interruptions (frameshifts + stop codons) in aligned translated query sequence per each starting 100 AA
 
 2. summary text file with overview of amounts of domains types in individual sequences
 

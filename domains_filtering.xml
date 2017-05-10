@@ -10,7 +10,7 @@ python3 ${__tool_directory__}/domains_filtering.py --domain_gff ${DomGff} --doma
 	<param name="th_identity" type="float" value="0.35" min="0" max="1" label="Minimum identity" help="Protein sequence indentity threshold between input and mapped protein from db [0-1]" />
 	<param name="th_similarity" type="float" value="0.45" min="0" max="1" label="Minimum similarity" help="Protein sequence similarity threshold between input and mapped protein from db [0-1]" />
 	<param name="th_length" type="float" value="0.8" min="0" max="1" label="Minimum alignment length" help="Proportion of the hit length without gaps to the length of the database sequence [0-1]" />
-	<param name="interruptions" type="integer" value="1" label="Interruptions [frameshifts + stop codons]" help=" tolerance threshold per every starting 100 bps of a sequence" />
+	<param name="interruptions" type="integer" value="3" label="Interruptions [frameshifts + stop codons]" help=" tolerance threshold per every starting 100 amino acids of alignment sequence" />
 	<param name="selected_domain" type="select" label="Select protein domain type" >
     <options from_file="select_domain.txt" >
      <column name="name" index="0"/>
@@ -42,7 +42,7 @@ This tool runs filtering on either primary GFF3 file of all domains, i.e. output
 	- alignment sequence identity
 	- alignment similarity
 	- alignment proportion length
-	- number of interruptions (frameshifts or stop codons)
+	- number of interruptions (frameshifts or stop codons) per 100 AA
 		
 **Protein domain type**
 	This filtration is based on "Name" attribute of GFF3 file
@@ -58,7 +58,7 @@ Based on the testing we recommend to set up these parameters for non-Viridiplant
 - Minimum identity: 0,3
 - Minimum similarity: 0,4
 - Minimum alignmnet length: 0,8
-- Interruption: 1
+- Interruption: 3
 
 **OUTPUTS PRODUCED:**
 	1.	Filtered GFF3 file
