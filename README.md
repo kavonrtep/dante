@@ -68,45 +68,45 @@ scripts from the command line
 
 * Protein Domains Finder
 
-	usage: protein_domains_pd.py [-h] -q QUERY -pdb PROTEIN_DATABASE -cs
-								 CLASSIFICATION [-oug DOMAIN_GFF] [-nld NEW_LDB]
-								 [-sum SUMMARY_FILE] [-dir OUTPUT_DIR]
-								 [-thsc THRESHOLD_SCORE] [-wd WIN_DOM]
-								 [-od OVERLAP_DOM]
+		usage: protein_domains_pd.py [-h] -q QUERY -pdb PROTEIN_DATABASE -cs
+									 CLASSIFICATION [-oug DOMAIN_GFF] [-nld NEW_LDB]
+									 [-sum SUMMARY_FILE] [-dir OUTPUT_DIR]
+									 [-thsc THRESHOLD_SCORE] [-wd WIN_DOM]
+									 [-od OVERLAP_DOM]
 
-	optional arguments:
-	  -h, --help            show this help message and exit
-	  -oug DOMAIN_GFF, --domain_gff DOMAIN_GFF
-							output domains gff format (default: None)
-	  -nld NEW_LDB, --new_ldb NEW_LDB
-							create indexed database files for lastal in case of
-							working with new protein db (default: False)
-	  -sum SUMMARY_FILE, --summary_file SUMMARY_FILE
-							output summary file containing overview of amount of
-							domains in individual seqs (default: None)
-	  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
-							specify if you want to change the output directory
-							(default: None)
-	  -thsc THRESHOLD_SCORE, --threshold_score THRESHOLD_SCORE
-							percentage of the best score in the cluster to be
-							tolerated when assigning annotations per base
-							(default: 80)
-	  -wd WIN_DOM, --win_dom WIN_DOM
-							window to process large input sequences sequentially
-							(default: 10000000)
-	  -od OVERLAP_DOM, --overlap_dom OVERLAP_DOM
-							overlap of sequences in two consecutive windows
-							(default: 10000)
+		optional arguments:
+			  -h, --help            show this help message and exit
+			  -oug DOMAIN_GFF, --domain_gff DOMAIN_GFF
+									output domains gff format (default: None)
+			  -nld NEW_LDB, --new_ldb NEW_LDB
+									create indexed database files for lastal in case of
+									working with new protein db (default: False)
+			  -sum SUMMARY_FILE, --summary_file SUMMARY_FILE
+									output summary file containing overview of amount of
+									domains in individual seqs (default: None)
+			  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
+									specify if you want to change the output directory
+									(default: None)
+			  -thsc THRESHOLD_SCORE, --threshold_score THRESHOLD_SCORE
+									percentage of the best score in the cluster to be
+									tolerated when assigning annotations per base
+									(default: 80)
+			  -wd WIN_DOM, --win_dom WIN_DOM
+									window to process large input sequences sequentially
+									(default: 10000000)
+			  -od OVERLAP_DOM, --overlap_dom OVERLAP_DOM
+									overlap of sequences in two consecutive windows
+									(default: 10000)
 
-	required named arguments:
-	  -q QUERY, --query QUERY
-							input DNA sequence to search for protein domains in a
-							fasta format. Multifasta format allowed. (default:
-							None)
-	  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
-							protein domains database file (default: None)
-	  -cs CLASSIFICATION, --classification CLASSIFICATION
-							protein domains classification file (default: None)
+		required named arguments:
+		  -q QUERY, --query QUERY
+								input DNA sequence to search for protein domains in a
+								fasta format. Multifasta format allowed. (default:
+								None)
+		  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
+								protein domains database file (default: None)
+		  -cs CLASSIFICATION, --classification CLASSIFICATION
+								protein domains classification file (default: None)
 
 		
 	HOW TO RUN EXAMPLE:
@@ -121,52 +121,52 @@ scripts from the command line
 	
 * Protein Domains Filter
 
-	usage: domains_filtering.py [-h] -dom_gff DOMAIN_GFF [-ouf DOMAINS_FILTERED]
-                            [-dps DOMAINS_PROT_SEQ] [-cls ELEMENT_TABLE]
-                            [-thl {float range 0.0..1.0}]
-                            [-thi {float range 0.0..1.0}]
-                            [-ths {float range 0.0..1.0}] [-ir INTERRUPTIONS]
-                            [-sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}]
-                            [-el ELEMENT_TYPE] [-dir OUTPUT_DIR]
+		usage: domains_filtering.py [-h] -dom_gff DOMAIN_GFF [-ouf DOMAINS_FILTERED]
+								[-dps DOMAINS_PROT_SEQ] [-cls ELEMENT_TABLE]
+								[-thl {float range 0.0..1.0}]
+								[-thi {float range 0.0..1.0}]
+								[-ths {float range 0.0..1.0}] [-ir INTERRUPTIONS]
+								[-sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}]
+								[-el ELEMENT_TYPE] [-dir OUTPUT_DIR]
 
 
 
-	optional arguments:
-	  -h, --help            show this help message and exit
-	  -ouf DOMAINS_FILTERED, --domains_filtered DOMAINS_FILTERED
-							output filtered domains gff file (default: None)
-	  -dps DOMAINS_PROT_SEQ, --domains_prot_seq DOMAINS_PROT_SEQ
-							output file containg domains protein sequences
-							(default: None)
-	  -cls ELEMENT_TABLE, --element_table ELEMENT_TABLE
-							output table containing original and filtered domains
-							classification and their amount (default: None)
-	  -thl {float range 0.0..1.0}, --th_length {float range 0.0..1.0}
-							proportion of alignment length threshold (default:
-							0.8)
-	  -thi {float range 0.0..1.0}, --th_identity {float range 0.0..1.0}
-							proportion of alignment identity threshold (default:
-							0.35)
-	  -ths {float range 0.0..1.0}, --th_similarity {float range 0.0..1.0}
-							threshold for alignment proportional similarity
-							(default: 0.45)
-	  -ir INTERRUPTIONS, --interruptions INTERRUPTIONS
-							interruptions (frameshifts + stop codons) tolerance
-							threshold per 100 bp (default: 1)
-	  -sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}, --selected_dom {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}
-							filter output domains based on the domain type
-							(default: All)
-	  -el ELEMENT_TYPE, --element_type ELEMENT_TYPE
-							filter output domains by typing substring from
-							classification (default: )
-	  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
-							specify if you want to change the output directory
-							(default: None)
+		optional arguments:
+		  -h, --help            show this help message and exit
+		  -ouf DOMAINS_FILTERED, --domains_filtered DOMAINS_FILTERED
+								output filtered domains gff file (default: None)
+		  -dps DOMAINS_PROT_SEQ, --domains_prot_seq DOMAINS_PROT_SEQ
+								output file containg domains protein sequences
+								(default: None)
+		  -cls ELEMENT_TABLE, --element_table ELEMENT_TABLE
+								output table containing original and filtered domains
+								classification and their amount (default: None)
+		  -thl {float range 0.0..1.0}, --th_length {float range 0.0..1.0}
+								proportion of alignment length threshold (default:
+								0.8)
+		  -thi {float range 0.0..1.0}, --th_identity {float range 0.0..1.0}
+								proportion of alignment identity threshold (default:
+								0.35)
+		  -ths {float range 0.0..1.0}, --th_similarity {float range 0.0..1.0}
+								threshold for alignment proportional similarity
+								(default: 0.45)
+		  -ir INTERRUPTIONS, --interruptions INTERRUPTIONS
+								interruptions (frameshifts + stop codons) tolerance
+								threshold per 100 bp (default: 1)
+		  -sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}, --selected_dom {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}
+								filter output domains based on the domain type
+								(default: All)
+		  -el ELEMENT_TYPE, --element_type ELEMENT_TYPE
+								filter output domains by typing substring from
+								classification (default: )
+		  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
+								specify if you want to change the output directory
+								(default: None)
 
-	required named arguments:
-	  -dom_gff DOMAIN_GFF, --domain_gff DOMAIN_GFF
-							basic unfiltered gff file of all domains (default:
-							None)
+		required named arguments:
+		  -dom_gff DOMAIN_GFF, --domain_gff DOMAIN_GFF
+								basic unfiltered gff file of all domains (default:
+								None)
 
 
 

@@ -53,7 +53,7 @@ This tool runs filtering on either primary GFF3 file of all domains, i.e. output
 All the records containing ambiguous domain type (e.g. RH/INT) are filtered out automatically. They do not take place in filtered gff file neither the protein sequence is derived from these potentially chimeric domains. Optimal results (for general usage) should be reached using the default quality filtering parameters which are appropriate to find all types of protein domains. Keep in mind that the results should be critically assessed based on your input data anyhow.
 
 **!NOTE**: If you are working with non-Viridiplantae eukayrotic organisms, the results might not be optimal as the domains database is mostly based on Viridiplantae organisms. In this case filtering parameters should be adjusted and results more carefully inspected.
-Based on the testing we recommend to set up these parameters for eukayrotics:
+Based on the testing we recommend to set up these parameters for non-Viridiplantae eukayrotics:
 
 - Minimum identity: 0,3
 - Minimum similarity: 0,4
