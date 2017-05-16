@@ -58,7 +58,7 @@ Based on the testing we recommend to set up these parameters for non-Viridiplant
 - Minimum identity: 0,3
 - Minimum similarity: 0,4
 - Minimum alignmnet length: 0,8
-- Interruption: 3
+- Interruptions: 3
 
 **OUTPUTS PRODUCED:**
 	1.	Filtered GFF3 file

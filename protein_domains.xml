@@ -69,6 +69,7 @@ This tool uses external aligning programme `LAST`_
 
 2. summary text file with overview of amounts of domains types in individual sequences
 
+!NOTE: Tool can in average process 0.5 Gbps of the DNA sequence per day. This is only a rough estimate and it is highly dependent on input data (repetive elements occurence) as well as computing resources. Maximum running time of the tool is 7 days.
 
  </help>
 </tool>

@@ -309,10 +309,30 @@ def filter_params(db, query, protein_len):
 	relat_interrupt = round(count_interrupt/math.ceil((len(query)/100)),2)
 	return align_identity, align_similarity, relat_align_len, relat_interrupt, 	
 
+def get_version(path):
+	branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True, cwd=path).decode('ascii').strip()
+	shorthash = subprocess.check_output("git log --pretty=format:'%h' -n 1  ", shell=True, cwd=path).decode('ascii').strip()
+	revcount = len(subprocess.check_output("git log --oneline", shell=True,  cwd=path).decode('ascii').split())
+	version_string = ("-------------------------------------"
+		"-------------------------------------\n"
+							  "PIPELINE VERSION         : "
+		"{branch}-rv-{revcount}({shorthash})\n"
+							  "PROTEIN DATABASE VERSION : {PD}\n"
+		"-------------------------------------"
+		"-------------------------------------\n").format(
+								  branch=branch,
+								  shorthash=shorthash,
+								  revcount=revcount,
+								  PD=configuration.LAST_DB_FILE
+                      )
+	return(version_string)
 
 def domains_stat(domains_all, seq_ids, SUMMARY):
 	'''  Create a file containing amounts of individual domains types'''
+	path = os.path.dirname(os.path.realpath(__file__))
+	version_string = get_version(path)
 	with open(SUMMARY, "w") as sumfile:
+		sumfile.write(version_string)
 		count_seq = 0 
 		if seq_ids == []:
 			sumfile.write("NO DOMAINS")
