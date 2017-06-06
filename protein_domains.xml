@@ -18,7 +18,7 @@ python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gf
 
 **WHAT IT DOES**
 
-This tool uses external aligning programme `LAST`_
+This tool uses external aligning programme `LAST`_ and **RepeatExplorer database of Viridiplantae TE protein domains (! in case of non-Viridiplantae species classification might not be reliable !)** 
 
 .. _LAST: http://last.cbrc.jp/  
 

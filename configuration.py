@@ -3,6 +3,7 @@ import os
 """ configuration file to set up the paths and constants """
 
 # PATHS
+MAIN_GIT_DIR = os.path.dirname(os.path.realpath(__file__)) 
 ######## PROFREP
 #JBROWSE_BIN = "/home/galaxy/bin/JBrowse-1.12.1/bin"
 JBROWSE_BIN_PC = "/var/www/html/JBrowse-1.12.1/bin"
@@ -11,8 +12,9 @@ jbrowse_link_to_galaxy = "data/galaxy_profrep_files"
 jbrowse_link_to_profrep = "data/profrep_data"
 LINK_PART1 = "http://nina/JBrowse-1.12.1/index.html?data="
 LINK_PART1_PC = "http://nina/JBrowse-1.12.1/index.html?data="
+PROFREP_DATA = os.path.join(MAIN_GIT_DIR, "profrep_data")
+#TBL = os.path.join(PROFREP_DATA, "prepared_datasets.txt")
 ######### DOMAINS
-MAIN_GIT_DIR = os.path.dirname(os.path.realpath(__file__)) 
 MAIN_RESULTS_DIR = os.getcwd()
 DOMAINS_DATA = os.path.join(MAIN_GIT_DIR, "domains_data")
 TMP = os.path.join(MAIN_RESULTS_DIR, "tmp")

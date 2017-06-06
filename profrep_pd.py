@@ -18,6 +18,8 @@ import gff
 import protein_domains_pd
 import configuration
 import visualization
+import config_jbrowse
+
 
 t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
@@ -244,28 +246,35 @@ def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF, REF
 
 def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
-	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
+	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
 	convert = "%2F"
 	# Galaxy usage
 	if GALAXY:
-		JBROWSE_BIN = os.environ["JBROWSE_BIN"]
-		extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
-		link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
-		link = configuration.LINK_PART1 + link_part2
+		results_path1 = "/".join(HTML.split("/")[HTML_DATA.split("/").index("database")+1:-1])
+		results_path2 = HTML_DATA.split("/")[-1]
+		link_part2 = os.path.join("data", config_jbrowse.link_to_files, results_path1, results_path2, configuration.jbrowse_data_dir).replace("/",convert)
+	    #JBROWSE_BIN = os.environ["JBROWSE_BIN"]
+	    #extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
+	    #link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
+	    #link = configuration.LINK_PART1 + link_part2
+
 	# Local usage
-	else: 
-		JBROWSE_BIN = configuration.JBROWSE_BIN_PC
-		link_part2 = os.path.join(configuration.jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
-		link = configuration.LINK_PART1_PC + link_part2
-	subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])
+	else:            
+		#JBROWSE_BIN = configuration.JBROWSE_BIN_PC
+		#link_part2 = os.path.join(configuration.jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
+		#link = configuration.LINK_PART1_PC + link_part2
+		link_part2 = os.path.join("data", config_jbrowse.link_to_files, configuration.jbrowse_data_dir).replace("/", convert)
+	link_part1 = "http://{}/{}/index.html?data=".format(config_jbrowse.PC, config_jbrowse.JBROWSE)
+	link = link_part1 + link_part2
+	subprocess.call(["{}/prepare-refseqs.pl".format(config_jbrowse.JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
 	count = 0
 	for repeat_id in repeats_all[1:]:
 		color = configuration.COLORS_RGB[count]
-		subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+		subprocess.call(["{}/wig-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 		count += 1
 	return link
 
@@ -299,15 +308,15 @@ def genome2coverage(GS, BLAST_DB):
 	return CV
 
 	
-def prepared_data(TBL, DB_ID):
+def prepared_data(TBL, DB_ID, TOOL_DATA_DIR):
 	''' Get prepared rep. annotation data from the table based on the selected species ID '''
 	with open(TBL) as datasets:
 		for line in datasets:
 			if DB_ID in line:
 				DB_NAME = line.split("\t")[1]
-				BLAST_DB = os.path.join(configuration.TOOL_DATA_DIR, line.split("\t")[2])
-				CLS = os.path.join(configuration.TOOL_DATA_DIR, line.split("\t")[3])
-				CL_ANNOTATION_TBL = os.path.join(configuration.TOOL_DATA_DIR, line.split("\t")[4])
+				BLAST_DB = os.path.join(TOOL_DATA_DIR, line.split("\t")[2])
+				CLS = os.path.join(TOOL_DATA_DIR, line.split("\t")[3])
+				CL_ANNOTATION_TBL = os.path.join(TOOL_DATA_DIR, line.split("\t")[4])
 				CV = float(line.split("\t")[5])
 				REF = line.split("\t")[6]
 				REF_LINK = line.split("\t")[7]
@@ -348,21 +357,37 @@ def main(args):
 	DB_ID = args.db_id
 	TBL = args.datasets_tbl
 	DB_NAME = args.db_name
+	THRESHOLD_SCORE = args.threshold_score
+	WIN_DOM = args.win_dom
+	OVERLAP_DOM = args.overlap_dom
+	THRESHOLD_SCORE = args.threshold_score
+	WIN_DOM = args.win_dom
+	OVERLAP_DOM = args.overlap_dom
+	GALAXY = args.galaxy_usage
+	TOOL_DATA_DIR = args.tool_dir
+
 
 	REF = None
 	REF_LINK = None
 	
-	if os.getenv("JBROWSE_BIN"):
-		GALAXY = True
-		CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
-		LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB)
-		TBL = os.path.join(configuration.TOOL_DATA_DIR, TBL)
-	else:
-		GALAXY = False
+	#if os.getenv("JBROWSE_BIN"):
+		#GALAXY = True
+		#CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
+		#LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB)
+		#TBL = os.path.join(configuration.TOOL_DATA_DIR, TBL)
+	#else:
+		#GALAXY = False
+		
+	
 	
 	# Parse prepared annotation data table
 	if TBL:
-		[DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK] = prepared_data(TBL, DB_ID)
+		TBL = os.path.join(configuration.PROFREP_DATA, TBL)
+		[DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK] = prepared_data(TBL, DB_ID, TOOL_DATA_DIR)
+		if GALAXY:
+			LAST_DB = os.path.join(LAST_DB, configuration.LAST_DB_FILE)
+			CLASSIFICATION = os.path.join(CLASSIFICATION, configuration.CLASS_FILE)
+
 	
 	# Calculate coverage 	
 	if not CN:
@@ -375,6 +400,9 @@ def main(args):
 	# Create dir to store outputs for html 
 	if not os.path.exists(HTML_DATA):
 		os.makedirs(HTML_DATA)
+		
+	if not os.path.isabs(OUT_DOMAIN_GFF):
+		OUT_DOMAIN_GFF = os.path.join(HTML_DATA, OUT_DOMAIN_GFF)
 		
 	# Define parameters for parallel process
 	STEP = WINDOW - OVERLAP		
@@ -432,8 +460,8 @@ def main(args):
 	
 	# Protein domains module
 	t_domains=time.time()
-	if DOMAINS:
-		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF)	
+	if DOMAINS is True:
+		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF,  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)	
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
 		
 	t_gff_vis = time.time() 
@@ -455,8 +483,8 @@ if __name__ == "__main__":
     REPEATS_GFF = configuration.REPEATS_GFF
     N_REG = configuration.N_REG
     REPEATS_TABLE = configuration.REPEATS_TABLE
-    CLASSIFICATION = configuration.CLASSIFICATION
-    LAST_DB = configuration.LAST_DB
+    #CLASSIFICATION = configuration.CLASSIFICATION
+    #LAST_DB = configuration.LAST_DB
 
     
     # Command line arguments
@@ -489,15 +517,15 @@ if __name__ == "__main__":
 						help='create a new blast database')
     parser.add_argument('-g', '--gff', default=True,
 						help='use module for gff')
-    parser.add_argument('-th', '--threshold', type=int, default=50,
+    parser.add_argument('-th', '--threshold', type=int, default=5,
 						help='threshold (number of hits) for report repetitive area in gff')
-    parser.add_argument('-ths', '--threshold_segment', type=int, default=50,
+    parser.add_argument('-ths', '--threshold_segment', type=int, default=80,
                         help='threshold for a single segment length to be reported as repetitive reagion in gff')
     parser.add_argument('-pd', '--protein_domains', default=True,
 						help='use module for protein domains')
-    parser.add_argument('-pdb', '--protein_database', type=str, default=LAST_DB,
+    parser.add_argument('-pdb', '--protein_database', type=str,
                         help='protein domains database')
-    parser.add_argument('-cs', '--classification', type=str, default=CLASSIFICATION,
+    parser.add_argument('-cs', '--classification', type=str,
                         help='protein domains classification file')
     parser.add_argument('-ou', '--output', type=str, default=REPEATS_TABLE,
 						help='output profile table name')
@@ -522,7 +550,21 @@ if __name__ == "__main__":
     parser.add_argument("-tbl", "--datasets_tbl", type=str,
                         help="table with prepared anotation data")    
     parser.add_argument("-dbn", "--db_name", type=str,
-                        help="custom database name")           
+                        help="custom database name")     
+    parser.add_argument("-dir","--output_dir", type=str,
+						help="specify if you want to change the output directory")
+    parser.add_argument("-thsc","--threshold_score", type=int, default=80,
+						help="percentage of the best score in the cluster to be tolerated when assigning annotations per base")
+    parser.add_argument("-wd","--win_dom", type=int, default=10000000,
+						help="window to process large input sequences sequentially")
+    parser.add_argument("-od","--overlap_dom", type=int, default=10000,
+						help="overlap of sequences in two consecutive windows")
+    parser.add_argument("-gu", "--galaxy_usage", default=False,
+                        help="option for galaxy usage only")
+    parser.add_argument("-td", "--tool_dir", default=False,
+                  		help="tool data directory in galaxy")
+
+
 
     args = parser.parse_args()
     main(args)

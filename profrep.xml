@@ -2,11 +2,14 @@
 <description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
 <command>
 export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
-/mnt/raid/opt/python-3.4.4/bin/python3 /mnt/raid/users/galaxy/galaxy-dist2/tools/profrep/profrep_pd.py --query ${input} --output ${ProfTbl} --output_gff ${ProfGff} --html_file ${html_file}
+python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl} --output_gff ${ProfGff} --html_file ${html_file}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff} 
---protein_database proteins_all
---classification classification.csv
+--protein_database ${__tool_data_path__ }/protein_domains
+--classification ${__tool_data_path__ }/protein_domains
 --domain_gff ${DomGff}
+--galaxy_usage True
+--tool_dir ${__tool_data_path__ }/profrep
+
 
  #if $advanced_options.opts:
 	--identical ${identical}  

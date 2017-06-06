@@ -19,6 +19,10 @@ def create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT):
 	for repeat in header[2:]:
 		above_th = seq_repeats[seq_id][np.where(seq_repeats[repeat] > THRESHOLD)[0]]
 		ranges = idx_ranges(above_th, THRESHOLD_SEGMENT)
+		#####
+		if repeat == "G_Athila":
+			print(ranges)
+		#####
 		with open(OUTPUT_GFF, "a") as gff:	
 			for i in range(len(ranges) - 1)[::2]:
 				gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, SOURCE, FEATURE, ranges[i], ranges[i + 1], SCORE, STRAND, FRAME, repeat))
