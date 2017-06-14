@@ -1,7 +1,9 @@
 <tool id="profrep" name="ProfRep" version="1.0.0">
 <description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
+<requirements>
+    <requirement type="package" version="1.0.0" >profrep</requirement>
+</requirements>
 <command>
-export JBROWSE_BIN="/home/galaxy/bin/JBrowse-1.12.1/bin";
 python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl} --output_gff ${ProfGff} --html_file ${html_file}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff} 
 --protein_database ${__tool_data_path__ }/protein_domains
@@ -10,15 +12,14 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
 --galaxy_usage True
 --tool_dir ${__tool_data_path__ }/profrep
 
-
  #if $advanced_options.opts:
-	--identical ${identical}  
-	--align_length ${align_length} 
-	--word_size ${word_size} 
-	--e_value ${e_value} 
-	--threshold ${threshold} 
-	--window ${window} 
-	--overlap ${overlap} 
+	--identical ${advanced_options.identical}  
+	--align_length ${advanced_options.align_length} 
+	--word_size ${advanced_options.word_size} 
+	--e_value ${advanced_options.e_value} 
+	--threshold ${advanced_options.threshold} 
+	--window ${advanced_options.window} 
+	--overlap ${advanced_options.overlap} 
  #end if
  
  #if $custom_data.options_custom_data:

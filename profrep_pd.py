@@ -14,6 +14,7 @@ import os
 from functools import partial
 from multiprocessing import Pool
 from tempfile import NamedTemporaryFile
+import pickle
 import gff
 import protein_domains_pd
 import configuration
@@ -123,21 +124,31 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			else:
 				annotation = "ALL"
 			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
-	return subprofile
+	ntf = NamedTemporaryFile(suffix='{}_.pickle'.format(subset_index),delete=False)
+	with open(ntf.name, 'wb') as handle:
+		pickle.dump(subprofile, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	ntf.close()
+	return ntf.name
 
 
 def concatenate_dict(profile_list, WINDOW, OVERLAP):
 	''' Concatenate sequential subprofiles to the final profile representing 
 	the whole sequence and deal with overlaping parts '''
 	profile = {}
-	for key in profile_list[0].keys():
-		if len(profile_list) == 1:
-			profile[key] = profile_list[0][key]
-		else:
-			profile[key] = profile_list[0][key][0 : WINDOW-OVERLAP//2]
-			for item in profile_list[1:-1]:
-				profile[key] = np.append(profile[key], item[key][OVERLAP//2 : WINDOW-OVERLAP//2])
-			profile[key] = np.append(profile[key], profile_list[-1][key][OVERLAP//2:])
+	with open(profile_list[0], 'rb') as handle_first:
+		first_dict = pickle.load(handle_first)
+		for key in first_dict.keys():
+			if len(profile_list) == 1:
+				profile[key] = first_dict[key]
+			else:
+				profile[key] = first_dict[key][0 : WINDOW-OVERLAP//2]
+				for item in profile_list[1:-1]:
+					with open(item, 'rb') as handle:
+						individual_dict = pickle.load(handle)
+						profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : WINDOW-OVERLAP//2])
+				with open(profile_list[-1],'rb') as handle_last:
+					last_dict = pickle.load(handle_last)
+					profile[key] = np.append(profile[key], last_dict[key][OVERLAP//2:])
 	return profile
 
 
@@ -205,7 +216,7 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 	return repeats_all
 
 
-def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF, REF_LINK):
+def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK):
 	''' Define html output with limited number of output pictures and link to JBrowse '''
 	pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM] ])
 	with open(SEQ_INFO, "r") as s_info:
@@ -230,7 +241,6 @@ def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF, REF
 		<h4> Database: </h4>
 		<pre> {} </pre>
 		<h4> Interactive visualization: </h4>
-		<a href="{}" target="_blank" >Link to JBrowse</a> </br>
 		<hr>
 		<h3> Repetitive profile(s)</h3> </br>
 		{} <br/>
@@ -239,7 +249,7 @@ def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF, REF
 		</h6>
 	</body>
 	</html>
-	'''.format(info, total_length, DB_NAME, link, pictures, ref_string)
+	'''.format(info, total_length, DB_NAME, pictures, ref_string)
 	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
 
@@ -247,25 +257,25 @@ def html_output(SEQ_INFO, total_length, seq_names, link, HTML, DB_NAME, REF, REF
 def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
-	convert = "%2F"
-	# Galaxy usage
-	if GALAXY:
-		results_path1 = "/".join(HTML.split("/")[HTML_DATA.split("/").index("database")+1:-1])
-		results_path2 = HTML_DATA.split("/")[-1]
-		link_part2 = os.path.join("data", config_jbrowse.link_to_files, results_path1, results_path2, configuration.jbrowse_data_dir).replace("/",convert)
-	    #JBROWSE_BIN = os.environ["JBROWSE_BIN"]
-	    #extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
-	    #link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
-	    #link = configuration.LINK_PART1 + link_part2
+	#convert = "%2F"
+	## Galaxy usage
+	#if GALAXY:
+		#results_path1 = "/".join(HTML.split("/")[HTML_DATA.split("/").index("database")+1:-1])
+		#results_path2 = HTML_DATA.split("/")[-1]
+		#link_part2 = os.path.join("data", config_jbrowse.link_to_files, results_path1, results_path2, configuration.jbrowse_data_dir).replace("/",convert)
+	    ##JBROWSE_BIN = os.environ["JBROWSE_BIN"]
+	    ##extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
+	    ##link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
+	    ##link = configuration.LINK_PART1 + link_part2
 
-	# Local usage
-	else:            
-		#JBROWSE_BIN = configuration.JBROWSE_BIN_PC
-		#link_part2 = os.path.join(configuration.jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
-		#link = configuration.LINK_PART1_PC + link_part2
-		link_part2 = os.path.join("data", config_jbrowse.link_to_files, configuration.jbrowse_data_dir).replace("/", convert)
-	link_part1 = "http://{}/{}/index.html?data=".format(config_jbrowse.PC, config_jbrowse.JBROWSE)
-	link = link_part1 + link_part2
+	## Local usage
+	#else:            
+		##JBROWSE_BIN = configuration.JBROWSE_BIN_PC
+		##link_part2 = os.path.join(configuration.jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
+		##link = configuration.LINK_PART1_PC + link_part2
+		#link_part2 = os.path.join("data", config_jbrowse.link_to_files, configuration.jbrowse_data_dir).replace("/", convert)
+	#link_part1 = "http://{}/{}/index.html?data=".format(config_jbrowse.PC, config_jbrowse.JBROWSE)
+	#link = link_part1 + link_part2
 	subprocess.call(["{}/prepare-refseqs.pl".format(config_jbrowse.JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
 	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
 	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
@@ -276,7 +286,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GF
 		color = configuration.COLORS_RGB[count]
 		subprocess.call(["{}/wig-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 		count += 1
-	return link
+	return None
 
 
 def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
@@ -439,9 +449,10 @@ def main(args):
 			
 			# Create parallel process																												
 			subset_index = list(range(0, seq_length, STEP))	
+			print(subset_index)
 			multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
 			profile_list = parallel_pool.map(multiple_param, subset_index)		 							
-
+			print(profile_list)
 			# Join partial profiles to the final profile of the sequence 
 			profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
 
@@ -455,6 +466,9 @@ def main(args):
 			start = end + 1
 			seq_count += 1
 			total_length += seq_length 
+			#os.unlink(subfasta)
+			for subprofile in profile_list:
+				os.unlink(subprofile)
 	
 	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
 	
@@ -470,9 +484,9 @@ def main(args):
 	print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 	
 	# Prepare data for html output
-	link = jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY)		
-	html_output(SEQ_INFO, total_length, headers, link, HTML, DB_NAME, REF, REF_LINK)
-	
+	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY)		
+	html_output(SEQ_INFO, total_length, headers, HTML, DB_NAME, REF, REF_LINK)
+
 	
 if __name__ == "__main__":
     
