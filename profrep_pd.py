@@ -124,7 +124,7 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			else:
 				annotation = "ALL"
 			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
-	ntf = NamedTemporaryFile(suffix='{}_.pickle'.format(subset_index),delete=False)
+	ntf = NamedTemporaryFile(suffix='_{}.pickle'.format(subset_index),delete=False)
 	with open(ntf.name, 'wb') as handle:
 		pickle.dump(subprofile, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	ntf.close()
@@ -141,11 +141,13 @@ def concatenate_dict(profile_list, WINDOW, OVERLAP):
 			if len(profile_list) == 1:
 				profile[key] = first_dict[key]
 			else:
-				profile[key] = first_dict[key][0 : WINDOW-OVERLAP//2]
+				#profile[key] = first_dict[key][0 : WINDOW-OVERLAP//2]
+				profile[key] = first_dict[key][0 : -OVERLAP//2-1]
 				for item in profile_list[1:-1]:
 					with open(item, 'rb') as handle:
 						individual_dict = pickle.load(handle)
-						profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : WINDOW-OVERLAP//2])
+						#profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : WINDOW-OVERLAP//2])
+						profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : -OVERLAP//2-1])
 				with open(profile_list[-1],'rb') as handle_last:
 					last_dict = pickle.load(handle_last)
 					profile[key] = np.append(profile[key], last_dict[key][OVERLAP//2:])
@@ -450,12 +452,27 @@ def main(args):
 			# Create parallel process																												
 			subset_index = list(range(0, seq_length, STEP))	
 			print(subset_index)
-			multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
-			profile_list = parallel_pool.map(multiple_param, subset_index)		 							
-			print(profile_list)
-			# Join partial profiles to the final profile of the sequence 
-			profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
-
+			#############################
+			files_num = 3
+			index_range = range(len(subset_index))
+			concatenated_prof = None
+			for chunk_index in index_range[0::files_num]:
+				#############################
+				multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
+				print(subset_index[chunk_index:chunk_index + files_num])
+				profile_list = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + files_num])
+				# Join partial profiles to the final profile of the sequence 
+				if concatenated_prof:
+					profile_list.insert(0, concatenated_prof)	 							
+				print(profile_list)
+				profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
+				prof_temp = NamedTemporaryFile(suffix='.pickle',delete=False)
+				concatenated_prof = prof_temp.name
+				with open(concatenated_prof, 'wb') as handle:
+					pickle.dump(profile, handle, protocol=pickle.HIGHEST_PROTOCOL)
+				prof_temp.close()
+				for subprofile in profile_list:
+					os.unlink(subprofile)
 			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
 			profile["ALL"] = sum(profile.values())
 			
@@ -467,8 +484,7 @@ def main(args):
 			seq_count += 1
 			total_length += seq_length 
 			#os.unlink(subfasta)
-			for subprofile in profile_list:
-				os.unlink(subprofile)
+			os.unlink(concatenated_prof)
 	
 	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
 	
@@ -486,7 +502,9 @@ def main(args):
 	# Prepare data for html output
 	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY)		
 	html_output(SEQ_INFO, total_length, headers, HTML, DB_NAME, REF, REF_LINK)
-
+	
+	for subfasta in fasta_list:
+		os.unlink(subfasta)
 	
 if __name__ == "__main__":
     
