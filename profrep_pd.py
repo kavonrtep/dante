@@ -26,6 +26,24 @@ t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
  
 
+#def multifasta(QUERY):
+	#''' Create single fasta temporary files to be processed sequentially '''
+	#PATTERN = ">"
+	#fasta_list = []
+	#with open(QUERY, "r") as fasta:
+		#reader = fasta.read()
+		#splitter = reader.split(PATTERN)[1:]
+		#if len(splitter) > 1:
+			#for fasta_num, part in enumerate(splitter):
+				#ntf = NamedTemporaryFile(delete=False)
+				#ntf.write("{}{}".format(PATTERN, part).encode("utf-8"))
+				#fasta_list.append(ntf.name)
+				#ntf.close()
+			#return fasta_list
+		#else:
+			#fasta_list.append(QUERY)
+			#return fasta_list
+
 def multifasta(QUERY):
 	''' Create single fasta temporary files to be processed sequentially '''
 	PATTERN = ">"
@@ -33,16 +51,13 @@ def multifasta(QUERY):
 	with open(QUERY, "r") as fasta:
 		reader = fasta.read()
 		splitter = reader.split(PATTERN)[1:]
-		if len(splitter) > 1:
-			for fasta_num, part in enumerate(splitter):
-				ntf = NamedTemporaryFile(delete=False)
-				ntf.write("{}{}".format(PATTERN, part).encode("utf-8"))
-				fasta_list.append(ntf.name)
-				ntf.close()
-			return fasta_list
-		else:
-			fasta_list.append(QUERY)
-			return fasta_list
+		for fasta_num, part in enumerate(splitter):
+			ntf = NamedTemporaryFile(delete=False)
+			ntf.write("{}{}".format(PATTERN, part).encode("utf-8"))
+			fasta_list.append(ntf.name)
+			ntf.close()
+		print(fasta_list)
+		return fasta_list
 
 
 def fasta_read(subfasta):
@@ -284,7 +299,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GF
 	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
 	count = 0
-	for repeat_id in repeats_all[1:]:
+	for repeat_id in repeats_all:
 		color = configuration.COLORS_RGB[count]
 		subprocess.call(["{}/wig-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 		count += 1
@@ -296,6 +311,7 @@ def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
 	header_repeats = seq_repeats.dtype.names
 	seq_id = header_repeats[0]
 	max_wig = []
+	print(header_repeats)
 	for track in header_repeats[1:]:
 		header_wig = "variableStep\tchrom={}".format(seq_id)
 		track_name = track.split("/")[-1]
@@ -440,7 +456,7 @@ def main(args):
 	total_length = 0
 	# Create file to record info about fasta sequences
 	SEQ_INFO = "{}/{}".format(HTML_DATA, configuration.SEQ_INFO)
-	with open(SEQ_INFO, "a") as s_info:
+	with open(SEQ_INFO, "w") as s_info:
 		s_info.write(configuration.s_info_header)
 		# Find hits for each fasta sequence separetely
 		for subfasta in fasta_list:
@@ -483,7 +499,6 @@ def main(args):
 			start = end + 1
 			seq_count += 1
 			total_length += seq_length 
-			#os.unlink(subfasta)
 			os.unlink(concatenated_prof)
 	
 	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
