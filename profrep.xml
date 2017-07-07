@@ -35,7 +35,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
     --db_id ${custom_data.prepared_dataset}  
     --copy_numbers $custom_data.copy_numbers
  #end if 
- >> $log_file 
+ > $log_file 
 </command> 
 
 <inputs>

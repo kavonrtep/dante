@@ -329,6 +329,7 @@ def genome2coverage(GS, BLAST_DB):
 	''' Convert genome size to coverage'''
 	nr = subprocess.Popen('''cat {} | grep '>' | wc -l'''.format(BLAST_DB), stdout=subprocess.PIPE, shell=True)
 	num_of_reads = int(nr.communicate()[0])
+	########################################### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#########################################################
 	lr = subprocess.Popen('''awk -v N=2 '{print}/>/&&--N<=0{exit}' ''' + BLAST_DB + '''| awk '$0 !~">"{print}' | awk '{sum+=length($0)}END{print sum}' ''', stdout=subprocess.PIPE, shell=True)
 	len_of_read = int(lr.communicate()[0])
 	CV = (num_of_reads*len_of_read)/(GS*1000000) # GS in Mbp
@@ -469,7 +470,7 @@ def main(args):
 			subset_index = list(range(0, seq_length, STEP))	
 			print(subset_index)
 			#############################
-			files_num = 3
+			files_num = 1000
 			index_range = range(len(subset_index))
 			concatenated_prof = None
 			for chunk_index in index_range[0::files_num]:
