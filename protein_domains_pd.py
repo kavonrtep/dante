@@ -516,13 +516,13 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								xminimal.append(int(split_line[3]))
 								xmaximal.append(int(split_line[4]))
-								dom.append(split_line[-1].split(",")[0].split("=")[1])
+								dom.append(split_line[-1].split(";")[0].split("=")[1])
 								seen.add(line_without_id)
 						elif int(split_line[4]) < cut_end:
 							adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 							xminimal.append(int(split_line[3]))
 							xmaximal.append(int(split_line[4]))
-							dom.append(split_line[-1].split(",")[0].split("=")[1])
+							dom.append(split_line[-1].split(";")[0].split("=")[1])
 								
 					## last part of the sequence
 					elif "LAST" in split_line[0]:
@@ -532,13 +532,13 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								xminimal.append(int(split_line[3]))
 								xmaximal.append(int(split_line[4]))
-								dom.append(split_line[-1].split(",")[0].split("=")[1])
+								dom.append(split_line[-1].split(";")[0].split("=")[1])
 								seen.add(line_without_id)
 						elif int(split_line[3]) > cut_start: 
 							adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 							xminimal.append(int(split_line[3]))
 							xmaximal.append(int(split_line[4]))
-							dom.append(split_line[-1].split(",")[0].split("=")[1])
+							dom.append(split_line[-1].split(";")[0].split("=")[1])
 							
 					## middle part of the sequence
 					else:
@@ -549,13 +549,13 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								xminimal.append(int(split_line[3]))
 								xmaximal.append(int(split_line[4]))
-								dom.append(split_line[-1].split(",")[0].split("=")[1])
+								dom.append(split_line[-1].split(";")[0].split("=")[1])
 								seen.add(line_without_id)
 						elif int(split_line[3]) > cut_start and int(split_line[4]) < cut_end:
 							adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 							xminimal.append(int(split_line[3]))
 							xmaximal.append(int(split_line[4]))
-							dom.append(split_line[-1].split(",")[0].split("=")[1])	
+							dom.append(split_line[-1].split(";")[0].split("=")[1])	
 				
 				## not divived
 				else:
@@ -570,7 +570,7 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 					adjusted_gff.write(line)
 					xminimal.append(int(split_line[3]))
 					xmaximal.append(int(split_line[4]))
-					dom.append(split_line[-1].split(",")[0].split("=")[1])			
+					dom.append(split_line[-1].split(";")[0].split("=")[1])			
 	xminimal_all.append(xminimal)
 	xmaximal_all.append(xmaximal)
 	dom_all.append(dom)

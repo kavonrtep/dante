@@ -24,25 +24,7 @@ import config_jbrowse
 
 t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
- 
 
-#def multifasta(QUERY):
-	#''' Create single fasta temporary files to be processed sequentially '''
-	#PATTERN = ">"
-	#fasta_list = []
-	#with open(QUERY, "r") as fasta:
-		#reader = fasta.read()
-		#splitter = reader.split(PATTERN)[1:]
-		#if len(splitter) > 1:
-			#for fasta_num, part in enumerate(splitter):
-				#ntf = NamedTemporaryFile(delete=False)
-				#ntf.write("{}{}".format(PATTERN, part).encode("utf-8"))
-				#fasta_list.append(ntf.name)
-				#ntf.close()
-			#return fasta_list
-		#else:
-			#fasta_list.append(QUERY)
-			#return fasta_list
 
 def multifasta(QUERY):
 	''' Create single fasta temporary files to be processed sequentially '''
@@ -460,28 +442,25 @@ def main(args):
 	with open(SEQ_INFO, "w") as s_info:
 		s_info.write(configuration.s_info_header)
 		# Find hits for each fasta sequence separetely
+		t_blast=time.time()	
 		for subfasta in fasta_list:
 			[header, sequence] = fasta_read(subfasta)
 			gff.N_gff(header, sequence, N_GFF)
 			seq_length = len(sequence)
 			headers.append(header)
 			
-			# Create parallel process																												
+			# Create parallel process
+																														
 			subset_index = list(range(0, seq_length, STEP))	
-			print(subset_index)
-			#############################
 			files_num = 1000
 			index_range = range(len(subset_index))
 			concatenated_prof = None
 			for chunk_index in index_range[0::files_num]:
-				#############################
 				multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
-				print(subset_index[chunk_index:chunk_index + files_num])
 				profile_list = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + files_num])
 				# Join partial profiles to the final profile of the sequence 
 				if concatenated_prof:
 					profile_list.insert(0, concatenated_prof)	 							
-				print(profile_list)
 				profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
 				prof_temp = NamedTemporaryFile(suffix='.pickle',delete=False)
 				concatenated_prof = prof_temp.name
@@ -492,7 +471,6 @@ def main(args):
 					os.unlink(subprofile)
 			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
 			profile["ALL"] = sum(profile.values())
-			
 			nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CV)
 			end = start + nonzero_len
 			# Each line defines one sequence and its position in hits table 
@@ -501,6 +479,7 @@ def main(args):
 			seq_count += 1
 			total_length += seq_length 
 			os.unlink(concatenated_prof)
+		print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_blast))
 	
 	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
 	
@@ -516,8 +495,12 @@ def main(args):
 	print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 	
 	# Prepare data for html output
+	t_jbrowse=time.time()
 	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY)		
+	print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
+	t_html=time.time()
 	html_output(SEQ_INFO, total_length, headers, HTML, DB_NAME, REF, REF_LINK)
+	print("ELAPSED_TIME_HTML = {} s".format(time.time() - t_html))
 	
 	for subfasta in fasta_list:
 		os.unlink(subfasta)
