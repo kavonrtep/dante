@@ -6,10 +6,10 @@ import configuration
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-def vis_profrep(seq_repeats, seq_length, CV):
+def vis_profrep(seq_id, present_repeats, seq_repeats, seq_length, CV):
 	''' visualization of repetitive profiles'''
-	header = seq_repeats.dtype.names
-	seq_id = header[0]
+	#header = seq_repeats.dtype.names
+	#seq_id = header[0]
 	fig = plt.figure(figsize=(18, 8))
 	ax = fig.add_subplot(111)
 	ax.set_xlabel('sequence bp')
@@ -20,11 +20,11 @@ def vis_profrep(seq_repeats, seq_length, CV):
 	ax.set_title(seq_id)
 	plt.xlim([0, seq_length])	
 	plot_num = 0
-	if not any(seq_repeats.shape):
+	#if not any(seq_repeats.shape):
+	if not present_repeats:
 		ax.hlines(0, 0, seq_length, color="red", lw=4)
 	else:
-		#ax.plot(seq_repeats[seq_id], seq_repeats[header[1]], label=header[1], color="#7F7F7F")
-		for repeat in header[1:]: 
+		for repeat in present_repeats:
 			ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label=repeat, color=configuration.COLORS_HEX[plot_num])
 			plot_num += 1
 		art = []

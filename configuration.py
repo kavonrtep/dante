@@ -43,9 +43,19 @@ html_str_domains = '''
 	'''
 
 #GFF tracks constants
+HEADER_GFF = "##gff-version 3"
 SOURCE = "profrep"
 PHASE = "."
 DOMAINS_FEATURE = "protein_domain"
+REPEATS_FEATURE = "repeat"
+R_SCORE = "."
+R_STRAND = "." 
+R_PHASE = "."
+N_NAME = "N"
+N_FEATURE = "N_region"
+N_SCORE = "."
+N_STRAND = "."
+N_PHASE = "."
 
 # JBROWSE TRACKS CONF
 JSON_CONF_R = """{"hooks" : {"modify": "function( track, f, fdiv ) {fdiv.style.backgroundColor = '#278ECF'}"}}"""
@@ -57,10 +67,14 @@ ADJUSTED_GFF = "adjusted_domains.gff"
 DOMAINS_GFF = "output_domains.gff"
 INPUT_DOMAINS_GFF = os.path.join(TMP, "output_domains.gff")
 HTML = os.path.join(TMP,"output.html")
+#HTML = "output.html"
 HTML_DOM = "dom_vis.html"
 REPEATS_GFF = os.path.join(TMP,"output_repeats.gff")
+#REPEATS_GFF = "output_repeats.gff"
+#N_REG = "N_regions.gff"
 N_REG = os.path.join(TMP,"N_regions.gff")
 REPEATS_TABLE = os.path.join(TMP,"output_table.csv")
+#REPEATS_TABLE = "output_table.csv"
 SEQ_INFO = "seq_info.csv"
 #DOM_PROT_SEQ = os.path.join(TMP,"dom_prot_seq.txt") 
 DOM_PROT_SEQ = "dom_prot_seq.txt" 

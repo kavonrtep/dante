@@ -95,7 +95,7 @@ def annot_profile(annotation_keys, part):
 	return subprofile
 
 
-def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, subset_index):
+def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, last_index, subsets_num, subset_index):
 	''' Run parallel function to process the input sequence in windows
 		Run blast for subsequence defined by the input index and window size
  		Create and increment subprofile vector based on reads aligned within window '''
@@ -121,34 +121,133 @@ def parallel_process(WINDOW, seq_length, annotation_keys, reads_annotations, sub
 			else:
 				annotation = "ALL"
 			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
-	ntf = NamedTemporaryFile(suffix='_{}.pickle'.format(subset_index),delete=False)
-	with open(ntf.name, 'wb') as handle:
-		pickle.dump(subprofile, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	#ntf = NamedTemporaryFile(suffix='_{}.pickle'.format(subset_index),delete=False)
+	#with open(ntf.name, 'wb') as handle:
+		#pickle.dump(subprofile, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	subprofile["ALL"] = sum(subprofile.values())
+	if subset_index == 0: 
+		if subsets_num == 1:
+			[data, nonzero_len] = subprofile_single(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP)
+		else:
+			[data, nonzero_len] = subprofile_first(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP)
+	elif subset_index == last_index:
+		[data, nonzero_len] = subprofile_last(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP)
+	else:
+		[data, nonzero_len] = subprofiles_middle(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP)
+	ntf = NamedTemporaryFile(suffix='_{}.tmp'.format(subset_index),delete=False)
+	with open(ntf.name, 'wb') as tmp_subprof:
+		np.savetxt(tmp_subprof, data, delimiter= "\t", fmt="%d")
 	ntf.close()
-	return ntf.name
+	return ntf.name, nonzero_len
+	
+def subprofile_single(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
+	data = np.zeros((len(subprofile["ALL"]), len(annotation_keys) + 2), dtype=int)
+	data[:,0] = np.array([list(range(1, len(subprofile["ALL"]) + 1))])
+	exclude = set(["ALL"])
+	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
+	count = 2
+	data[:,1] = subprofile["ALL"]
+	for key in sorted(set(annotation_keys).difference(exclude)):
+		data[:,count] = subprofile[key]
+		count += 1
+	# exclude rows containing only zeros
+	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	nonzero_len = len(data)
+	return data, nonzero_len
+	
+def subprofile_first(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
+	data = np.zeros((WINDOW-OVERLAP//2, len(annotation_keys) + 2), dtype=int)
+	#if any(profile["ALL"]):
+	data[:,0] = np.array([list(range(subset_index + 1, subset_index + WINDOW-OVERLAP//2 + 1))])
+	#keys = set(nonzero_keys)
+	exclude = set(["ALL"])
+	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
+	count = 2
+	data[:,1] = subprofile["ALL"][0 : -OVERLAP//2-1]
+	for key in sorted(set(annotation_keys).difference(exclude)):
+		data[:,count] = subprofile[key][0 : -OVERLAP//2-1]
+		count += 1
+	# exclude rows containing only zeros
+	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	nonzero_len = len(data)
+	return data, nonzero_len
+	
+	
+def subprofiles_middle(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
+	data = np.zeros((WINDOW-2*(OVERLAP//2), len(annotation_keys) + 2), dtype=int)
+	#if any(profile["ALL"]):
+	data[:,0] = np.array([list(range(subset_index + OVERLAP//2 + 1, subset_index + WINDOW-OVERLAP//2 + 1))])
+	#keys = set(annotation_keys)
+	exclude = set(["ALL"])
+	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
+	count = 2
+	data[:,1] = subprofile["ALL"][OVERLAP//2 : -OVERLAP//2-1]
+	for key in sorted(set(annotation_keys).difference(exclude)):
+		data[:,count] = subprofile[key][OVERLAP//2 : -OVERLAP//2-1]
+		count += 1
+	# exclude rows containing only zeros
+	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	nonzero_len = len(data)
+	return data, nonzero_len
+	
+
+def subprofile_last(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
+	data = np.zeros((len(subprofile["ALL"])-OVERLAP//2, len(annotation_keys) + 2), dtype=int)
+	#if any(profile["ALL"]):
+	data[:,0] = np.array([list(range(subset_index + OVERLAP//2 + 1, subset_index + len(subprofile["ALL"])+1))])
+	#keys = set(nonzero_keys)
+	exclude = set(["ALL"])
+	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
+	count = 2
+	data[:,1] = subprofile["ALL"][OVERLAP//2:]
+	for key in sorted(set(annotation_keys).difference(exclude)):
+		data[:,count] = subprofile[key][OVERLAP//2:]
+		count += 1
+	# exclude rows containing only zeros
+	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	nonzero_len = len(data)
+	return data, nonzero_len
 
 
-def concatenate_dict(profile_list, WINDOW, OVERLAP):
-	''' Concatenate sequential subprofiles to the final profile representing 
-	the whole sequence and deal with overlaping parts '''
-	profile = {}
-	with open(profile_list[0], 'rb') as handle_first:
-		first_dict = pickle.load(handle_first)
-		for key in first_dict.keys():
-			if len(profile_list) == 1:
-				profile[key] = first_dict[key]
-			else:
-				#profile[key] = first_dict[key][0 : WINDOW-OVERLAP//2]
-				profile[key] = first_dict[key][0 : -OVERLAP//2-1]
-				for item in profile_list[1:-1]:
-					with open(item, 'rb') as handle:
-						individual_dict = pickle.load(handle)
-						#profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : WINDOW-OVERLAP//2])
-						profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : -OVERLAP//2-1])
-				with open(profile_list[-1],'rb') as handle_last:
-					last_dict = pickle.load(handle_last)
-					profile[key] = np.append(profile[key], last_dict[key][OVERLAP//2:])
-	return profile
+
+
+#def concatenate_dict(profile_list, WINDOW, OVERLAP):
+	#''' Concatenate sequential subprofiles to the final profile representing 
+	#the whole sequence and deal with overlaping parts '''
+	#profile = {}
+	#with open(profile_list[0], 'rb') as handle_first:
+		#first_dict = pickle.load(handle_first)
+		#for key in first_dict.keys():
+			#if len(profile_list) == 1:
+				#profile[key] = first_dict[key]
+			#else:
+				##profile[key] = first_dict[key][0 : WINDOW-OVERLAP//2]
+				#profile[key] = first_dict[key][0 : -OVERLAP//2-1]
+				#for item in profile_list[1:-1]:
+					#with open(item, 'rb') as handle:
+						#individual_dict = pickle.load(handle)
+						##profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : WINDOW-OVERLAP//2])
+						#profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : -OVERLAP//2-1])
+				#with open(profile_list[-1],'rb') as handle_last:
+					#last_dict = pickle.load(handle_last)
+					#profile[key] = np.append(profile[key], last_dict[key][OVERLAP//2:])
+	#return profile
+
+def concatenate_prof(OUTPUT, profile_list, CV):
+	with open (OUTPUT, 'ab') as profile_tbl:
+		for subprofile in profile_list:
+			with open(subprofile, 'rb') as handle:
+				if CV:
+					for line in handle:
+						#print((line.split("\t")[1:])/CV)
+						counter = line.decode("utf-8").split("\t")[0]
+						#cn_line = "\t".join([x for x in line.decode("utf-8").rstrip().split("\t")[1:]])
+						cn_line = "\t".join([str(int((int(x)/CV))) for x in line.decode("utf-8").rstrip().split("\t")[1:]])
+						profile_tbl.write("{}\t{}\n".format(counter, cn_line).encode("utf-8"))
+				else:
+					for line in handle:
+						profile_tbl.write(line)
+					
 
 
 def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
@@ -178,6 +277,7 @@ def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
 		data = [0]
 		header = seq_id
 	nonzero_len = len(data)
+	################# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	with open(OUTPUT, "ab") as hits_tbl:
 		np.savetxt(hits_tbl, data, delimiter= "\t", header=header, fmt="%d")
 	return nonzero_len
@@ -187,24 +287,41 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 	''' Process the hits table separately for each fasta, create gff file and profile picture '''
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
-		repeats_all = []
-		header_gff = "##gff-version 3"
-		with open(OUTPUT_GFF, "a") as gff_file:
-			gff_file.write("{}\n".format(header_gff))
+		repeats_all_seq = []
+		#header_gff = "##gff-version 3"
+		#with open(OUTPUT_GFF, "a") as gff_file:
+			#gff_file.write("{}\n".format(header_gff))
+		with open(OUTPUT_GFF, "w") as gff_file:
+			gff_file.write("{}\n".format(configuration.HEADER_GFF))
+		gff_repeats = open(OUTPUT_GFF, "a")	
 		seq_count = 1
 		for line in s_info:
+			####################################
+			present_repeats = []
+			####################################
 			line_parsed = line.strip().split("\t")
 			fasta_start = int(line_parsed[3])
 			fasta_end = int(line_parsed[4])
 			seq_length = int(line_parsed[1])
 			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=fasta_end - fasta_start, delimiter="\t", deletechars="")
+			seq_repeats = np.atleast_1d(seq_repeats)
 			seq_id = seq_repeats.dtype.names[0]
+			############################################################
+			for repeat in seq_repeats.dtype.names[1:]:
+				if not all(value == 0 for value in seq_repeats[repeat]):
+					present_repeats.append(repeat)
+					###
+					if repeat not in repeats_all_seq:
+						repeats_all_seq.append(repeat)
+					### 
+			############################################################
 			if any(seq_repeats.shape):
 				if GFF:
-					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT)
-				[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
+					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
+				#[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
+				max_wig = create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA)
 			if seq_count <= configuration.MAX_PIC_NUM:
-				[fig, ax] = visualization.vis_profrep(seq_repeats, seq_length, CV)
+				[fig, ax] = visualization.vis_profrep(seq_id, present_repeats, seq_repeats, seq_length, CV)
 				if seq_id in seq_ids_dom:
 					dom_idx = seq_ids_dom.index(seq_id) 
 					[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
@@ -212,7 +329,10 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
 			seq_count += 1
 			plt.close()
-	return repeats_all
+		gff_repeats.close()
+	print(repeats_all_seq)	
+	return repeats_all_seq
+
 
 
 def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK):
@@ -275,36 +395,41 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GF
 		#link_part2 = os.path.join("data", config_jbrowse.link_to_files, configuration.jbrowse_data_dir).replace("/", convert)
 	#link_part1 = "http://{}/{}/index.html?data=".format(config_jbrowse.PC, config_jbrowse.JBROWSE)
 	#link = link_part1 + link_part2
-	subprocess.call(["{}/prepare-refseqs.pl".format(config_jbrowse.JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
+	if GALAXY:
+		jbrowse_bin = config_jbrowse.JBROWSE_BIN_G
+	else:
+		jbrowse_bin = config_jbrowse.JBROWSE_BIN_PC
+	subprocess.call(["{}/prepare-refseqs.pl".format(jbrowse_bin), "--fasta", QUERY, "--out", jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
+	subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
 	count = 0
 	for repeat_id in repeats_all:
 		color = configuration.COLORS_RGB[count]
-		subprocess.call(["{}/wig-to-json.pl".format(config_jbrowse.JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+		subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 		count += 1
 	return None
 
 
-def create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all):
+def create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA):
 	''' Create wiggle format to display individual profiles by JBrowse '''
-	header_repeats = seq_repeats.dtype.names
-	seq_id = header_repeats[0]
+	#header_repeats = seq_repeats.dtype.names
+	#seq_id = header_repeats[0]
 	max_wig = []
-	print(header_repeats)
-	for track in header_repeats[1:]:
+	#print(header_repeats)
+	#for track in header_repeats[1:]:
+	for track in present_repeats:
 		header_wig = "variableStep\tchrom={}".format(seq_id)
 		track_name = track.split("/")[-1]
 		track_data = np.c_[seq_repeats[seq_id],seq_repeats[track]]
 		track_nonzero = track_data[np.nonzero(track_data[:,1])]
-		if track not in repeats_all:
-			repeats_all.append(track)
+		#if track not in repeats_all:
+			#repeats_all.append(track)
 		with open("{}/{}.wig".format(HTML_DATA, track_name), "ab") as track_file:
 			np.savetxt(track_file, track_nonzero, fmt='%d', delimiter = "\t", header=header_wig, comments="")
 		max_wig.append(max(seq_repeats[track]))
-	return repeats_all, max_wig
+	return max_wig
 	
 
 def genome2coverage(GS, BLAST_DB):
@@ -414,7 +539,13 @@ def main(args):
 		
 	if not os.path.isabs(OUT_DOMAIN_GFF):
 		OUT_DOMAIN_GFF = os.path.join(HTML_DATA, OUT_DOMAIN_GFF)
-		
+	
+	#if not os.path.isabs(N_GFF):
+		#N_GFF = os.path.join(HTML_DATA, N_GFF)
+	#############################################################################
+	if not os.path.isabs(HTML):
+		HTML = os.path.join(HTML_DATA, HTML)
+	#############################################################################	
 	# Define parameters for parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
@@ -437,6 +568,9 @@ def main(args):
 	seq_count = 1
 	start = 1
 	total_length = 0
+	with open(N_GFF, "w") as Ngff:
+		Ngff.write("{}\n".format(configuration.HEADER_GFF))
+	Ngff = open(N_GFF,"a")
 	# Create file to record info about fasta sequences
 	SEQ_INFO = "{}/{}".format(HTML_DATA, configuration.SEQ_INFO)
 	with open(SEQ_INFO, "w") as s_info:
@@ -445,42 +579,54 @@ def main(args):
 		t_blast=time.time()	
 		for subfasta in fasta_list:
 			[header, sequence] = fasta_read(subfasta)
-			gff.N_gff(header, sequence, N_GFF)
+			gff.N_gff(header, sequence, Ngff)
 			seq_length = len(sequence)
 			headers.append(header)
-			
+			with open(OUTPUT, 'a') as profile_tbl:
+				profile_tbl.write( "{}\tALL\t{}\n".format(header, "\t".join(sorted(set(annotation_keys).difference(set(["ALL"]))))))
 			# Create parallel process
-																														
+																													
 			subset_index = list(range(0, seq_length, STEP))	
+			last_index = subset_index[-1]
+			######## CONF #####################
 			files_num = 1000
+			###################################
+			nonzero_total = 0
 			index_range = range(len(subset_index))
 			concatenated_prof = None
 			for chunk_index in index_range[0::files_num]:
-				multiple_param = partial(parallel_process, WINDOW, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH)	
-				profile_list = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + files_num])
+				multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, last_index, len(subset_index))
+				parallel_data = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + files_num])
+				profile_list, nonzero_len = zip(*parallel_data)
+				nonzero_total = nonzero_total + sum(nonzero_len)
 				# Join partial profiles to the final profile of the sequence 
-				if concatenated_prof:
-					profile_list.insert(0, concatenated_prof)	 							
-				profile = concatenate_dict(profile_list, WINDOW, OVERLAP)
-				prof_temp = NamedTemporaryFile(suffix='.pickle',delete=False)
-				concatenated_prof = prof_temp.name
-				with open(concatenated_prof, 'wb') as handle:
-					pickle.dump(profile, handle, protocol=pickle.HIGHEST_PROTOCOL)
-				prof_temp.close()
+				#if concatenated_prof:
+					#profile_list.insert(0, concatenated_prof)	 							
+				concatenate_prof(OUTPUT, profile_list, CV)
+				#prof_temp = NamedTemporaryFile(suffix='.pickle',delete=False)
+				#concatenated_prof = prof_temp.name
+				#with open(concatenated_prof, 'wb') as handle:
+					#pickle.dump(profile, handle, protocol=pickle.HIGHEST_PROTOCOL)
+				#prof_temp.close()
 				for subprofile in profile_list:
 					os.unlink(subprofile)
 			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
-			profile["ALL"] = sum(profile.values())
-			nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CV)
-			end = start + nonzero_len
+			#profile["ALL"] = sum(profile.values())
+			#nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CV)
+			if nonzero_total == 0:
+				with open(OUTPUT, "a") as profile_tbl:
+					no_repeats = ["0"] * (len(annotation_keys) + 2)
+					profile_tbl.write("{}\n".format("\t".join(no_repeats)))
+					nonzero_total = 1
+			end = start + nonzero_total
 			# Each line defines one sequence and its position in hits table 
 			s_info.write("{}\t{}\t{}\t{}\t{}\n".format(header, seq_length, seq_count, start, end))
 			start = end + 1
 			seq_count += 1
 			total_length += seq_length 
-			os.unlink(concatenated_prof)
-		print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_blast))
-	
+			#os.unlink(concatenated_prof)
+	Ngff.close()
+	print("ELAPSED_TIME_BLAST = {} s".format(time.time() - t_blast))
 	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
 	
 	# Protein domains module
