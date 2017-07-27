@@ -20,6 +20,11 @@ import protein_domains_pd
 import configuration
 import visualization
 import config_jbrowse
+#####################
+import distutils
+from distutils import dir_util
+import tempfile
+#####################
 
 
 t_profrep = time.time()
@@ -399,16 +404,20 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GF
 		jbrowse_bin = config_jbrowse.JBROWSE_BIN_G
 	else:
 		jbrowse_bin = config_jbrowse.JBROWSE_BIN_PC
-	subprocess.call(["{}/prepare-refseqs.pl".format(jbrowse_bin), "--fasta", QUERY, "--out", jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
-	subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
+	########################################################################################
+	with tempfile.TemporaryDirectory() as dirpath:
+	########################################################################################
+		subprocess.call(["{}/prepare-refseqs.pl".format(jbrowse_bin), "--fasta", QUERY, "--out", jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
-	count = 0
-	for repeat_id in repeats_all:
-		color = configuration.COLORS_RGB[count]
-		subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
-		count += 1
+		count = 0
+		for repeat_id in repeats_all:
+			color = configuration.COLORS_RGB[count]
+			subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+			count += 1
+		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
 
 
