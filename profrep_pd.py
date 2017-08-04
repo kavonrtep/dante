@@ -111,7 +111,7 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 		subprofile = annot_profile(annotation_keys, seq_length - loc_start + 1)
 	else:
 		subprofile = annot_profile(annotation_keys, WINDOW + 1)
-		
+	
 	# Find HSP records for every window defined by query location and parse the tabular stdout:
 	# 1. query, 2. database read, 3. %identical, 4. alignment length, 5. alignment start, 6. alignment end
 	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
@@ -378,7 +378,7 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 		html_file.write(html_str)
 
 
-def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY):
+def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY, total_length):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
 	#convert = "%2F"
@@ -413,10 +413,16 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GF
 		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
 		count = 0
-		for repeat_id in repeats_all:
-			color = configuration.COLORS_RGB[count]
-			subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
-			count += 1
+		###############################################
+		#control the total length processed, if above threshold, dont create wig image tracks 
+		# default 1MB seq
+		threshold_wig = 1000000
+		if total_length <= threshold_wig:
+		###############################################
+			for repeat_id in repeats_all:
+				color = configuration.COLORS_RGB[count]
+				subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+				count += 1
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
 
@@ -534,7 +540,7 @@ def main(args):
 			CLASSIFICATION = os.path.join(CLASSIFICATION, configuration.CLASS_FILE)
 
 	
-	# Calculate coverage 	
+	# Calculate coverage 
 	if not CN:
 		CV = False
 		
@@ -594,8 +600,12 @@ def main(args):
 			with open(OUTPUT, 'a') as profile_tbl:
 				profile_tbl.write( "{}\tALL\t{}\n".format(header, "\t".join(sorted(set(annotation_keys).difference(set(["ALL"]))))))
 			# Create parallel process
-																													
-			subset_index = list(range(0, seq_length, STEP))	
+			print(seq_length)																								
+			subset_index = list(range(0, seq_length, STEP))
+			# Situation when penultimal window is not complete but it is following by another one
+			if len(subset_index) > 1 and subset_index[-2] + WINDOW >= seq_length:
+				subset_index = subset_index[:-1]
+			print(subset_index)	
 			last_index = subset_index[-1]
 			######## CONF #####################
 			files_num = 1000
@@ -651,7 +661,7 @@ def main(args):
 	
 	# Prepare data for html output
 	t_jbrowse=time.time()
-	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY)		
+	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY, total_length)		
 	print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
 	t_html=time.time()
 	html_output(SEQ_INFO, total_length, headers, HTML, DB_NAME, REF, REF_LINK)

@@ -33,7 +33,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
  #else
     --datasets_tbl prepared_datasets.txt
     --db_id ${custom_data.prepared_dataset}  
-    --copy_numbers $custom_data.copy_numbers
+    --copy_numbers '$custom_data.copy_numbers'
  #end if 
  > $log_file 
 </command> 
@@ -49,7 +49,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
      <column name="value" index="0"/>
     </options>
    </param>  
-   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers"  />  
+   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="" checked="true" label="Convert hits to copy numbers"  />  
   </when>
   <when value="true">
    <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="File containing reads sequences in fasta format"  />
