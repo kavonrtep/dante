@@ -378,7 +378,7 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 		html_file.write(html_str)
 
 
-def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY, total_length):
+def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
 	#convert = "%2F"
@@ -400,10 +400,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GF
 		#link_part2 = os.path.join("data", config_jbrowse.link_to_files, configuration.jbrowse_data_dir).replace("/", convert)
 	#link_part1 = "http://{}/{}/index.html?data=".format(config_jbrowse.PC, config_jbrowse.JBROWSE)
 	#link = link_part1 + link_part2
-	if GALAXY:
-		jbrowse_bin = config_jbrowse.JBROWSE_BIN_G
-	else:
-		jbrowse_bin = config_jbrowse.JBROWSE_BIN_PC
+	jbrowse_bin = config_jbrowse.JBROWSE_BIN
 	########################################################################################
 	with tempfile.TemporaryDirectory() as dirpath:
 	########################################################################################
@@ -535,9 +532,9 @@ def main(args):
 	if TBL:
 		TBL = os.path.join(configuration.PROFREP_DATA, TBL)
 		[DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK] = prepared_data(TBL, DB_ID, TOOL_DATA_DIR)
-		if GALAXY:
-			LAST_DB = os.path.join(LAST_DB, configuration.LAST_DB_FILE)
-			CLASSIFICATION = os.path.join(CLASSIFICATION, configuration.CLASS_FILE)
+	if GALAXY:
+		LAST_DB = os.path.join(LAST_DB, configuration.LAST_DB_FILE)
+		CLASSIFICATION = os.path.join(CLASSIFICATION, configuration.CLASS_FILE)
 
 	
 	# Calculate coverage 
@@ -661,7 +658,7 @@ def main(args):
 	
 	# Prepare data for html output
 	t_jbrowse=time.time()
-	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, GALAXY, total_length)		
+	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length)		
 	print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
 	t_html=time.time()
 	html_output(SEQ_INFO, total_length, headers, HTML, DB_NAME, REF, REF_LINK)
