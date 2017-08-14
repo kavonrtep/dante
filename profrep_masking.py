@@ -66,7 +66,7 @@ if __name__ == "__main__":
 						help='query sequence to be processed')
     parser.add_argument('-rt', '--rep_table', type=str, required=True,
 						help='query sequence to be processed')
-    parser.add_argument('-rth', '--rp_threshold', type=str, default=0,
+    parser.add_argument('-rth', '--rp_threshold', type=str, default=1,
 						help='query sequence to be processed')
     parser.add_argument('-m', '--mode', default="lowercase", choices=['lowercase', 'N'],
 						help='query sequence to be processed')

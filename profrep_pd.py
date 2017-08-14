@@ -20,11 +20,9 @@ import protein_domains_pd
 import configuration
 import visualization
 import config_jbrowse
-#####################
 import distutils
 from distutils import dir_util
 import tempfile
-#####################
 
 
 t_profrep = time.time()
@@ -214,30 +212,6 @@ def subprofile_last(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
 	return data, nonzero_len
 
 
-
-
-#def concatenate_dict(profile_list, WINDOW, OVERLAP):
-	#''' Concatenate sequential subprofiles to the final profile representing 
-	#the whole sequence and deal with overlaping parts '''
-	#profile = {}
-	#with open(profile_list[0], 'rb') as handle_first:
-		#first_dict = pickle.load(handle_first)
-		#for key in first_dict.keys():
-			#if len(profile_list) == 1:
-				#profile[key] = first_dict[key]
-			#else:
-				##profile[key] = first_dict[key][0 : WINDOW-OVERLAP//2]
-				#profile[key] = first_dict[key][0 : -OVERLAP//2-1]
-				#for item in profile_list[1:-1]:
-					#with open(item, 'rb') as handle:
-						#individual_dict = pickle.load(handle)
-						##profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : WINDOW-OVERLAP//2])
-						#profile[key] = np.append(profile[key], individual_dict[key][OVERLAP//2 : -OVERLAP//2-1])
-				#with open(profile_list[-1],'rb') as handle_last:
-					#last_dict = pickle.load(handle_last)
-					#profile[key] = np.append(profile[key], last_dict[key][OVERLAP//2:])
-	#return profile
-
 def concatenate_prof(OUTPUT, profile_list, CV):
 	with open (OUTPUT, 'ab') as profile_tbl:
 		for subprofile in profile_list:
@@ -251,8 +225,7 @@ def concatenate_prof(OUTPUT, profile_list, CV):
 						profile_tbl.write("{}\t{}\n".format(counter, cn_line).encode("utf-8"))
 				else:
 					for line in handle:
-						profile_tbl.write(line)
-					
+						profile_tbl.write(line)					
 
 
 def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
@@ -288,7 +261,7 @@ def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
 	return nonzero_len
 
 
-def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom, CV):
+def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CV):
 	''' Process the hits table separately for each fasta, create gff file and profile picture '''
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
@@ -337,6 +310,57 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 		gff_repeats.close()
 	print(repeats_all_seq)	
 	return repeats_all_seq
+	
+
+def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, CV):
+	''' Process the hits table separately for each fasta, create gff file and profile picture '''
+	with open(SEQ_INFO, "r") as s_info:
+		next(s_info)
+		repeats_all_seq = []
+		#header_gff = "##gff-version 3"
+		#with open(OUTPUT_GFF, "a") as gff_file:
+			#gff_file.write("{}\n".format(header_gff))
+		with open(OUTPUT_GFF, "w") as gff_file:
+			gff_file.write("{}\n".format(configuration.HEADER_GFF))
+		gff_repeats = open(OUTPUT_GFF, "a")	
+		seq_count = 1
+		for line in s_info:
+			####################################
+			present_repeats = []
+			####################################
+			line_parsed = line.strip().split("\t")
+			fasta_start = int(line_parsed[3])
+			fasta_end = int(line_parsed[4])
+			seq_length = int(line_parsed[1])
+			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=fasta_end - fasta_start, delimiter="\t", deletechars="")
+			seq_repeats = np.atleast_1d(seq_repeats)
+			seq_id = seq_repeats.dtype.names[0]
+			############################################################
+			for repeat in seq_repeats.dtype.names[1:]:
+				if not all(value == 0 for value in seq_repeats[repeat]):
+					present_repeats.append(repeat)
+					###
+					if repeat not in repeats_all_seq:
+						repeats_all_seq.append(repeat)
+					### 
+			############################################################
+			if any(seq_repeats.shape):
+				if GFF:
+					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
+				#[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
+				max_wig = create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA)
+			if seq_count <= configuration.MAX_PIC_NUM:
+				[fig, ax] = visualization.vis_profrep(seq_id, present_repeats, seq_repeats, seq_length, CV)
+				#if seq_id in seq_ids_dom:
+				#	dom_idx = seq_ids_dom.index(seq_id) 
+				#	[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
+				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
+				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
+			seq_count += 1
+			plt.close()
+		gff_repeats.close()
+	print(repeats_all_seq)	
+	return repeats_all_seq
 
 
 
@@ -364,7 +388,6 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 		<pre> {} bp </pre>
 		<h4> Database: </h4>
 		<pre> {} </pre>
-		<h4> Interactive visualization: </h4>
 		<hr>
 		<h3> Repetitive profile(s)</h3> </br>
 		{} <br/>
@@ -378,34 +401,41 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 		html_file.write(html_str)
 
 
-def jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length):
+def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
-	#convert = "%2F"
-	## Galaxy usage
-	#if GALAXY:
-		#results_path1 = "/".join(HTML.split("/")[HTML_DATA.split("/").index("database")+1:-1])
-		#results_path2 = HTML_DATA.split("/")[-1]
-		#link_part2 = os.path.join("data", config_jbrowse.link_to_files, results_path1, results_path2, configuration.jbrowse_data_dir).replace("/",convert)
-	    ##JBROWSE_BIN = os.environ["JBROWSE_BIN"]
-	    ##extra_data_path = "/".join(HTML_DATA.split("/")[-2:])
-	    ##link_part2 = os.path.join(configuration.jbrowse_link_to_galaxy, extra_data_path, configuration.jbrowse_data_dir).replace("/",convert)
-	    ##link = configuration.LINK_PART1 + link_part2
-
-	## Local usage
-	#else:            
-		##JBROWSE_BIN = configuration.JBROWSE_BIN_PC
-		##link_part2 = os.path.join(configuration.jbrowse_link_to_profrep, "jbrowse").replace("/", convert)
-		##link = configuration.LINK_PART1_PC + link_part2
-		#link_part2 = os.path.join("data", config_jbrowse.link_to_files, configuration.jbrowse_data_dir).replace("/", convert)
-	#link_part1 = "http://{}/{}/index.html?data=".format(config_jbrowse.PC, config_jbrowse.JBROWSE)
-	#link = link_part1 + link_part2
 	jbrowse_bin = config_jbrowse.JBROWSE_BIN
 	########################################################################################
 	with tempfile.TemporaryDirectory() as dirpath:
 	########################################################################################
 		subprocess.call(["{}/prepare-refseqs.pl".format(jbrowse_bin), "--fasta", QUERY, "--out", jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
+
+		count = 0
+		###############################################
+		#control the total length processed, if above threshold, dont create wig image tracks 
+		# default 1MB seq
+		threshold_wig = 1000000
+		if total_length <= threshold_wig:
+		###############################################
+			for repeat_id in repeats_all:
+				color = configuration.COLORS_RGB[count]
+				subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+				count += 1
+		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
+	return None
+	
+	
+def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length):
+	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
+	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
+	jbrowse_bin = config_jbrowse.JBROWSE_BIN
+	########################################################################################
+	with tempfile.TemporaryDirectory() as dirpath:
+	########################################################################################
+		subprocess.call(["{}/prepare-refseqs.pl".format(jbrowse_bin), "--fasta", QUERY, "--out", jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
@@ -647,19 +677,31 @@ def main(args):
 	
 	# Protein domains module
 	t_domains=time.time()
-	if DOMAINS is True:
+	if DOMAINS == "True":
 		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF,  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)	
-	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
+		print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
 		
-	t_gff_vis = time.time() 
-	# Process individual sequences from the input file sequentially
-	repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, OUT_DOMAIN_GFF, xminimal, xmaximal, domains, seq_ids_dom, CV)
-	print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
+		# Process individual sequences from the input file sequentially
+		t_gff_vis = time.time() 
+		repeats_all = seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CV)
+		print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
+		
+		# Prepare data for html output
+		t_jbrowse=time.time()
+		jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length)		
+		print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
+	else:
+		# Process individual sequences from the input file sequentially
+		t_gff_vis = time.time() 
+		repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, CV)
+		print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
+		
+		# Prepare data for html output
+		t_jbrowse=time.time()
+		jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length)		
+		print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
 	
-	# Prepare data for html output
-	t_jbrowse=time.time()
-	jbrowse_prep(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length)		
-	print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
+	# Create HTML output
 	t_html=time.time()
 	html_output(SEQ_INFO, total_length, headers, HTML, DB_NAME, REF, REF_LINK)
 	print("ELAPSED_TIME_HTML = {} s".format(time.time() - t_html))

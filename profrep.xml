@@ -8,9 +8,13 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff} 
 --protein_database ${__tool_data_path__ }/protein_domains
 --classification ${__tool_data_path__ }/protein_domains
---domain_gff ${DomGff}
 --galaxy_usage True
 --tool_dir ${__tool_data_path__ }/profrep
+--protein_domains $domains_switch
+
+ #if $domains_switch:
+	--domain_gff ${DomGff}
+ #end if
 
  #if $advanced_options.opts:
 	--identical ${advanced_options.identical}  
@@ -52,9 +56,9 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
    <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="" checked="true" label="Convert hits to copy numbers"  />  
   </when>
   <when value="true">
-   <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="File containing reads sequences in fasta format"  />
-   <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" />
-   <param format="cls" type="data" name="cls" label="Choose cls file" />
+   <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="This file  contains reads sequences in fasta format"  />
+   <param format="cls" type="data" name="cls" label="Choose file containing reads assigned to clusters (.cls file of RE clustering output)" help="This file in fasta format contains cluster number as identifier(e.g. >CL100) and belonging reads names as a subsequent line" />
+   <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" help="This file contains number of cluster (1st column) and its  repetitive classification (2nd column)" />
    <conditional name="cn">
     <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers" />
     <when value="true">
@@ -63,6 +67,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
    </conditional>
   </when>
  </conditional>
+ <param name="domains_switch" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Show protein domains"/>
  <conditional name="advanced_options" >
   <param name="opts" type="boolean" display="checkbox" truevalue="true" falsevalue="false" checked="false" label="Advanced options"/>
   <when value="true">
@@ -75,13 +80,14 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
    <param name="threshold" type="integer" value="10" min="1" label="Repetitive threshold" help="Threshold for copy numbers/hits at certain position to be reported as repetitive in GFF format"  />
   </when>
  </conditional>
-
 </inputs>
 
  <outputs>
  	<data format="csv" name="ProfTbl" label="Repetitive profile table from dataset ${input.hid}" />
 	<data format="gff3" name="ProfGff" label="GFF file of repetitive regions from dataset ${input.hid}" />
-	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid}" />
+	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid}" >
+	 <filter>domains_switch</filter>
+	</data>
 	<data format="html" name="html_file" label="HTML output, JBrowse visualization ${input.hid}" />
 	<data format="gff3" name="NGff" label="GFF file of unknown bases(N) from dataset ${input.hid}" />
 	<data format="txt" name="log_file" label="Log file" />
