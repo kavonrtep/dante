@@ -6,8 +6,6 @@ from Bio.Seq import MutableSeq
 from Bio.Alphabet import generic_dna
 import sys
 
-
-
 def main(args):
 	# Command line arguments
 	QUERY = args.query
@@ -15,10 +13,8 @@ def main(args):
 	REP_TBL = args.rep_table
 	MASKED = args.output_masked
 	R_TH = args.rp_threshold
-	
-	
+		
 	repeats_all = get_indices(REP_TBL, R_TH)
-
 
 	if MODE == "lowercase":
 		lower_mask(QUERY, repeats_all, MASKED)
@@ -37,14 +33,9 @@ def get_indices(REP_TBL, R_TH):
 			else:
 				value = int(line.split("\t")[1])
 				if value >= int(R_TH):
-				##########################!!!!!!!!
-				#if key:
-				#############################
 					repeats_all[key].append(int(index))
-			################# !!! when no data in table??
 	return repeats_all
 			
-
 
 def lower_mask(QUERY, repeats_all, MASKED):
 	allSeqs = list(SeqIO.parse(QUERY,'fasta'))

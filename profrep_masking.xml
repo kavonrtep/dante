@@ -1,5 +1,8 @@
 <tool id="profrep_mask" name="ProfRep Masker" version="1.0.0">
 <description> Tool to mask repetitive regions of a given sequence(s) based on the ProfRep tool output </description>
+<requirements>
+    <requirement type="package" version="1.0.0" >profrep</requirement>
+</requirements>
 <command>
 python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_table ${rp_table} --rp_threshold ${r_th} --mode ${mode}  --output_masked ${out_masked}
 </command>
