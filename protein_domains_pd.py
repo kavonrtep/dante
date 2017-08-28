@@ -11,6 +11,7 @@ import os
 import configuration
 from tempfile import NamedTemporaryFile
 import sys
+import warnings
 
 np.set_printoptions(threshold=np.nan)
 
@@ -405,7 +406,9 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 	start = True
 	while True:	
 		try:
-			sequence_hits = np.genfromtxt(line_generator(tab_pipe, maf_pipe, start),
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				sequence_hits = np.genfromtxt(line_generator(tab_pipe, maf_pipe, start),
 				names="score, name_db, start_db, al_size_db, strand_db, seq_size_db, name_q, start_q, al_size_q, strand_q, seq_size_q, block1, block2, block3, db_seq, q_seq",
 				usecols="score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db",
 				dtype=None)

@@ -23,6 +23,7 @@ import config_jbrowse
 import distutils
 from distutils import dir_util
 import tempfile
+import re
 
 
 t_profrep = time.time()
@@ -61,7 +62,7 @@ def fasta_read(subfasta):
 def cluster_annotation(CL_ANNOTATION_TBL):
 	''' Create dictionary of known annotations classes and related clusters '''
 	cl_annotations = {} 			
-	annot_table = np.genfromtxt(CL_ANNOTATION_TBL, dtype=str) 	
+	annot_table = np.genfromtxt(CL_ANNOTATION_TBL, dtype=str) 
 	for line in annot_table:
 		if line[1] in cl_annotations:
 			cl_annotations[line[1]].append(line[0])
@@ -76,15 +77,16 @@ def read_annotation(CLS, cl_annotations_items):
 	with open(CLS, "r") as cls_file:
 		count = 0
 		for line in cls_file:
+			line = line.rstrip()
 			count += 1
 			if count%2 == 0:
-				reads = line.rstrip().split(" ") 
+				reads = re.split("\s+", line) 
 				for element in reads: 
 					for key, value in cl_annotations_items:
 						if clust in value:
 							reads_annotations[element] = key 
 			else:
-				clust = line.split(" ")[0][3:]  
+				clust = re.split("\s+", line)[0].split(">CL")[1]
 	return reads_annotations
 
 
@@ -261,7 +263,7 @@ def hits_table(profile, OUTPUT, seq_id, seq_length, CV):
 	return nonzero_len
 
 
-def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CV):
+def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CV):
 	''' Process the hits table separately for each fasta, create gff file and profile picture '''
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
@@ -294,8 +296,8 @@ def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, 
 					### 
 			############################################################
 			if any(seq_repeats.shape):
-				if GFF:
-					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
+				#if GFF:
+				gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
 				#[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
 				max_wig = create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA)
 			if seq_count <= configuration.MAX_PIC_NUM:
@@ -312,7 +314,7 @@ def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, 
 	return repeats_all_seq
 	
 
-def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, CV):
+def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, CV):
 	''' Process the hits table separately for each fasta, create gff file and profile picture '''
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
@@ -345,8 +347,8 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF,
 					### 
 			############################################################
 			if any(seq_repeats.shape):
-				if GFF:
-					gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
+				#if GFF:
+				gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
 				#[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
 				max_wig = create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA)
 			if seq_count <= configuration.MAX_PIC_NUM:
@@ -375,8 +377,10 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 		ref_part_2 = "-".join(REF.split("-")[1:]).split(". ")[0]
 		ref_part_3 = ". ".join("-".join(REF.split("-")[1:]).split(". ")[1:])
 		ref_string = '''<h6> {} - <a href="{}" target="_blank" >{}</a>. {}'''.format(ref_part_1, REF_LINK, ref_part_2, ref_part_3)
+		database = DB_NAME
 	else:
-		ref_string = ""
+		ref_string = "Custom Data"
+		database = "CUSTOM"
 	html_str = '''
 	<!DOCTYPE html>
 	<html>
@@ -396,7 +400,7 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 		</h6>
 	</body>
 	</html>
-	'''.format(info, total_length, DB_NAME, pictures, ref_string)
+	'''.format(info, total_length, database, pictures, ref_string)
 	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
 
@@ -517,7 +521,7 @@ def main(args):
 	BLAST_TASK = args.task
 	MAX_ALIGNMENTS = args.max_alignments
 	NEW_DB = args.new_db
-	GFF = args.gff
+	#GFF = args.gff
 	THRESHOLD = args.threshold
 	THRESHOLD_SEGMENT = args.threshold_segment
 	OUTPUT = args.output
@@ -683,7 +687,7 @@ def main(args):
 		
 		# Process individual sequences from the input file sequentially
 		t_gff_vis = time.time() 
-		repeats_all = seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CV)
+		repeats_all = seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CV)
 		print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 		
 		# Prepare data for html output
@@ -693,7 +697,7 @@ def main(args):
 	else:
 		# Process individual sequences from the input file sequentially
 		t_gff_vis = time.time() 
-		repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, GFF, HTML_DATA, CV)
+		repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, CV)
 		print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 		
 		# Prepare data for html output
@@ -750,8 +754,8 @@ if __name__ == "__main__":
 						help='overlap for parallely processed regions, set greater than read size')
     parser.add_argument('-n', '--new_db', default=False,
 						help='create a new blast database')
-    parser.add_argument('-g', '--gff', default=True,
-						help='use module for gff')
+    #parser.add_argument('-g', '--gff', default=True,
+						#help='use module for gff')
     parser.add_argument('-th', '--threshold', type=int, default=5,
 						help='threshold (number of hits) for report repetitive area in gff')
     parser.add_argument('-ths', '--threshold_segment', type=int, default=80,

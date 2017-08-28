@@ -57,7 +57,6 @@ def main(args):
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
 		for line in s_info:
-			print(line)
 			line_parsed = line.strip().split("\t")
 			fasta_start = int(line_parsed[3])
 			fasta_end = line_parsed[4]
