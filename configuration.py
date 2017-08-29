@@ -5,9 +5,8 @@ import os
 # PATHS
 MAIN_GIT_DIR = os.path.dirname(os.path.realpath(__file__)) 
 ######## PROFREP
-#JBROWSE_BIN = "/home/galaxy/bin/JBrowse-1.12.1/bin"
-JBROWSE_BIN_PC = "/var/www/html/JBrowse-1.12.1/bin"
-jbrowse_data_dir = "jbrowse"
+JBROWSE_BIN = "/home/ninah/programs/JBrowse-1.12.3/bin"
+jbrowse_data_dir = "data"
 jbrowse_link_to_galaxy = "data/galaxy_profrep_files"
 jbrowse_link_to_profrep = "data/profrep_data"
 LINK_PART1 = "http://nina/JBrowse-1.12.1/index.html?data="

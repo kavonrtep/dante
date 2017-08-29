@@ -11,6 +11,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
 --galaxy_usage True
 --tool_dir ${__tool_data_path__ }/profrep
 --protein_domains $domains_switch
+--jbrowse_bin \${JBROWSE_BIN}
 
  #if $domains_switch:
 	--domain_gff ${DomGff}

@@ -171,8 +171,8 @@ if __name__ == "__main__":
 						default= 0.35, help="proportion of alignment identity threshold")
 	parser.add_argument("-ths","--th_similarity",type=float, choices=[Range(0.0, 1.0)],
 						default= 0.45, help="threshold for alignment proportional similarity")
-	parser.add_argument("-ir","--interruptions",type=int, default=1,
-						help="interruptions (frameshifts + stop codons) tolerance threshold per 100 bp")
+	parser.add_argument("-ir","--interruptions",type=int, default=3,
+						help="interruptions (frameshifts + stop codons) tolerance threshold per 100 AA")
 	parser.add_argument("-sd","--selected_dom",type=str, default="All", choices=[
 						"All",
 						"GAG",

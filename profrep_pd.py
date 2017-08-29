@@ -19,7 +19,6 @@ import gff
 import protein_domains_pd
 import configuration
 import visualization
-import config_jbrowse
 import distutils
 from distutils import dir_util
 import tempfile
@@ -405,17 +404,17 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 		html_file.write(html_str)
 
 
-def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length):
+def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
-	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
-	jbrowse_bin = config_jbrowse.JBROWSE_BIN
+	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
+	#jbrowse_bin = config_jbrowse.JBROWSE_BIN
 	########################################################################################
 	with tempfile.TemporaryDirectory() as dirpath:
 	########################################################################################
-		subprocess.call(["{}/prepare-refseqs.pl".format(jbrowse_bin), "--fasta", QUERY, "--out", jbrowse_data_path])
-		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
-		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
-		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
+		subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
 		count = 0
 		###############################################
@@ -426,22 +425,22 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, 
 		###############################################
 			for repeat_id in repeats_all:
 				color = configuration.COLORS_RGB[count]
-				subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 				count += 1
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
 	
 	
-def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length):
+def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
-	jbrowse_data_path = os.path.join(HTML_DATA, config_jbrowse.jbrowse_data_dir)
-	jbrowse_bin = config_jbrowse.JBROWSE_BIN
+	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
+	#jbrowse_bin = config_jbrowse.JBROWSE_BIN
 	########################################################################################
 	with tempfile.TemporaryDirectory() as dirpath:
 	########################################################################################
-		subprocess.call(["{}/prepare-refseqs.pl".format(jbrowse_bin), "--fasta", QUERY, "--out", jbrowse_data_path])
-		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
-		subprocess.call(["{}/flatfile-to-json.pl".format(jbrowse_bin), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
+		subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
+		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 
 		count = 0
 		###############################################
@@ -452,7 +451,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length)
 		###############################################
 			for repeat_id in repeats_all:
 				color = configuration.COLORS_RGB[count]
-				subprocess.call(["{}/wig-to-json.pl".format(jbrowse_bin), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 				count += 1
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
@@ -547,6 +546,7 @@ def main(args):
 	OVERLAP_DOM = args.overlap_dom
 	GALAXY = args.galaxy_usage
 	TOOL_DATA_DIR = args.tool_dir
+	JBROWSE_BIN = args.jbrowse_bin
 
 
 	REF = None
@@ -692,7 +692,7 @@ def main(args):
 		
 		# Prepare data for html output
 		t_jbrowse=time.time()
-		jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length)		
+		jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN)		
 		print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
 	else:
 		# Process individual sequences from the input file sequentially
@@ -702,7 +702,7 @@ def main(args):
 		
 		# Prepare data for html output
 		t_jbrowse=time.time()
-		jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length)		
+		jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN)		
 		print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
 	
 	# Create HTML output
@@ -802,7 +802,8 @@ if __name__ == "__main__":
                         help="option for galaxy usage only")
     parser.add_argument("-td", "--tool_dir", default=False,
                   		help="tool data directory in galaxy")
-
+    parser.add_argument("-jb", "--jbrowse_bin", type=str, default=configuration.JBROWSE_BIN,
+                  		help="path to JBrowse bin directory")
 
 
     args = parser.parse_args()
