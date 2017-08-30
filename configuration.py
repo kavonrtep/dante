@@ -61,7 +61,6 @@ JSON_CONF_R = """{"hooks" : {"modify": "function( track, f, fdiv ) {fdiv.style.b
 JSON_CONF_N = """{"hooks" : {"modify": "function( track, f, fdiv ) {fdiv.style.background = '#474747'}"}}"""
 
 # OUPUTS
-ADJUSTED_GFF = "adjusted_domains.gff"
 #DOMAINS_GFF = "{}/{}".format(TMP,"output_domains.gff")
 DOMAINS_GFF = "output_domains.gff"
 INPUT_DOMAINS_GFF = os.path.join(TMP, "output_domains.gff")

@@ -12,6 +12,7 @@ import configuration
 from tempfile import NamedTemporaryFile
 import sys
 import warnings
+import shutil
 
 np.set_printoptions(threshold=np.nan)
 
@@ -487,7 +488,8 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 	xmaximal = []
 	dom  = []
 	seen = set()
-	adjusted_file = os.path.join(os.path.dirname(OUTPUT_DOMAIN), configuration.ADJUSTED_GFF)
+	adjusted = NamedTemporaryFile(suffix='_adj', delete=False)
+	adjusted_file = adjusted.name
 	with open(adjusted_file, "w") as adjusted_gff:
 		adjusted_gff.write("##gff-version 3\n")
 		with open(OUTPUT_DOMAIN, "r") as primary_gff:
@@ -577,8 +579,8 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 	xminimal_all.append(xminimal)
 	xmaximal_all.append(xmaximal)
 	dom_all.append(dom)
-	os.remove(OUTPUT_DOMAIN)
-	os.rename(adjusted_file, OUTPUT_DOMAIN)
+	adjusted.close()
+	shutil.move(adjusted_file, OUTPUT_DOMAIN)
 	return xminimal_all, xmaximal_all, dom_all, seq_id_all 		
 	
 	

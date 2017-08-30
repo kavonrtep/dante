@@ -163,7 +163,7 @@ if __name__ == "__main__":
 						help="output filtered domains gff file") 
 	parser.add_argument("-dps","--domains_prot_seq",type=str, 
 						help="output file containg domains protein sequences")
-	parser.add_argument("-cls","--element_table",type=str, 
+	parser.add_argument("-et","--element_table",type=str, 
 						help="output table containing original and filtered domains classification and their amount")
 	parser.add_argument("-thl","--th_length",type=float, choices=[Range(0.0, 1.0)],
 						default= 0.8, help="proportion of alignment length threshold")
