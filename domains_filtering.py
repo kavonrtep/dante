@@ -30,11 +30,11 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 	with open(OUTPUT_DOMAIN, "r") as gff_all:
 		next(gff_all)
 		with open (FILT_DOM_GFF, "w") as gff_filtered:
-			gff_filtered.write("##gff-version 3\n")
+			gff_filtered.write("{}\n".format(configuration.HEADER_GFF))
 			for line in gff_all:
 				attributes = line.rstrip().split("\t")[-1]
 				classification = attributes.split(";")[1].split("=")[1]
-				if classification != "Ambiguous_domain":
+				if classification != configuration.AMBIGUOUS_TAG:
 					al_identity = float(attributes.split(";")[-4].split("=")[1])
 					al_similarity = float(attributes.split(";")[-3].split("=")[1])
 					al_length = float(attributes.split(";")[-2].split("=")[1])
@@ -52,9 +52,7 @@ def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
 			for line in filt_gff: 
 				attributes = line.rstrip().split("\t")[8]
 				positions = attributes.split(";")[3].split("=")[1].split(":")[-1].split("[")[0]
-				#len_percent = attributes.split(";")[3].split("=")[1].split(":")[1].split("[")[1].split("]")[0]
 				dom = attributes.split(";")[0].split("=")[1]
-				#dom_class = "/".join(attributes.split(",")[3].split("=")[1].split(":")[0].split("/")[1:])
 				dom_class = attributes.split(";")[1].split("=")[1]
 				seq_id = line.rstrip().split("\t")[0]
 				prot_seq_align = line.rstrip().split("\t")[8].split(";")[5].split("=")[1]
@@ -83,7 +81,7 @@ def elements_table(OUTPUT_DOMAIN, FILT_DOM_GFF, ELEM_TABLE):
 			else:
 				output_dict[classification] = 1 	
 	with open(ELEM_TABLE, "w") as elem_table:
-		elem_table.write("DOMAINS_REPETITIVE_CLASSIFICATION\tORIGINAL_FILE_COUNTS\tFILTERED_FILE_COUNTS\n")
+		elem_table.write(configuration.ELEM_TBL_HEAD)
 		ordered_classes = sorted(input_dict.keys())
 		for item in ordered_classes:
 			if item in output_dict.keys():

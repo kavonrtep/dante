@@ -14,7 +14,6 @@ import os
 from functools import partial
 from multiprocessing import Pool
 from tempfile import NamedTemporaryFile
-import pickle
 import gff
 import protein_domains_pd
 import configuration
@@ -23,10 +22,18 @@ import distutils
 from distutils import dir_util
 import tempfile
 import re
+from Bio import SeqIO
 
 
 t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
+
+def check_fasta_id(QUERY):
+	forbidden_ids = []
+	for record in SeqIO.parse(QUERY, "fasta"):
+		if any(x in record.id for x in configuration.FORBIDDEN_CHARS):
+		 forbidden_ids.append(record.id)	
+	return forbidden_ids
 
 
 def multifasta(QUERY):
@@ -41,7 +48,6 @@ def multifasta(QUERY):
 			ntf.write("{}{}".format(PATTERN, part).encode("utf-8"))
 			fasta_list.append(ntf.name)
 			ntf.close()
-		print(fasta_list)
 		return fasta_list
 
 
@@ -125,9 +131,6 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 			else:
 				annotation = "ALL"
 			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
-	#ntf = NamedTemporaryFile(suffix='_{}.pickle'.format(subset_index),delete=False)
-	#with open(ntf.name, 'wb') as handle:
-		#pickle.dump(subprofile, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	subprofile["ALL"] = sum(subprofile.values())
 	if subset_index == 0: 
 		if subsets_num == 1:
@@ -148,7 +151,6 @@ def subprofile_single(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP
 	data = np.zeros((len(subprofile["ALL"]), len(annotation_keys) + 2), dtype=int)
 	data[:,0] = np.array([list(range(1, len(subprofile["ALL"]) + 1))])
 	exclude = set(["ALL"])
-	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
 	count = 2
 	data[:,1] = subprofile["ALL"]
 	for key in sorted(set(annotation_keys).difference(exclude)):
@@ -161,11 +163,8 @@ def subprofile_single(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP
 	
 def subprofile_first(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
 	data = np.zeros((WINDOW-OVERLAP//2, len(annotation_keys) + 2), dtype=int)
-	#if any(profile["ALL"]):
 	data[:,0] = np.array([list(range(subset_index + 1, subset_index + WINDOW-OVERLAP//2 + 1))])
-	#keys = set(nonzero_keys)
 	exclude = set(["ALL"])
-	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
 	count = 2
 	data[:,1] = subprofile["ALL"][0 : -OVERLAP//2-1]
 	for key in sorted(set(annotation_keys).difference(exclude)):
@@ -179,11 +178,8 @@ def subprofile_first(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP)
 	
 def subprofiles_middle(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
 	data = np.zeros((WINDOW-2*(OVERLAP//2), len(annotation_keys) + 2), dtype=int)
-	#if any(profile["ALL"]):
 	data[:,0] = np.array([list(range(subset_index + OVERLAP//2 + 1, subset_index + WINDOW-OVERLAP//2 + 1))])
-	#keys = set(annotation_keys)
 	exclude = set(["ALL"])
-	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
 	count = 2
 	data[:,1] = subprofile["ALL"][OVERLAP//2 : -OVERLAP//2-1]
 	for key in sorted(set(annotation_keys).difference(exclude)):
@@ -197,11 +193,8 @@ def subprofiles_middle(subprofile, subset_index, annotation_keys, WINDOW, OVERLA
 
 def subprofile_last(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
 	data = np.zeros((len(subprofile["ALL"])-OVERLAP//2, len(annotation_keys) + 2), dtype=int)
-	#if any(profile["ALL"]):
 	data[:,0] = np.array([list(range(subset_index + OVERLAP//2 + 1, subset_index + len(subprofile["ALL"])+1))])
-	#keys = set(nonzero_keys)
 	exclude = set(["ALL"])
-	#header = "{}\tALL\t{}".format(seq_id, "\t".join(sorted(set(annotation_keys).difference(exclude))))
 	count = 2
 	data[:,1] = subprofile["ALL"][OVERLAP//2:]
 	for key in sorted(set(annotation_keys).difference(exclude)):
@@ -219,9 +212,7 @@ def concatenate_prof(OUTPUT, profile_list, CV):
 			with open(subprofile, 'rb') as handle:
 				if CV:
 					for line in handle:
-						#print((line.split("\t")[1:])/CV)
 						counter = line.decode("utf-8").split("\t")[0]
-						#cn_line = "\t".join([x for x in line.decode("utf-8").rstrip().split("\t")[1:]])
 						cn_line = "\t".join([str(int((int(x)/CV))) for x in line.decode("utf-8").rstrip().split("\t")[1:]])
 						profile_tbl.write("{}\t{}\n".format(counter, cn_line).encode("utf-8"))
 				else:
@@ -267,17 +258,12 @@ def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, 
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
 		repeats_all_seq = []
-		#header_gff = "##gff-version 3"
-		#with open(OUTPUT_GFF, "a") as gff_file:
-			#gff_file.write("{}\n".format(header_gff))
 		with open(OUTPUT_GFF, "w") as gff_file:
 			gff_file.write("{}\n".format(configuration.HEADER_GFF))
 		gff_repeats = open(OUTPUT_GFF, "a")	
 		seq_count = 1
 		for line in s_info:
-			####################################
 			present_repeats = []
-			####################################
 			line_parsed = line.strip().split("\t")
 			fasta_start = int(line_parsed[3])
 			fasta_end = int(line_parsed[4])
@@ -285,19 +271,13 @@ def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, 
 			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=fasta_end - fasta_start, delimiter="\t", deletechars="")
 			seq_repeats = np.atleast_1d(seq_repeats)
 			seq_id = seq_repeats.dtype.names[0]
-			############################################################
 			for repeat in seq_repeats.dtype.names[1:]:
 				if not all(value == 0 for value in seq_repeats[repeat]):
 					present_repeats.append(repeat)
-					###
 					if repeat not in repeats_all_seq:
 						repeats_all_seq.append(repeat)
-					### 
-			############################################################
 			if any(seq_repeats.shape):
-				#if GFF:
 				gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
-				#[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
 				max_wig = create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA)
 			if seq_count <= configuration.MAX_PIC_NUM:
 				[fig, ax] = visualization.vis_profrep(seq_id, present_repeats, seq_repeats, seq_length, CV)
@@ -308,8 +288,7 @@ def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, 
 				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
 			seq_count += 1
 			plt.close()
-		gff_repeats.close()
-	print(repeats_all_seq)	
+		gff_repeats.close()	
 	return repeats_all_seq
 	
 
@@ -318,17 +297,12 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
 		repeats_all_seq = []
-		#header_gff = "##gff-version 3"
-		#with open(OUTPUT_GFF, "a") as gff_file:
-			#gff_file.write("{}\n".format(header_gff))
 		with open(OUTPUT_GFF, "w") as gff_file:
 			gff_file.write("{}\n".format(configuration.HEADER_GFF))
 		gff_repeats = open(OUTPUT_GFF, "a")	
 		seq_count = 1
 		for line in s_info:
-			####################################
 			present_repeats = []
-			####################################
 			line_parsed = line.strip().split("\t")
 			fasta_start = int(line_parsed[3])
 			fasta_end = int(line_parsed[4])
@@ -336,31 +310,21 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML
 			seq_repeats = np.genfromtxt(OUTPUT, names=True, dtype="int", skip_header=fasta_start-1, max_rows=fasta_end - fasta_start, delimiter="\t", deletechars="")
 			seq_repeats = np.atleast_1d(seq_repeats)
 			seq_id = seq_repeats.dtype.names[0]
-			############################################################
 			for repeat in seq_repeats.dtype.names[1:]:
 				if not all(value == 0 for value in seq_repeats[repeat]):
 					present_repeats.append(repeat)
-					###
 					if repeat not in repeats_all_seq:
-						repeats_all_seq.append(repeat)
-					### 
-			############################################################
+						repeats_all_seq.append(repeat) 
 			if any(seq_repeats.shape):
-				#if GFF:
 				gff.create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats)
-				#[repeats_all, max_wig] = create_wig(seq_repeats, seq_id, HTML_DATA, repeats_all)
 				max_wig = create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA)
 			if seq_count <= configuration.MAX_PIC_NUM:
 				[fig, ax] = visualization.vis_profrep(seq_id, present_repeats, seq_repeats, seq_length, CV)
-				#if seq_id in seq_ids_dom:
-				#	dom_idx = seq_ids_dom.index(seq_id) 
-				#	[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
 				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
 				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
 			seq_count += 1
 			plt.close()
 		gff_repeats.close()
-	print(repeats_all_seq)	
 	return repeats_all_seq
 
 
@@ -407,22 +371,14 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
-	#jbrowse_bin = config_jbrowse.JBROWSE_BIN
-	########################################################################################
 	with tempfile.TemporaryDirectory() as dirpath:
-	########################################################################################
 		subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUT_DOMAIN_GFF, "--trackLabel", "GFF_domains", "--out",  jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
-
 		count = 0
-		###############################################
-		#control the total length processed, if above threshold, dont create wig image tracks 
-		# default 1MB seq
-		threshold_wig = 1000000
-		if total_length <= threshold_wig:
-		###############################################
+		# Control the total length processed, if above threshold, dont create wig image tracks 
+		if total_length <= configuration.WIG_TH:
 			for repeat_id in repeats_all:
 				color = configuration.COLORS_RGB[count]
 				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
@@ -434,21 +390,13 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, 
 def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
-	#jbrowse_bin = config_jbrowse.JBROWSE_BIN
-	########################################################################################
 	with tempfile.TemporaryDirectory() as dirpath:
-	########################################################################################
 		subprocess.call(["{}/prepare-refseqs.pl".format(JBROWSE_BIN), "--fasta", QUERY, "--out", jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
-
 		count = 0
-		###############################################
-		#control the total length processed, if above threshold, dont create wig image tracks 
-		# default 1MB seq
-		threshold_wig = 1000000
-		if total_length <= threshold_wig:
-		###############################################
+		# Control the total length processed, if above threshold, dont create wig image tracks 
+		if total_length <= configuration.WIG_TH:
 			for repeat_id in repeats_all:
 				color = configuration.COLORS_RGB[count]
 				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}/{}.wig".format(HTML_DATA, repeat_id.split("/")[-1]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
@@ -459,18 +407,12 @@ def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length,
 
 def create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA):
 	''' Create wiggle format to display individual profiles by JBrowse '''
-	#header_repeats = seq_repeats.dtype.names
-	#seq_id = header_repeats[0]
 	max_wig = []
-	#print(header_repeats)
-	#for track in header_repeats[1:]:
 	for track in present_repeats:
 		header_wig = "variableStep\tchrom={}".format(seq_id)
 		track_name = track.split("/")[-1]
 		track_data = np.c_[seq_repeats[seq_id],seq_repeats[track]]
 		track_nonzero = track_data[np.nonzero(track_data[:,1])]
-		#if track not in repeats_all:
-			#repeats_all.append(track)
 		with open("{}/{}.wig".format(HTML_DATA, track_name), "ab") as track_file:
 			np.savetxt(track_file, track_nonzero, fmt='%d', delimiter = "\t", header=header_wig, comments="")
 		max_wig.append(max(seq_repeats[track]))
@@ -478,7 +420,7 @@ def create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA):
 	
 
 def genome2coverage(GS, BLAST_DB):
-	''' Convert genome size to coverage'''
+	''' Convert genome size to coverage '''
 	nr = subprocess.Popen('''cat {} | grep '>' | wc -l'''.format(BLAST_DB), stdout=subprocess.PIPE, shell=True)
 	num_of_reads = int(nr.communicate()[0])
 	########################################### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#########################################################
@@ -520,7 +462,6 @@ def main(args):
 	BLAST_TASK = args.task
 	MAX_ALIGNMENTS = args.max_alignments
 	NEW_DB = args.new_db
-	#GFF = args.gff
 	THRESHOLD = args.threshold
 	THRESHOLD_SEGMENT = args.threshold_segment
 	OUTPUT = args.output
@@ -551,16 +492,12 @@ def main(args):
 
 	REF = None
 	REF_LINK = None
-	
-	#if os.getenv("JBROWSE_BIN"):
-		#GALAXY = True
-		#CLASSIFICATION = os.path.join(configuration.TOOL_DATA_DIR, CLASSIFICATION)
-		#LAST_DB = os.path.join(configuration.TOOL_DATA_DIR, LAST_DB)
-		#TBL = os.path.join(configuration.TOOL_DATA_DIR, TBL)
-	#else:
-		#GALAXY = False
-		
-	
+
+	# Check if there are forbidden characters in fasta IDs 
+	forbidden_ids = check_fasta_id(QUERY)
+	if forbidden_ids:
+		raise UserWarning("The following IDs contain forbidden characters ('/' or '\\') - PLEASE REPLACE OR DELETE THEM:\n{}".format("\n".join(forbidden_ids)))
+
 	
 	# Parse prepared annotation data table
 	if TBL:
@@ -586,12 +523,9 @@ def main(args):
 	if not os.path.isabs(OUT_DOMAIN_GFF):
 		OUT_DOMAIN_GFF = os.path.join(HTML_DATA, OUT_DOMAIN_GFF)
 	
-	#if not os.path.isabs(N_GFF):
-		#N_GFF = os.path.join(HTML_DATA, N_GFF)
-	#############################################################################
 	if not os.path.isabs(HTML):
 		HTML = os.path.join(HTML_DATA, HTML)
-	#############################################################################	
+
 	# Define parameters for parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
@@ -621,6 +555,7 @@ def main(args):
 	SEQ_INFO = "{}/{}".format(HTML_DATA, configuration.SEQ_INFO)
 	with open(SEQ_INFO, "w") as s_info:
 		s_info.write(configuration.s_info_header)
+		
 		# Find hits for each fasta sequence separetely
 		t_blast=time.time()	
 		for subfasta in fasta_list:
@@ -630,39 +565,24 @@ def main(args):
 			headers.append(header)
 			with open(OUTPUT, 'a') as profile_tbl:
 				profile_tbl.write( "{}\tALL\t{}\n".format(header, "\t".join(sorted(set(annotation_keys).difference(set(["ALL"]))))))
-			# Create parallel process
-			print(seq_length)																								
+			# Create parallel process																							
 			subset_index = list(range(0, seq_length, STEP))
 			# Situation when penultimal window is not complete but it is following by another one
 			if len(subset_index) > 1 and subset_index[-2] + WINDOW >= seq_length:
-				subset_index = subset_index[:-1]
-			print(subset_index)	
+				subset_index = subset_index[:-1]	
 			last_index = subset_index[-1]
-			######## CONF #####################
-			files_num = 1000
-			###################################
 			nonzero_total = 0
 			index_range = range(len(subset_index))
 			concatenated_prof = None
-			for chunk_index in index_range[0::files_num]:
+			for chunk_index in index_range[0::configuration.MAX_FILES_SUBPROFILES]:
 				multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, last_index, len(subset_index))
-				parallel_data = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + files_num])
+				parallel_data = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + configuration.MAX_FILES_SUBPROFILES])
 				profile_list, nonzero_len = zip(*parallel_data)
 				nonzero_total = nonzero_total + sum(nonzero_len)
-				# Join partial profiles to the final profile of the sequence 
-				#if concatenated_prof:
-					#profile_list.insert(0, concatenated_prof)	 							
+				# Join partial profiles to the final profile of the sequence 							
 				concatenate_prof(OUTPUT, profile_list, CV)
-				#prof_temp = NamedTemporaryFile(suffix='.pickle',delete=False)
-				#concatenated_prof = prof_temp.name
-				#with open(concatenated_prof, 'wb') as handle:
-					#pickle.dump(profile, handle, protocol=pickle.HIGHEST_PROTOCOL)
-				#prof_temp.close()
 				for subprofile in profile_list:
 					os.unlink(subprofile)
-			# Sum the profile counts to get "all" profile (including all repetitions and also hits not belonging anywhere)
-			#profile["ALL"] = sum(profile.values())
-			#nonzero_len = hits_table(profile, OUTPUT, header, seq_length, CV)
 			if nonzero_total == 0:
 				with open(OUTPUT, "a") as profile_tbl:
 					no_repeats = ["0"] * (len(annotation_keys) + 2)
@@ -674,7 +594,6 @@ def main(args):
 			start = end + 1
 			seq_count += 1
 			total_length += seq_length 
-			#os.unlink(concatenated_prof)
 	Ngff.close()
 	print("ELAPSED_TIME_BLAST = {} s".format(time.time() - t_blast))
 	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
@@ -754,8 +673,6 @@ if __name__ == "__main__":
 						help='overlap for parallely processed regions, set greater than read size')
     parser.add_argument('-n', '--new_db', default=False,
 						help='create a new blast database')
-    #parser.add_argument('-g', '--gff', default=True,
-						#help='use module for gff')
     parser.add_argument('-th', '--threshold', type=int, default=5,
 						help='threshold (number of hits) for report repetitive area in gff')
     parser.add_argument('-ths', '--threshold_segment', type=int, default=80,
