@@ -14,7 +14,8 @@ def create_dom_dict(DOM_GFF):
 		next(domains)
 		for line in domains:
 			seq_id = line.split("\t")[0]
-			ann_dom_lineage = line.split("\t")[8].split(";")[1].split("=")[-1].split("|")[-1]
+			#ann_dom_lineage = line.split("\t")[8].split(";")[1].split("=")[-1].split("|")[-1]
+			ann_dom_lineage = line.split("\t")[8].split(";")[1].split("=")[-1]
 			start_dom = int(line.split("\t")[3])      
 			end_dom = int(line.split("\t")[4])
 			strand_dom = line.split("\t")[6]
@@ -33,16 +34,19 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, d
 				seq_id_ini = inicial.rstrip().split("\t")[0] 
 				start_ini = int(inicial.rstrip().split("\t")[3])
 				end_ini = int(inicial.rstrip().split("\t")[4]) 
-				ann_ini = inicial.rstrip().split("\t")[8].split("=")[-1].split("/")[-1]
+				#ann_ini = inicial.rstrip().split("\t")[8].split("=")[-1].split("/")[-1]
+				ann_ini = inicial.rstrip().split("\t")[8].split("=")[-1]
 				starts_part = [start_ini]
 				ends_part = [end_ini]
 				for line in repeats:
 					seq_id = line.rstrip().split("\t")[0]
 					start = int(line.rstrip().split("\t")[3])
 					end = int(line.rstrip().split("\t")[4])
-					ann = line.rstrip().split("\t")[8].split("=")[-1].split("/")[-1]
+					#ann = line.rstrip().split("\t")[8].split("=")[-1].split("/")[-1]
+					ann = line.rstrip().split("\t")[8].split("=")[-1]
 					if seq_id != seq_id_ini:
-						if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
+						#if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
+						if INCLUDE_DOM is True and joined is True and configuration.WITH_DOMAINS in ann_ini:
 							dict_domains = dom_refining(joined_intervals, dict_domains, seq_id_ini, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM)
 						else:
 							joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id_ini, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
@@ -59,7 +63,8 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, d
 						end_ini = end
 						joined = True
 					else:
-						if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
+						#if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
+						if INCLUDE_DOM is True and joined is True and configuration.WITH_DOMAINS in ann_ini:
 							dict_domains = dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM)
 						else:
 							joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
@@ -69,7 +74,8 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, d
 						start_ini = start
 						end_ini = end
 						ann_ini = ann	
-				if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
+				#if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
+				if INCLUDE_DOM is True and joined is True and configuration.WITH_DOMAINS in ann_ini:
 					dict_domains = dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM)
 				else:
 					joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
@@ -85,7 +91,10 @@ def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann
 	for dom_attributes in dict_domains[seq_id]:
 		ann_dom = dom_attributes[2]
 		if dom_attributes[0] >= start_ini and dom_attributes[1] <= end_ini:
-			if ann_dom == ann_ini:
+			######################################################################
+			#if ann_dom == ann_ini:
+			if ann_dom == "|".join(ann_ini.split("|")[1:]):
+			######################################################################
 				strands.append(dom_attributes[3])
 				count_dom += 1
 			index_dom += 1 
@@ -94,8 +103,11 @@ def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann
 	else:
 		for part_start, part_end in zip(starts_part, ends_part):
 			joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, part_start, part_end, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
-	for idx in range(index_dom):
-		del(dict_domains[seq_id][idx])
+	print(start_ini)
+	print(dict_domains)
+	print(index_dom)
+	print(len(dict_domains[seq_id]))
+	del(dict_domains[seq_id][0:index_dom])
 	return dict_domains
 	
 	

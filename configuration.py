@@ -21,7 +21,10 @@ SC_MATRIX = os.path.join(DOMAINS_DATA, "blosum80.txt")
 AMBIGUOUS_TAG = "Ambiguous_domain"
 ELEM_TBL_HEAD = "DOMAINS_REPETITIVE_CLASSIFICATION\tORIGINAL_FILE_COUNTS\tFILTERED_FILE_COUNTS\n"
 ######## PROFREP_REFINING ##############################################
-WITHOUT_DOM = ["MITE", "Satellite", "Tandem"] 
+#############################################################!!!!!!!!!!!
+#WITHOUT_DOM = ["MITE", "Satellite", "Tandem"] 
+WITH_DOMAINS = "mobile_element"
+########################################################################
 # FILE_NAMES
 CLASS_FILE = "ALL.classification-new"
 LAST_DB_FILE = "ALL_protein-domains_05.fasta"

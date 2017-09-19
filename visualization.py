@@ -25,7 +25,11 @@ def vis_profrep(seq_id, present_repeats, seq_repeats, seq_length, CV):
 		ax.hlines(0, 0, seq_length, color="red", lw=4)
 	else:
 		for repeat in present_repeats:
-			ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label=repeat, color=configuration.COLORS_HEX[plot_num])
+			################### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ##################
+			if "|" in repeat:
+				ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label="|".join(repeat.split("|")[-2:]), color=configuration.COLORS_HEX[plot_num])
+			else:
+				ax.plot(seq_repeats[seq_id], seq_repeats[repeat], label=repeat, color=configuration.COLORS_HEX[plot_num])
 			plot_num += 1
 		art = []
 		lgd = ax.legend(bbox_to_anchor=(0.5,-0.1), loc=9, ncol=3)
