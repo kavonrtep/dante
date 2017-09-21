@@ -16,6 +16,7 @@ from multiprocessing import Pool
 from tempfile import NamedTemporaryFile
 import gff
 import protein_domains_pd
+import domains_filtering
 import configuration
 import visualization
 import distutils
@@ -601,7 +602,11 @@ def main(args):
 	# Protein domains module
 	t_domains=time.time()
 	if DOMAINS == "True":
-		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, OUT_DOMAIN_GFF,  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)	
+		domains_primary = NamedTemporaryFile(delete=False)
+		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
+		domains_primary.close()
+		domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
+		os.unlink(domains_primary.name)
 		print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
 		
 		# Process individual sequences from the input file sequentially
