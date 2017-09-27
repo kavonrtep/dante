@@ -1,0 +1,26 @@
+
+<tool id="gff_select" name="GFF Region Selector" version="1.0.0">
+<description> Tool to polish the raw ProfRep output in order to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
+<command>
+python3 ${__tool_directory__}/gff_selection.py  --gff_input ${gff_input} --gff_output ${gff_output} --seq_to_cut ${seq_to_cut} --start ${start} --end ${end} --new_seq_id ${new_seq_id} 
+</command>
+<inputs>
+	<param format="gff" type="data" name="gff_input" label="Choose input GFF3 file to cut" />
+	<param name="seq_to_cut" type="text" label="Type in the name of the sequence you wish to extract the region from" />
+	<param name="start" type="integer" value="" label="Interval starting position" help="" />
+	<param name="end" type="integer" value="" label="Interval ending position" help="" />
+	<param name="new_seq_id" type="text" label="Type in a new sequence name for the cut region" help="In case of using JBrowse it must correspond to the cut reference sequence name" />
+</inputs>
+<outputs>
+ <data format="gff3" name="gff_output" label="Refined GFF3 file from dataset ${gff_input.hid}" /> 
+</outputs>
+
+<help>
+
+**WHAT IT DOES**
+
+In prep.
+
+</help>
+</tool>
+
