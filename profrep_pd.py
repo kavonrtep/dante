@@ -14,6 +14,8 @@ import os
 from functools import partial
 from multiprocessing import Pool
 from tempfile import NamedTemporaryFile
+from operator import itemgetter
+from itertools import groupby
 import gff
 import protein_domains_pd
 import domains_filtering
@@ -157,8 +159,11 @@ def subprofile_single(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP
 	for key in sorted(set(annotation_keys).difference(exclude)):
 		data[:,count] = subprofile[key]
 		count += 1
-	# exclude rows containing only zeros
-	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	# exclude rows containing only zeros except from border positions
+	####################################################################
+	#data = data[~np.all(data[:,1:] == 0, axis=1)]
+	data = handle_zero_lines(data)
+	####################################################################
 	nonzero_len = len(data)
 	return data, nonzero_len
 	
@@ -171,8 +176,11 @@ def subprofile_first(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP)
 	for key in sorted(set(annotation_keys).difference(exclude)):
 		data[:,count] = subprofile[key][0 : -OVERLAP//2-1]
 		count += 1
-	# exclude rows containing only zeros
-	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	# exclude rows containing only zeros except from border positions
+	####################################################################
+	#data = data[~np.all(data[:,1:] == 0, axis=1)]
+	data = handle_zero_lines(data)
+	####################################################################
 	nonzero_len = len(data)
 	return data, nonzero_len
 	
@@ -186,8 +194,11 @@ def subprofiles_middle(subprofile, subset_index, annotation_keys, WINDOW, OVERLA
 	for key in sorted(set(annotation_keys).difference(exclude)):
 		data[:,count] = subprofile[key][OVERLAP//2 : -OVERLAP//2-1]
 		count += 1
-	# exclude rows containing only zeros
-	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	# exclude rows containing only zeros except from border positions
+	####################################################################
+	#data = data[~np.all(data[:,1:] == 0, axis=1)]
+	data = handle_zero_lines(data)
+	####################################################################
 	nonzero_len = len(data)
 	return data, nonzero_len
 	
@@ -201,10 +212,27 @@ def subprofile_last(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
 	for key in sorted(set(annotation_keys).difference(exclude)):
 		data[:,count] = subprofile[key][OVERLAP//2:]
 		count += 1
-	# exclude rows containing only zeros
-	data = data[~np.all(data[:,1:] == 0, axis=1)]
+	# exclude rows containing only zeros except from border positions
+	####################################################################
+	#data = data[~np.all(data[:,1:] == 0, axis=1)]
+	data = handle_zero_lines(data)
+	####################################################################
 	nonzero_len = len(data)
 	return data, nonzero_len
+
+def handle_zero_lines(data):
+	''' Clean lines which contains only zeros, i.e. positons which do not contain any hit. However border zero positions need to be preserved due to correct graphs plotting '''
+	zero_lines = np.where(~data[:,1:].any(axis=1))[0]
+	print(zero_lines)
+	zero_lines_breakpoints = []
+	for key, group in groupby(enumerate(zero_lines), lambda index_item: index_item[0] - index_item[1]):
+		group = list(map(itemgetter(1),group))
+		zero_lines_breakpoints.append(group[0])
+		zero_lines_breakpoints.append(group[-1])	
+	saved_lines = data[:,1:].any(axis=1)
+	saved_lines[zero_lines_breakpoints] = True
+	data = data[saved_lines]
+	return data
 
 
 def concatenate_prof(OUTPUT, profile_list, CV):
