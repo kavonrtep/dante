@@ -25,6 +25,11 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
 	--threshold ${advanced_options.threshold} 
 	--window ${advanced_options.window} 
 	--overlap ${advanced_options.overlap} 
+	#if $advanced_options.dust_filter:
+		--dust_filter "yes"
+	#else
+		--dust_filter "no"
+	#end if
  #end if
  
  #if $custom_data.options_custom_data:
@@ -76,6 +81,8 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
    <param name="align_length" type="integer" value="40" label="Minimum alignment length" help="Blast filtering option: minimum alignment length threshold in bp" />
    <param name="e_value" type="text" value="1e-15" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
    <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by Blast for alignment" />  
+   <param name="dust_filter" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Use DUST filter" help="Filters query sequence for low-complexity regions with DUST filter" >
+   </param>
    <param name="window" type="integer" value="5000" min="5000" label="Sliding window size" help="Use when having a long input sequence so that it can be processed in parallel" />
    <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
    <param name="threshold" type="integer" value="10" min="1" label="Repetitive threshold" help="Threshold for copy numbers/hits at certain position to be reported as repetitive in GFF format"  />

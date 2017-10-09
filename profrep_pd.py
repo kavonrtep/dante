@@ -108,7 +108,7 @@ def annot_profile(annotation_keys, part):
 	return subprofile
 
 
-def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, last_index, subsets_num, subset_index):
+def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, subsets_num, subset_index):
 	''' Run parallel function to process the input sequence in windows
 		Run blast for subsequence defined by the input index and window size
  		Create and increment subprofile vector based on reads aligned within window '''
@@ -122,7 +122,7 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 	
 	# Find HSP records for every window defined by query location and parse the tabular stdout:
 	# 1. query, 2. database read, 3. %identical, 4. alignment length, 5. alignment start, 6. alignment end
-	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
+	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -dust {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, DUST_FILTER, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
 	for line in p.stdout:
 		column = line.decode("utf-8").rstrip().split("\t")
 		if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
@@ -313,7 +313,8 @@ def seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, 
 				if seq_id in seq_ids_dom:
 					dom_idx = seq_ids_dom.index(seq_id) 
 					[fig, ax] = visualization.vis_domains(fig, ax, seq_id, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
-				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
+				#output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
+				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_count - 1)
 				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
 			seq_count += 1
 			plt.close()
@@ -349,7 +350,8 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML
 				max_wig = create_wig(seq_id, present_repeats, seq_repeats, HTML_DATA)
 			if seq_count <= configuration.MAX_PIC_NUM:
 				[fig, ax] = visualization.vis_profrep(seq_id, present_repeats, seq_repeats, seq_length, CV)
-				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
+				#output_pic_png = "{}/{}.png".format(HTML_DATA, seq_id)
+				output_pic_png = "{}/{}.png".format(HTML_DATA, seq_count - 1)
 				fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
 			seq_count += 1
 			plt.close()
@@ -360,10 +362,12 @@ def seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML
 
 def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK):
 	''' Define html output with limited number of output pictures and link to JBrowse '''
-	pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM] ])
+	#pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in seq_names[:configuration.MAX_PIC_NUM] ])
+	seq_count = 1
 	with open(SEQ_INFO, "r") as s_info:
 		next(s_info)
 		info = "\t\t".join(['<pre> {} [{} bp]</pre>'.format(line.split("\t")[0],line.split("\t")[1])for line in s_info])
+		seq_count += 1
 	if REF:
 		ref_part_1 = REF.split("-")[0]
 		ref_part_2 = "-".join(REF.split("-")[1:]).split(". ")[0]
@@ -373,6 +377,7 @@ def html_output(SEQ_INFO, total_length, seq_names, HTML, DB_NAME, REF, REF_LINK)
 	else:
 		ref_string = "Custom Data"
 		database = "CUSTOM"
+	pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in range(seq_count)[:configuration.MAX_PIC_NUM]])
 	html_str = '''
 	<!DOCTYPE html>
 	<html>
@@ -517,6 +522,7 @@ def main(args):
 	GALAXY = args.galaxy_usage
 	TOOL_DATA_DIR = args.tool_dir
 	JBROWSE_BIN = args.jbrowse_bin
+	DUST_FILTER = args.dust_filter
 
 
 	REF = None
@@ -604,7 +610,7 @@ def main(args):
 			index_range = range(len(subset_index))
 			concatenated_prof = None
 			for chunk_index in index_range[0::configuration.MAX_FILES_SUBPROFILES]:
-				multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, last_index, len(subset_index))
+				multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, len(subset_index))
 				parallel_data = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + configuration.MAX_FILES_SUBPROFILES])
 				profile_list, nonzero_len = zip(*parallel_data)
 				nonzero_total = nonzero_total + sum(nonzero_len)
@@ -696,6 +702,8 @@ if __name__ == "__main__":
 						help='blast filtering option: maximal number of alignments in the output')
     parser.add_argument('-e', '--e_value', type=str, default=1e-15,
 						help='blast setting option: e-value')
+    parser.add_argument('-df', '--dust_filter', type=str, default="'20 64 1'",
+						help='dust low-complexity regions filtering during blast search')
     parser.add_argument('-ws', '--word_size', type=int, default=11,
 						help='blast setting option: initial word size for alignment')
     parser.add_argument('-t', '--task', type=str, default="blastn",
