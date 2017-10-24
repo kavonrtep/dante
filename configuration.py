@@ -92,6 +92,7 @@ FILT_DOM_GFF = "domains_filtered.gff"
 DOM_SUMMARY = "dom_summary.txt"
 #ELEM_TABLE = os.path.join(TMP,"elements_table.txt")
 ELEM_TABLE = "elements_table.txt"
+LOG_FILE = "log.txt"
 
 
 

@@ -397,13 +397,13 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 
 	seq_ids = []
 	domain_reg = []
-	xminimal_all = []
-	xmaximal_all = []
-	domains_all = []
+	#xminimal_all = []
+	#xmaximal_all = []
+	#domains_all = []
 	header_gff = "##gff-version 3"
 	with open(OUTPUT_DOMAIN, "w") as gff:
 		gff.write("{}\n".format(header_gff))
-	gff = open(OUTPUT_DOMAIN,"a")
+	gff = open(OUTPUT_DOMAIN, "a")
 	start = True
 	while True:	
 		try:
@@ -460,17 +460,22 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				strand_gff = "-"
 			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
 			count_region += 1
-			domain_reg.append(domain_type)
-		xminimal_all.append(mins)
-		xmaximal_all.append(maxs)
-		domains_all.append(domain_reg)
+########################################################################
+			#domain_reg.append(domain_type)
+		#xminimal_all.append(mins)
+		#xmaximal_all.append(maxs)
+		#domains_all.append(domain_reg)
+########################################################################
 		domain_reg = []
 		seq_ids.append(seq_id)
 	os.unlink(query_temp)
 	gff.close()
 	if any("PART" in x for x in seq_ids):
-		[xminimal_all, xmaximal_all, domains_all, seq_ids] = adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step)
-	return xminimal_all, xmaximal_all, domains_all, seq_ids
+		################################################################
+		#[xminimal_all, xmaximal_all, domains_all, seq_ids] = adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step)
+		adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step)
+		################################################################
+	#return xminimal_all, xmaximal_all, domains_all, seq_ids
 	
 	
 def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
@@ -480,13 +485,13 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 	Duplicate domains going through the middle of the overlap are removed.
 	First and the last part (marked as LAST) of a certain sequence are 
 	handled separately as the are overlapped from one side only '''
-	xminimal_all = []
-	xmaximal_all = []
-	dom_all = []
+	#xminimal_all = []
+	#xmaximal_all = []
+	#dom_all = []
 	seq_id_all = []
-	xminimal = []
-	xmaximal = []
-	dom  = []
+	#xminimal = []
+	#xmaximal = []
+	#dom  = []
 	seen = set()
 	adjusted = NamedTemporaryFile(suffix='_adj', delete=False)
 	adjusted_file = adjusted.name
@@ -506,12 +511,12 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 					part = int(split_line[0].split("_PART")[1].split(":")[0].split("_")[0])
 					if seq_id != seq_id_all[-1]:
 						seq_id_all.append(seq_id)
-						xminimal_all.append(xminimal)
-						xmaximal_all.append(xmaximal)
-						dom_all.append(dom)
-						xminimal = []
-						xmaximal = []
-						dom = []
+						#xminimal_all.append(xminimal)
+						#xmaximal_all.append(xmaximal)
+						#dom_all.append(dom)
+						#xminimal = []
+						#xmaximal = []
+						#dom = []
 						
 					## first part of the sequence
 					if part == 1:
@@ -519,15 +524,15 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 						if int(split_line[3]) <= cut_end <= int(split_line[4]):
 							if line_without_id not in seen:
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
-								xminimal.append(int(split_line[3]))
-								xmaximal.append(int(split_line[4]))
-								dom.append(split_line[-1].split(";")[0].split("=")[1])
+								#xminimal.append(int(split_line[3]))
+								#xmaximal.append(int(split_line[4]))
+								#dom.append(split_line[-1].split(";")[0].split("=")[1])
 								seen.add(line_without_id)
 						elif int(split_line[4]) < cut_end:
 							adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
-							xminimal.append(int(split_line[3]))
-							xmaximal.append(int(split_line[4]))
-							dom.append(split_line[-1].split(";")[0].split("=")[1])
+							#xminimal.append(int(split_line[3]))
+							#xmaximal.append(int(split_line[4]))
+							#dom.append(split_line[-1].split(";")[0].split("=")[1])
 								
 					## last part of the sequence
 					elif "LAST" in split_line[0]:
@@ -535,15 +540,15 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 						if int(split_line[3]) <= cut_start <= int(split_line[4]):
 							if line_without_id not in seen:
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
-								xminimal.append(int(split_line[3]))
-								xmaximal.append(int(split_line[4]))
-								dom.append(split_line[-1].split(";")[0].split("=")[1])
+								#xminimal.append(int(split_line[3]))
+								#xmaximal.append(int(split_line[4]))
+								#dom.append(split_line[-1].split(";")[0].split("=")[1])
 								seen.add(line_without_id)
 						elif int(split_line[3]) > cut_start: 
 							adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
-							xminimal.append(int(split_line[3]))
-							xmaximal.append(int(split_line[4]))
-							dom.append(split_line[-1].split(";")[0].split("=")[1])
+							#xminimal.append(int(split_line[3]))
+							#xmaximal.append(int(split_line[4]))
+							#dom.append(split_line[-1].split(";")[0].split("=")[1])
 							
 					## middle part of the sequence
 					else:
@@ -552,36 +557,36 @@ def adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step):
 						if int(split_line[3]) <= cut_start <= int(split_line[4]) or int(split_line[3]) <= cut_end <= int(split_line[4]):
 							if line_without_id not in seen:
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
-								xminimal.append(int(split_line[3]))
-								xmaximal.append(int(split_line[4]))
-								dom.append(split_line[-1].split(";")[0].split("=")[1])
+								#xminimal.append(int(split_line[3]))
+								#xmaximal.append(int(split_line[4]))
+								#dom.append(split_line[-1].split(";")[0].split("=")[1])
 								seen.add(line_without_id)
 						elif int(split_line[3]) > cut_start and int(split_line[4]) < cut_end:
 							adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
-							xminimal.append(int(split_line[3]))
-							xmaximal.append(int(split_line[4]))
-							dom.append(split_line[-1].split(";")[0].split("=")[1])	
+							#xminimal.append(int(split_line[3]))
+							#xmaximal.append(int(split_line[4]))
+							#dom.append(split_line[-1].split(";")[0].split("=")[1])	
 				
 				## not divived
 				else:
 					if seq_id != seq_id_all[-1]:
 						seq_id_all.append(seq_id)
-						xminimal_all.append(xminimal)
-						xmaximal_all.append(xmaximal)
-						dom_all.append(dom)
-						xminimal = []
-						xmaximal = []
-						dom = []
+						#xminimal_all.append(xminimal)
+						#xmaximal_all.append(xmaximal)
+						#dom_all.append(dom)
+						#xminimal = []
+						#xmaximal = []
+						#dom = []
 					adjusted_gff.write(line)
-					xminimal.append(int(split_line[3]))
-					xmaximal.append(int(split_line[4]))
-					dom.append(split_line[-1].split(";")[0].split("=")[1])			
-	xminimal_all.append(xminimal)
-	xmaximal_all.append(xmaximal)
-	dom_all.append(dom)
+					#xminimal.append(int(split_line[3]))
+					#xmaximal.append(int(split_line[4]))
+					#dom.append(split_line[-1].split(";")[0].split("=")[1])			
+	#xminimal_all.append(xminimal)
+	#xmaximal_all.append(xmaximal)
+	#dom_all.append(dom)
 	adjusted.close()
 	shutil.move(adjusted_file, OUTPUT_DOMAIN)
-	return xminimal_all, xmaximal_all, dom_all, seq_id_all 		
+	#return xminimal_all, xmaximal_all, dom_all, seq_id_all 		
 	
 	
 def main(args):
@@ -622,9 +627,10 @@ def main(args):
 				os.makedirs(OUTPUT_DIR)
 		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
 		SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
-
-	[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
-	
+	####################################################################
+	#[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
+	domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
+	####################################################################
 	domains_stat(domains_all, seq_ids, SUMMARY)
 	
 	

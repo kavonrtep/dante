@@ -27,7 +27,6 @@ import tempfile
 import re
 from Bio import SeqIO
 
-
 t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
 
@@ -223,7 +222,6 @@ def subprofile_last(subprofile, subset_index, annotation_keys, WINDOW, OVERLAP):
 def handle_zero_lines(data):
 	''' Clean lines which contains only zeros, i.e. positons which do not contain any hit. However border zero positions need to be preserved due to correct graphs plotting '''
 	zero_lines = np.where(~data[:,1:].any(axis=1))[0]
-	print(zero_lines)
 	zero_lines_breakpoints = []
 	for key, group in groupby(enumerate(zero_lines), lambda index_item: index_item[0] - index_item[1]):
 		group = list(map(itemgetter(1),group))
@@ -523,6 +521,7 @@ def main(args):
 	TOOL_DATA_DIR = args.tool_dir
 	JBROWSE_BIN = args.jbrowse_bin
 	DUST_FILTER = args.dust_filter
+	LOG_FILE = args.log_file
 
 
 	REF = None
@@ -536,7 +535,7 @@ def main(args):
 	
 	# Parse prepared annotation data table
 	if TBL:
-		TBL = os.path.join(configuration.PROFREP_DATA, TBL)
+		#TBL = os.path.join(configuration.PROFREP_DATA, TBL)
 		[DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK] = prepared_data(TBL, DB_ID, TOOL_DATA_DIR)
 	if GALAXY:
 		LAST_DB = os.path.join(LAST_DB, configuration.LAST_DB_FILE)
@@ -560,11 +559,18 @@ def main(args):
 	
 	if not os.path.isabs(HTML):
 		HTML = os.path.join(HTML_DATA, HTML)
+	
+	if not os.path.isabs(LOG_FILE):
+		LOG_FILE = os.path.join(HTML_DATA, LOG_FILE)
 
 	# Define parameters for parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
-	print("NUM_OF_CORES = {}".format(NUM_CORES))
+	with open(LOG_FILE, "w") as log:
+		log.write("NUM_OF_CORES = {}\n".format(NUM_CORES))
+	log = open(LOG_FILE,"a")
+	#log.write("NUM_OF_CORES = {}".format(NUM_CORES))
+	#print("NUM_OF_CORES = {}".format(NUM_CORES))
 	parallel_pool = Pool(NUM_CORES)
 
 	# Assign clusters to repetitive classes
@@ -630,43 +636,63 @@ def main(args):
 			seq_count += 1
 			total_length += seq_length 
 	Ngff.close()
-	print("ELAPSED_TIME_BLAST = {} s".format(time.time() - t_blast))
-	print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
+	log.write("ELAPSED_TIME_BLAST = {} s\n".format(time.time() - t_blast))
+	#print("ELAPSED_TIME_BLAST = {} s".format(time.time() - t_blast))
+	log.write("TOTAL_LENGHT_ANALYZED = {} bp\n".format(total_length))
+	#print("TOTAL_LENGHT_ANALYZED = {} bp".format(total_length))
 	
 	# Protein domains module
 	t_domains=time.time()
 	if DOMAINS == "True":
 		domains_primary = NamedTemporaryFile(delete=False)
-		[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
+		################################################################
+		#[xminimal, xmaximal, domains, seq_ids_dom] = protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
+		protein_domains_pd.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
+		################################################################
 		domains_primary.close()
-		domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
+		#domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
+		[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
 		os.unlink(domains_primary.name)
-		print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
+		################################################################
+		log = open(LOG_FILE, "a")
+		################################################################
+		log.write("ELAPSED_TIME_DOMAINS = {} s\n".format(time.time() - t_domains))
+		#print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t_domains))
 		
 		# Process individual sequences from the input file sequentially
 		t_gff_vis = time.time() 
 		repeats_all = seq_process_dom(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CV)
-		print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
+		log.write("ELAPSED_TIME_GFF_VIS = {} s\n".format(time.time() - t_gff_vis))
+		#print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 		
 		# Prepare data for html output
 		t_jbrowse=time.time()
-		jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN)		
-		print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
+		jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN)	
+		log.write("ELAPSED_TIME_JBROWSE_PREP = {} s\n".format(time.time() - t_jbrowse))	
+		#print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
 	else:
 		# Process individual sequences from the input file sequentially
 		t_gff_vis = time.time() 
 		repeats_all = seq_process(OUTPUT, SEQ_INFO, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, CV)
-		print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
+		log.write("ELAPSED_TIME_GFF_VIS = {} s\n".format(time.time() - t_gff_vis))
+		#print("ELAPSED_TIME_GFF_VIS = {} s".format(time.time() - t_gff_vis))
 		
 		# Prepare data for html output
 		t_jbrowse=time.time()
 		jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, repeats_all, N_GFF, total_length, JBROWSE_BIN)		
-		print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
+		log.write("ELAPSED_TIME_JBROWSE_PREP = {} s\n".format(time.time() - t_jbrowse))
+		#print("ELAPSED_TIME_JBROWSE_PREP = {} s".format(time.time() - t_jbrowse))
 	
 	# Create HTML output
 	t_html=time.time()
 	html_output(SEQ_INFO, total_length, headers, HTML, DB_NAME, REF, REF_LINK)
-	print("ELAPSED_TIME_HTML = {} s".format(time.time() - t_html))
+	log.write("ELAPSED_TIME_HTML = {} s\n".format(time.time() - t_html))
+	#print("ELAPSED_TIME_HTML = {} s".format(time.time() - t_html))
+	
+	log.write("ELAPSED_TIME_PROFREP = {} s\n".format(time.time() - t_profrep))
+	####################################################################
+	log.close()
+	####################################################################
 	
 	for subfasta in fasta_list:
 		os.unlink(subfasta)
@@ -680,6 +706,7 @@ if __name__ == "__main__":
     REPEATS_GFF = configuration.REPEATS_GFF
     N_REG = configuration.N_REG
     REPEATS_TABLE = configuration.REPEATS_TABLE
+    LOG_FILE = configuration.LOG_FILE
     #CLASSIFICATION = configuration.CLASSIFICATION
     #LAST_DB = configuration.LAST_DB
 
@@ -762,10 +789,12 @@ if __name__ == "__main__":
                   		help="tool data directory in galaxy")
     parser.add_argument("-jb", "--jbrowse_bin", type=str, default=configuration.JBROWSE_BIN,
                   		help="path to JBrowse bin directory")
+    parser.add_argument("-lg", "--log_file", type=str, default=LOG_FILE,
+                  		help="path to log file")
 
 
     args = parser.parse_args()
     main(args)
 
-print("ELAPSED_TIME_PROFREP = {} s".format(time.time() - t_profrep))
+
 

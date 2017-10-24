@@ -12,6 +12,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
 --tool_dir ${__tool_data_path__ }/profrep
 --protein_domains $domains_switch
 --jbrowse_bin \${JBROWSE_BIN}
+--log_file ${log_file}
 
  #if $domains_switch:
 	--domain_gff ${DomGff}
@@ -41,11 +42,10 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
         --genome_size ${custom_data.cn.genome_size}
     #end if
  #else
-    --datasets_tbl prepared_datasets.txt
+    --datasets_tbl ${__tool_data_path__ }/prepared_datasets.txt
     --db_id ${custom_data.prepared_dataset}  
     --copy_numbers '$custom_data.copy_numbers'
  #end if 
- > $log_file 
 </command> 
 
 <inputs>

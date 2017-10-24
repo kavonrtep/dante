@@ -6,35 +6,41 @@ import time
 from operator import itemgetter
 from itertools import groupby
 import configuration
- 
- 
+
+
 def create_gff(seq_repeats, OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, gff_repeats):
-	header = seq_repeats.dtype.names
-	seq_id = header[0]
-	for repeat in header[2:]:
-		above_th = seq_repeats[seq_id][np.where(seq_repeats[repeat] > THRESHOLD)[0]]
-		ranges = idx_ranges(above_th, THRESHOLD_SEGMENT)
-		print(ranges)
-		for i in range(len(ranges) - 1)[::2]:
-			gff_repeats.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, ranges[i], ranges[i + 1], configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, repeat))
+        header = seq_repeats.dtype.names
+        seq_id = header[0]
+        for repeat in header[2:]:
+                above_th = seq_repeats[seq_id][np.where(seq_repeats[repeat] > THRESHOLD)[0]]
+                ranges = idx_ranges(above_th, THRESHOLD_SEGMENT, seq_id, gff_repeats, repeat)
 
 
 def N_gff(header, sequence, Ngff):
-	indices = [indices + 1 for indices, n in enumerate(sequence) if n == "n" or n == "N"]
-	ranges = idx_ranges(indices, configuration.N_segment)
-	for i in range(len(ranges) - 1)[::2]:
-		Ngff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(header, configuration.SOURCE, configuration.N_FEATURE, ranges[i], ranges[i + 1], configuration.N_SCORE, configuration.N_STRAND, configuration.N_PHASE, configuration.N_NAME))
+        indices = [indices + 1 for indices, n in enumerate(sequence) if n == "n" or n == "N"]
+        for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):
+                        group = list(map(itemgetter(1), group))
+                        if len(group) > configuration.N_segment:
+                                # Take boundaries of the group vectors
+                                Ngff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(header, configuration.SOURCE, configuration.N_FEATURE, group[0], group[-1], configuration.N_SCORE, configuration.N_STRAND, configuration.N_PHASE, configuration.N_NAME))
+   
+                                
+def idx_ranges(indices, THRESHOLD_SEGMENT, seq_id, gff_repeats, repeat):
+        ranges = []
+        for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):
+                        group = list(map(itemgetter(1), group))
+                        if len(group) > THRESHOLD_SEGMENT:
+                                # Take boundaries of the group vectors
+                                gff_repeats.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, group[0], group[-1], configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, repeat))
 
 
-def idx_ranges(indices, THRESHOLD_SEGMENT):
-	ranges = []
-	for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):
-			group = list(map(itemgetter(1), group))
-			if len(group) > THRESHOLD_SEGMENT:
-				# Take boundaries of the group vectors
-				ranges.append(group[0])
-				ranges.append(group[-1])
-	return ranges
+def idx_Nranges(indices, THRESHOLD_SEGMENT, header):
+        ranges = []
+        for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):
+                        group = list(map(itemgetter(1), group))
+                        if len(group) > THRESHOLD_SEGMENT:
+                                # Take boundaries of the group vectors
+                                Ngff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(header, configuration.SOURCE, configuration.N_FEATURE, group[0], group[-1], configuration.N_SCORE, configuration.N_STRAND, configuration.N_PHASE, configuration.N_NAME))
 
 	
 def main(args):

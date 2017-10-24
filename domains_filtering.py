@@ -31,6 +31,16 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 		next(gff_all)
 		with open (FILT_DOM_GFF, "w") as gff_filtered:
 			gff_filtered.write("{}\n".format(configuration.HEADER_GFF))
+			############################################################
+			seq_ids_all = [] 
+			xminimals = []
+			xmaximals = []
+			domains = []
+			xminimals_all = []
+			xmaximals_all = []
+			domains_all = []
+			count_line = 0
+			############################################################
 			for line in gff_all:
 				attributes = line.rstrip().split("\t")[-1]
 				classification = attributes.split(";")[1].split("=")[1]
@@ -39,9 +49,34 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 					al_similarity = float(attributes.split(";")[-3].split("=")[1])
 					al_length = float(attributes.split(";")[-2].split("=")[1])
 					relat_interrupt = float(attributes.split("\t")[-1].split(";")[-1].split("=")[1])
-					dom_type = attributes.split(";")[0].split("=")[1]		
+					dom_type = attributes.split(";")[0].split("=")[1]
+					####################################################
+					seq_id = line.split("\t")[0]
+					xminimal = int(line.split("\t")[3])	
+					xmaximal = int(line.split("\t")[4])		
+					####################################################		
 					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and (ELEMENT in classification):			
 						gff_filtered.writelines(line)
+						################################################
+						if count_line == 0:
+							seq_ids_all.append(line.split("\t")[0])
+						xminimals.append(xminimal)
+						xmaximals.append(xmaximal)
+						domains.append(dom_type)
+						if seq_id != seq_ids_all[-1]:
+							seq_ids_all.append(seq_id)
+							xminimals_all.append(xminimals)
+							xmaximals_all.append(xmaximals)
+							domains_all.append(domains)
+							xminimals = []
+							xmaximals = []
+							domains = []
+	xminimals_all.append(xminimals)
+	xmaximals_all.append(xmaximals)
+	domains_all.append(domains)				
+	return xminimals_all, xmaximals_all, domains_all, seq_ids_all
+						################################################
+					
 					
 	
 def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
@@ -124,7 +159,10 @@ def main(args):
 		DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
 		ELEM_TABLE = os.path.join(OUTPUT_DIR, os.path.basename(ELEM_TABLE))
 
-	filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT)
+	#filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT)
+	####################################################################
+	[xminimals_all, xmaximals_all, domains_all, seq_ids_all] = filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT)
+	####################################################################
 	get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ)
 	elements_table(OUTPUT_DOMAIN, FILT_DOM_GFF, ELEM_TABLE)
 
