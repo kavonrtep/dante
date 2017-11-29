@@ -4,7 +4,7 @@
     <requirement type="package" version="1.0.0" >profrep</requirement>
 </requirements>
 <command>
-python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl} --output_gff ${ProfGff} --html_file ${html_file}
+python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output_gff ${ProfGff} --html_file ${html_file}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff} 
 --protein_database ${__tool_data_path__ }/protein_domains
 --classification ${__tool_data_path__ }/protein_domains
@@ -91,7 +91,6 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output ${ProfTbl}
 </inputs>
 
  <outputs>
- 	<data format="csv" name="ProfTbl" label="Repetitive profile table from dataset ${input.hid}" />
 	<data format="gff3" name="ProfGff" label="GFF file of repetitive regions from dataset ${input.hid}" />
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid}" >
 	 <filter>domains_switch</filter>

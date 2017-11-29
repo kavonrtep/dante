@@ -412,7 +412,9 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				sequence_hits = np.genfromtxt(line_generator(tab_pipe, maf_pipe, start),
 				names="score, name_db, start_db, al_size_db, strand_db, seq_size_db, name_q, start_q, al_size_q, strand_q, seq_size_q, block1, block2, block3, db_seq, q_seq",
 				usecols="score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db",
-				dtype=None)
+				dtype=None,
+				comments=None)
+				print(sequence_hits)
 		except RuntimeError:
 			break
 		## if there are no domains found
@@ -631,7 +633,7 @@ def main(args):
 	#[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 	domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 	####################################################################
-	domains_stat(domains_all, seq_ids, SUMMARY)
+	#domains_stat(domains_all, seq_ids, SUMMARY)
 	
 	
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t))

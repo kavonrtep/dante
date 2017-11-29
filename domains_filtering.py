@@ -39,7 +39,7 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 			xminimals_all = []
 			xmaximals_all = []
 			domains_all = []
-			count_line = 0
+			start = True
 			############################################################
 			for line in gff_all:
 				attributes = line.rstrip().split("\t")[-1]
@@ -57,12 +57,9 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 					####################################################		
 					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and (ELEMENT in classification):			
 						gff_filtered.writelines(line)
-						################################################
-						if count_line == 0:
+						if start:
 							seq_ids_all.append(line.split("\t")[0])
-						xminimals.append(xminimal)
-						xmaximals.append(xmaximal)
-						domains.append(dom_type)
+							start = False
 						if seq_id != seq_ids_all[-1]:
 							seq_ids_all.append(seq_id)
 							xminimals_all.append(xminimals)
@@ -71,13 +68,18 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 							xminimals = []
 							xmaximals = []
 							domains = []
+						
+						################################################
+						xminimals.append(xminimal)
+						xmaximals.append(xmaximal)
+						domains.append(dom_type)					
 	xminimals_all.append(xminimals)
 	xmaximals_all.append(xmaximals)
-	domains_all.append(domains)				
+	domains_all.append(domains)	
+	print(domains_all)			
 	return xminimals_all, xmaximals_all, domains_all, seq_ids_all
 						################################################
-					
-					
+									
 	
 def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
 	''' Get the translated protein sequence of original DNA seq for all the filtered domains regions '''
