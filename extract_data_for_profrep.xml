@@ -1,0 +1,21 @@
+<tool id="extract_data" name="Extract_Data_For_ProfRep" version="1.0.0">
+<description> Extract data for ProfRep from RepaetExplorer </description>
+<command>
+python3 ${__tool_directory__}/extract_data_for_profrep.py --re_archive ${re_archive} --output_cls ${output_cls} --output_reads_all ${output_reads_all} --output_annotation ${output_annotation}
+</command>
+<inputs>
+ <param format="zip" type="data" name="re_archive" label="RepeatExplorer output data archive" help="" />
+</inputs>
+
+<outputs>
+ <data format="fasta" name="output_cls" label="Output cls file of all clusters from ${re_archive.hid} archive" />
+ <data format="fasta" name="output_reads_all" label="Output file of all reads sequences from ${re_archive.hid} archive" />
+ <data format="tabular" name="output_annotation" label="Output file of clusters annotation from ${re_archive.hid} archive" />
+</outputs>
+
+ <help>
+
+**WHAT IT DOES**
+
+ </help>
+</tool>

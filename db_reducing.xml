@@ -1,0 +1,30 @@
+<tool id="db_reducing" name="ProfRep_DB_Reducing" version="1.0.0">
+<description> Tool to reduce database of reads sequences based on the reads similarity in order to speed up ProfRep analysis </description>
+<requirements>
+    <requirement type="package" version="4.6.4" >cd-hit</requirement>
+</requirements>
+<command>
+python3 ${__tool_directory__}/profrep_db_reducing.py --reads_all ${reads_all} --cls ${cls} --cluster_size ${cluster_size} --identity_th ${identity_th} --reads_reduced ${reads_reduced} --cls_reduced ${cls_reduced}
+</command>
+<inputs>
+ <param format="fasta" type="data" name="reads_all" label="Choose input file containing all reads sequences" help="" />
+ <param format="fasta" type="data" name="cls" label="Choose hitsort.cls file" help="cls file is clutering output of RepeatExplorer containing clusters with belonging reads" />
+ <param name="cluster_size" type="integer" value="69000" min="1" max ="1000000000" label="Enter minimum cluster size to be included in reducing" />
+ <param name="identity_th" type="float" value="0.90" min="0.1" max ="1.0" label="Enter reads identity threshold for clustering" />
+</inputs>
+
+<outputs>
+ <data format="fasta" name="cls_reduced" label="Modified cls file of ${cls.hid}" />
+ <data format="fasta" name="reads_reduced" label="Reduced reads database of ${reads_all.hid}" />
+</outputs>
+
+ <help>
+
+**WHAT IT DOES**
+
+ </help>
+</tool>
+
+
+
+

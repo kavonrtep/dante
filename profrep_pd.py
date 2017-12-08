@@ -128,13 +128,17 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 		column = line.decode("utf-8").rstrip().split("\t")
 		if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
 			read = column[1]				# ID of individual aligned read
+			if "_" in read:
+				reads_representation = int(read.split("_")[1])
+			else:
+				reads_representation = 1
 			qstart = int(column[4])			# starting position of alignment
 			qend = int(column[5])			# ending position of alignemnt
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
 				annotation = "ALL"
-			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
+			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + reads_representation
 	subprofile["ALL"] = sum(subprofile.values())
 	if subset_index == 0: 
 		if subsets_num == 1:
@@ -146,6 +150,46 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 	else:
 		subprf_name = subprofiles_middle(subprofile, subset_index, WINDOW, OVERLAP)
 	return subprf_name
+	
+	
+#def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, subsets_num, subset_index):
+	#''' Run parallel function to process the input sequence in windows
+		#Run blast for subsequence defined by the input index and window size
+ 		#Create and increment subprofile vector based on reads aligned within window '''
+	#print("reduced_db_2")
+	#loc_start = subset_index + 1
+	#loc_end = subset_index + WINDOW
+	#if loc_end > seq_length:
+		#loc_end = seq_length
+		#subprofile = annot_profile(annotation_keys, seq_length - loc_start + 1)
+	#else:
+		#subprofile = annot_profile(annotation_keys, WINDOW + 1)
+	
+	## Find HSP records for every window defined by query location and parse the tabular stdout:
+	## 1. query, 2. database read, 3. %identical, 4. alignment length, 5. alignment start, 6. alignment end
+	#p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -dust {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, DUST_FILTER, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
+	#for line in p.stdout:
+		#column = line.decode("utf-8").rstrip().split("\t")
+		#if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
+			#read = column[1]				# ID of individual aligned read
+			#qstart = int(column[4])			# starting position of alignment
+			#qend = int(column[5])			# ending position of alignemnt
+			#if read in reads_annotations:
+				#annotation = reads_annotations[read]								
+			#else:
+				#annotation = "ALL"
+			#subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
+	#subprofile["ALL"] = sum(subprofile.values())
+	#if subset_index == 0: 
+		#if subsets_num == 1:
+			#subprf_name = subprofile_single(subprofile, subset_index)
+		#else:
+			#subprf_name = subprofile_first(subprofile, subset_index, WINDOW, OVERLAP)
+	#elif subset_index == last_index:
+		#subprf_name = subprofile_last(subprofile, subset_index, OVERLAP)
+	#else:
+		#subprf_name = subprofiles_middle(subprofile, subset_index, WINDOW, OVERLAP)
+	#return subprf_name
 	
 	
 def subprofile_single(subprofile, subset_index):
@@ -435,9 +479,10 @@ def prepared_data(TBL, DB_ID, TOOL_DATA_DIR):
 	''' Get prepared rep. annotation data from the table based on the selected species ID '''
 	with open(TBL) as datasets:
 		for line in datasets:
-			if DB_ID in line:
+			if line.split("\t")[0] == DB_ID:
 				DB_NAME = line.split("\t")[1]
 				BLAST_DB = os.path.join(TOOL_DATA_DIR, line.split("\t")[2])
+				print(BLAST_DB)
 				CLS = os.path.join(TOOL_DATA_DIR, line.split("\t")[3])
 				CL_ANNOTATION_TBL = os.path.join(TOOL_DATA_DIR, line.split("\t")[4])
 				CV = float(line.split("\t")[5])
@@ -490,10 +535,15 @@ def main(args):
 	JBROWSE_BIN = args.jbrowse_bin
 	DUST_FILTER = args.dust_filter
 	LOG_FILE = args.log_file
-
+	#REDUCED_DB = args.reduced_db
 
 	REF = None
 	REF_LINK = None
+	
+	print(DB_ID)
+	#if "reduced" in DB_ID:
+		#REDUCED_DB = True 
+		#print("reduced")
 
 	## Check if there are forbidden characters in fasta IDs 
 	forbidden_ids = check_fasta_id(QUERY)
@@ -583,6 +633,10 @@ def main(args):
 		last_index = subset_index[-1]
 		index_range = range(len(subset_index))
 		for chunk_index in index_range[0::configuration.MAX_FILES_SUBPROFILES]:
+			#if REDUCED_DB:
+				#print("reduced_db")
+				#multiple_param = partial(parallel_process_reduced, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, len(subset_index))
+			#else:
 			multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, len(subset_index))
 			subprofiles_all = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + configuration.MAX_FILES_SUBPROFILES])
 			## Join partial profiles to the final profile of the sequence 
@@ -743,6 +797,8 @@ if __name__ == "__main__":
                   		help="path to JBrowse bin directory")
     parser.add_argument("-lg", "--log_file", type=str, default=LOG_FILE,
                   		help="path to log file")
+    #parser.add_argument("-rd", "--reduced_db", default=False,
+                  		#help="reduced reads database")
 
 
     args = parser.parse_args()

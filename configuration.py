@@ -12,6 +12,17 @@ jbrowse_link_to_profrep = "data/profrep_data"
 LINK_PART1 = "http://nina/JBrowse-1.12.1/index.html?data="
 LINK_PART1_PC = "http://nina/JBrowse-1.12.1/index.html?data="
 PROFREP_DATA = os.path.join(MAIN_GIT_DIR, "profrep_data")
+########################################################################
+# EXTRACT_DATA_DOR_PROFREP
+HITSORT_CLS = "seqclust/clustering/hitsort.cls"
+READS_ALL = "seqclust/sequences/sequences.fasta"
+ANNOTATION = "SUPERCLUSTER_TABLE.csv"
+########################################################################
+# PROFREP_DB_REDUCING
+MEM_LIM = 1500 # in MB
+CLS_REDUCED = "hitsort_reduced.cls"
+READS_ALL_REDUCED = "reads_all_reduced"
+########################################################################
 #TBL = os.path.join(PROFREP_DATA, "prepared_datasets.txt")
 ######### DOMAINS ######################################################
 MAIN_RESULTS_DIR = os.getcwd()

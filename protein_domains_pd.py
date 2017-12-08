@@ -414,7 +414,6 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				usecols="score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db",
 				dtype=None,
 				comments=None)
-				print(sequence_hits)
 		except RuntimeError:
 			break
 		## if there are no domains found

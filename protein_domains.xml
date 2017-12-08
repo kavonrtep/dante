@@ -1,4 +1,3 @@
-
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
 <description> Find and classify all protein domains in your DNA sequence based on the database of repetitive elements protein domains </description>
 <command>
