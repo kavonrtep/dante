@@ -16,7 +16,7 @@ PROFREP_DATA = os.path.join(MAIN_GIT_DIR, "profrep_data")
 # EXTRACT_DATA_DOR_PROFREP
 HITSORT_CLS = "seqclust/clustering/hitsort.cls"
 READS_ALL = "seqclust/sequences/sequences.fasta"
-ANNOTATION = "SUPERCLUSTER_TABLE.csv"
+ANNOTATION = "CLUSTER_TABLE.csv"
 ########################################################################
 # PROFREP_DB_REDUCING
 MEM_LIM = 1500 # in MB

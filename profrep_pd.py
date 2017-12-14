@@ -128,8 +128,8 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 		column = line.decode("utf-8").rstrip().split("\t")
 		if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
 			read = column[1]				# ID of individual aligned read
-			if "_" in read:
-				reads_representation = int(read.split("_")[1])
+			if "reduce" in read:
+				reads_representation = int(read.split("reduce")[-1])
 			else:
 				reads_representation = 1
 			qstart = int(column[4])			# starting position of alignment
@@ -150,46 +150,6 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 	else:
 		subprf_name = subprofiles_middle(subprofile, subset_index, WINDOW, OVERLAP)
 	return subprf_name
-	
-	
-#def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, subsets_num, subset_index):
-	#''' Run parallel function to process the input sequence in windows
-		#Run blast for subsequence defined by the input index and window size
- 		#Create and increment subprofile vector based on reads aligned within window '''
-	#print("reduced_db_2")
-	#loc_start = subset_index + 1
-	#loc_end = subset_index + WINDOW
-	#if loc_end > seq_length:
-		#loc_end = seq_length
-		#subprofile = annot_profile(annotation_keys, seq_length - loc_start + 1)
-	#else:
-		#subprofile = annot_profile(annotation_keys, WINDOW + 1)
-	
-	## Find HSP records for every window defined by query location and parse the tabular stdout:
-	## 1. query, 2. database read, 3. %identical, 4. alignment length, 5. alignment start, 6. alignment end
-	#p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -dust {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, DUST_FILTER, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
-	#for line in p.stdout:
-		#column = line.decode("utf-8").rstrip().split("\t")
-		#if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
-			#read = column[1]				# ID of individual aligned read
-			#qstart = int(column[4])			# starting position of alignment
-			#qend = int(column[5])			# ending position of alignemnt
-			#if read in reads_annotations:
-				#annotation = reads_annotations[read]								
-			#else:
-				#annotation = "ALL"
-			#subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + 1
-	#subprofile["ALL"] = sum(subprofile.values())
-	#if subset_index == 0: 
-		#if subsets_num == 1:
-			#subprf_name = subprofile_single(subprofile, subset_index)
-		#else:
-			#subprf_name = subprofile_first(subprofile, subset_index, WINDOW, OVERLAP)
-	#elif subset_index == last_index:
-		#subprf_name = subprofile_last(subprofile, subset_index, OVERLAP)
-	#else:
-		#subprf_name = subprofiles_middle(subprofile, subset_index, WINDOW, OVERLAP)
-	#return subprf_name
 	
 	
 def subprofile_single(subprofile, subset_index):
@@ -719,6 +679,8 @@ if __name__ == "__main__":
     
     # Command line arguments
     parser = argparse.ArgumentParser()
+    
+    ################ INPUTS ############################################
     parser.add_argument('-q', '--query', type=str, required=True,
 						help='query sequence to be processed')
     parser.add_argument('-d', '--database', type=str,
@@ -727,6 +689,8 @@ if __name__ == "__main__":
 						help='clusters annotation table')
     parser.add_argument('-c', '--cls', type=str, 
 						help='cls file containing reads assigned to clusters')
+						
+	################ BLAST parameters ##################################
     parser.add_argument('-i', '--identical', type=float, default=95,
 						help='blast filtering option: sequence indentity threshold between query and mapped read from db in %')
     parser.add_argument('-l', '--align_length', type=int, default=40,
@@ -741,34 +705,28 @@ if __name__ == "__main__":
 						help='blast setting option: initial word size for alignment')
     parser.add_argument('-t', '--task', type=str, default="blastn",
 						help='type of blast to be triggered')
+    parser.add_argument('-n', '--new_db', default=False,
+						help='create a new blast database')			
     parser.add_argument('-w', '--window', type=int, default=5000,
 						help='window size for parallel processing')
     parser.add_argument('-o', '--overlap', type=int, default=150,
 						help='overlap for parallely processed regions, set greater than read size')
-    parser.add_argument('-n', '--new_db', default=False,
-						help='create a new blast database')
+									
+	################ GFF PARAMETERS ####################################
     parser.add_argument('-th', '--threshold', type=int, default=5,
 						help='threshold (number of hits) for report repetitive area in gff')
     parser.add_argument('-ths', '--threshold_segment', type=int, default=80,
                         help='threshold for a single segment length to be reported as repetitive reagion in gff')
+                        
+    ################ PROTEIN DOMAINS PARAMETERS ########################
     parser.add_argument('-pd', '--protein_domains', default=True,
 						help='use module for protein domains')
     parser.add_argument('-pdb', '--protein_database', type=str,
                         help='protein domains database')
     parser.add_argument('-cs', '--classification', type=str,
                         help='protein domains classification file')
-    #parser.add_argument('-ou', '--output', type=str, default=REPEATS_TABLE,
-						#help='output profile table name')
-    parser.add_argument('-ouf', '--output_gff', type=str, default=REPEATS_GFF,
-                        help='output gff format')
-    parser.add_argument("-oug", "--domain_gff",type=str, default=DOMAINS_GFF,
-						help="output domains gff format")
-    parser.add_argument("-oun", "--n_gff",type=str, default=N_REG,
-						help="N regions gff format")
-    parser.add_argument("-hf", "--html_file", type=str, default=HTML,
-                        help="output html file name")
-    parser.add_argument("-hp", "--html_path", type=str, default=TMP,
-                        help="path to html extra files")
+                        
+	################ COVERAGE AND PREPARED DATASETS ####################
     parser.add_argument("-cv", "--coverage", type=float, 
                         help="coverage")
     parser.add_argument("-cn", "--copy_numbers", type=bool, 
@@ -781,24 +739,40 @@ if __name__ == "__main__":
                         help="table with prepared anotation data")    
     parser.add_argument("-dbn", "--db_name", type=str,
                         help="custom database name")     
+    ##################################################################### ???????????????????
     parser.add_argument("-dir","--output_dir", type=str,
 						help="specify if you want to change the output directory")
+	#############################################################################
     parser.add_argument("-thsc","--threshold_score", type=int, default=80,
 						help="percentage of the best score in the cluster to be tolerated when assigning annotations per base")
     parser.add_argument("-wd","--win_dom", type=int, default=10000000,
 						help="window to process large input sequences sequentially")
     parser.add_argument("-od","--overlap_dom", type=int, default=10000,
 						help="overlap of sequences in two consecutive windows")
+						
+	################ OUTPUTS ###########################################
+    parser.add_argument("-lg", "--log_file", type=str, default=LOG_FILE,
+                  		help="path to log file")
+	#parser.add_argument('-ou', '--output', type=str, default=REPEATS_TABLE,
+						#help='output profile table name')
+    parser.add_argument('-ouf', '--output_gff', type=str, default=REPEATS_GFF,
+                        help='output gff format')
+    parser.add_argument("-oug", "--domain_gff",type=str, default=DOMAINS_GFF,
+						help="output domains gff format")
+    parser.add_argument("-oun", "--n_gff",type=str, default=N_REG,
+						help="N regions gff format")
+    parser.add_argument("-hf", "--html_file", type=str, default=HTML,
+                        help="output html file name")
+    parser.add_argument("-hp", "--html_path", type=str, default=TMP,
+                        help="path to html extra files")
+	
+	################ GALAXY USAGE AND JBROWSE ##########################
     parser.add_argument("-gu", "--galaxy_usage", default=False,
                         help="option for galaxy usage only")
     parser.add_argument("-td", "--tool_dir", default=False,
                   		help="tool data directory in galaxy")
     parser.add_argument("-jb", "--jbrowse_bin", type=str, default=configuration.JBROWSE_BIN,
                   		help="path to JBrowse bin directory")
-    parser.add_argument("-lg", "--log_file", type=str, default=LOG_FILE,
-                  		help="path to log file")
-    #parser.add_argument("-rd", "--reduced_db", default=False,
-                  		#help="reduced reads database")
 
 
     args = parser.parse_args()

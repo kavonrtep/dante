@@ -5,6 +5,7 @@ import subprocess
 import re
 from tempfile import NamedTemporaryFile
 import os
+import configuration
 
 
 def find_representative_reads(reads_files_list, IDENTITY_TH):
@@ -99,7 +100,7 @@ def process_similarity_clusters(reads_cl_reduced, reads_repre_dict):
 				line = clstr.readline()
 			if read_represent:	
 				reads_repre_dict[read_represent] = count_reads
-				reads_cl_mod.append("{}_{}".format(read_represent.rstrip().lstrip(">"), count_reads))
+				reads_cl_mod.append("{}reduce{}".format(read_represent.rstrip().lstrip(">"), count_reads))
 	return reads_repre_dict, reads_cl_mod
 	
 	
@@ -111,7 +112,7 @@ def reduce_reads(READS_ALL, READS_ALL_REDUCED, reads_repre_dict):
 					if line.rstrip() in reads_repre_dict:
 						amount_represented = reads_repre_dict[line.rstrip()]
 						if  amount_represented > 0:
-							reads_all_red.write("{}_{}\n".format(line.rstrip(), amount_represented))
+							reads_all_red.write("{}reduce{}\n".format(line.rstrip(), amount_represented))
 							reads_all_red.write(reads_all_ori.readline())
 					else:
 						reads_all_red.write(line)
@@ -153,7 +154,7 @@ if __name__ == '__main__':
 						help='output cls file containing adjusted clusters for the reduced reads database')					
 	parser.add_argument('-i', '--identity_th', type=float, default=0.90,
 						help='reads identity threshold for cdhit')
-	parser.add_argument('-cs', '--cluster_size', type=int, default=69000,
+	parser.add_argument('-cs', '--cluster_size', type=int, default=1000,
 						help='minimum cluster size to be included in reducing')
 						
 	args = parser.parse_args()

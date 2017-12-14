@@ -4,11 +4,11 @@
     <requirement type="package" version="1.0.0" >profrep</requirement>
 </requirements>
 <command>
-python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_table ${rp_table} --rp_threshold ${r_th} --mode ${mode}  --output_masked ${out_masked}
+python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_gff ${rp_gff} --rp_threshold ${r_th} --mode ${mode}  --output_masked ${out_masked}
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
- <param format="csv" type="data" name="rp_table" label="Repetitive profiles table from ProfRep output" help="" />
+ <param format="gff" type="data" name="rp_gff" label="Repetitive profiles table from ProfRep output" help="" />
  <param name="r_th" type="integer" value="1" min="1" label="Repetitive Threshold" help="Threshold of hits/copy numbers for the certain position to be masked" />
  <param name="mode" type="select" label="Select the mode of masking" help="" >
 	 <option value="lowercase" selected="True">lowercase</option>

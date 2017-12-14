@@ -5,6 +5,7 @@ import tempfile
 import argparse
 from shutil import copyfile
 import os
+import configuration
 
 def main(args):
 	
