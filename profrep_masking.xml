@@ -1,15 +1,14 @@
 <tool id="profrep_mask" name="ProfRep Masker" version="1.0.0">
-<description> Tool to mask repetitive regions of a given sequence(s) based on the ProfRep tool output </description>
+<description> Tool to mask repetitive regions of a given sequence(s) based on the repeats GFF (ProfRep output) </description>
 <requirements>
     <requirement type="package" version="1.0.0" >profrep</requirement>
 </requirements>
 <command>
-python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_gff ${rp_gff} --rp_threshold ${r_th} --mode ${mode}  --output_masked ${out_masked}
+python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_gff ${rp_gff} --mode ${mode} --output_masked ${out_masked}
 </command>
 <inputs>
- <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
- <param format="gff" type="data" name="rp_gff" label="Repetitive profiles table from ProfRep output" help="" />
- <param name="r_th" type="integer" value="1" min="1" label="Repetitive Threshold" help="Threshold of hits/copy numbers for the certain position to be masked" />
+ <param format="fasta" type="data" name="input" label="Choose your input sequence to be masked" help="" />
+ <param format="gff" type="data" name="rp_gff" label="Choose GFF file of repetitive regions" help="" />
  <param name="mode" type="select" label="Select the mode of masking" help="" >
 	 <option value="lowercase" selected="True">lowercase</option>
      <option value="N">N</option>/>
@@ -23,6 +22,6 @@ python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_gff ${rp
 
 <help>
 **WHAT IT DOES**
- This tool will mask repetitive regions of the given DNA fasta sequence(s) using ProfRep tool output - Repetitive profile table. You can choose either lowercase(sequence will be preserved) or "N" mode of masking. You can also adjust the masking stringency by setting the threshold for hits/copy numbers to be considered as significantly repetitive. 
+ This tool will mask repetitive regions of the given DNA fasta sequence(s) based on repeats GFF which is laso output of ProfRep tool. You can choose either lowercase(sequence will be preserved) or "N" mode of masking.
 </help>
 </tool>

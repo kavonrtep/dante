@@ -14,9 +14,14 @@ def main(args):
 	
 	if GFF_OUT is None:
 		GFF_OUT = "{}_cut{}:{}.gff3".format(GFF_IN, INT_START, INT_END)
+		
+	if not NEW_SEQ_ID:
+		NEW_SEQ_ID = "{}_cut{}:{}".format(SEQ_TO_CUT, INT_START, INT_END)
 	
 	with open(GFF_OUT,"w") as gff_out:
 		with open(GFF_IN, "r") as gff_in:
+			gff_out.write(gff_in.readline())
+			gff_out.write("##sequence region {} {} {}\n".format(SEQ_TO_CUT, INT_START, INT_END))
 			for line in gff_in:
 				if line.split("\t")[0] == SEQ_TO_CUT and int(line.split("\t")[3]) >= INT_START and int(line.split("\t")[4]) <= INT_END:
 					new_start = int(line.split("\t")[3]) - INT_START + 1
@@ -37,7 +42,7 @@ if __name__ == "__main__":
 						help='interval start')
     parser.add_argument('-e', '--end', type=int, required=True,
 						help='interval end')
-    parser.add_argument('-si', '--new_seq_id', type=str, required=True,
+    parser.add_argument('-si', '--new_seq_id', type=str,
 						help=' ')
     parser.add_argument('-sc', '--seq_to_cut', type=str, required=True,
 						help=' ')
