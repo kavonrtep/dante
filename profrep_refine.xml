@@ -7,6 +7,7 @@ python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} -
     --domains_gff ${include_domains.dom_gff} 
     --dom_number ${include_domains.dom_num}
     --include_dom
+    --class_tbl ${__tool_data_path__ }/protein_domains
  #end if
 </command>
 <inputs>

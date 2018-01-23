@@ -1,4 +1,4 @@
-#Code	Name	READS	CLS	ANNOTATION	Coverage Reference	Ref_link
+#ID	Name	READS	CLS	ANNOTATION	Coverage Reference	Ref_link
 PST_C	Pisum sativum Cameor (2017)	PST_C_reads_all	PST_C_hitsort.cls	PST_C_annotation	0.1038	None	None
 PST_C_reduced	Pisum sativum Cameor - REDUCED (2017)	PST_C_reads_all_reduced_new	PST_C_hitsort_reduced_new.cls	PST_C_annotation	0.1038	None	None
 PST	Pisum sativum Terno (Macas et al. 2015)	PST_reads_all	PST_hitsort_PID90_LCOV55.cls	PST_annotation	0.1038	Macas J., Novák P., Pellicer J., Čížková J., Koblížková A., Neumann P., Fuková I., Doležel J., Kelly L., Leitch I. (2015) - In Depth Characterization of Repetitive DNA in 23 Plant Genomes Reveals Sources of Genome Size Variation in the Legume Tribe Fabeae PLoS ONE 10 (11): e0143424.	http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143424

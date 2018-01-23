@@ -1,56 +1,177 @@
-# TOOLS TO FIND REGIONS OF REPETITIONS AND/OR PROTEIN DOMAINS IN DNA SEQUENCE #
+﻿# REPEATS ANNOTATION TOOLS FOR ASSEMBLIES  #
 
 
 ## 1. PROFREP ##
+*- Sequences **PROF**iles of **REP**etitive elements -* 
 
-### *-IN PREPARATION-* ###
 
-This tool uses former clustering output (.cls files) from Repeat Explorer (list of all clusters and belonging reads), annotation table that assigns repetitive class to every cluster and list of all sequencing reads to create repetitive profile of a sequence as well as to report protein domains. You can either provide your own files or you can exploit our prepared datasets for certain species listed above. At first Blast+ run similarity search to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate length. Other parameters of blast search are also adjustable. Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. Be careful to set the overlap between windows at least of the length of reads so that hits on the border of windows can be found and of course the window size must be greater than overlap itself. 
-When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be asked to provide genome size of the species so that the sequencing coverage can be calculated. 
-
-Protein domains search utilizes LAST tool to find hits between input sequence and our database of protein domains - this is accomplished using protein_domains_pd.py [SEE BELLOW] which also serves as a module for PROFREP.
-
-OUTPUT:		
-	
-* table reporting copy numbers/hits at every position for all repeats occuring in the sequence
-* GFF file reporting N regions in the sequence
-* GFF file reporting repetitive regions of a certain length and above copy numbers/hits threshold
-* GFF file reporting protein domains, classification of domain, chain orientation and alignment sequence
-* HTML reporting domains and profiles summary visualization that can be further explored using a link to JBrowse
+The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation in DNA sequences (typically assemblies but not necessarily). Moreover, it provides repetitive profiles of the sequence, pointing out quantitative representation of individual repeats along the sequence as well as the overall repetitiveness.
 
 ### Dependencies ###
 
-* python 3.4 or higher 
-* python packages:
+* python 3.4 or higher with packages:
 	* numpy
 	* matplotlib
 * [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
-* [JBrowse 1.12.1](http://jbrowse.org/) or higher
-* protein_domains_pd.py
-* gff.py
-* visualization.py
-* configuration.py 
+* ProfRep Modules:
+	* gff.py
+	* visualization.py
+	* configuration.py 
+	* protein_domains.py
+	* domains_filtering.py
+	
 
-## 2. PROTEIN DOMAINS TOOLS ##
-Two tools are available to explore protein domains in your DNA sequence:
-* Protein Domains Finder [protein_domains_pd.py]
+### Running ProfRep ###
+
+	usage: profrep.py [-h] -q QUERY [-d DATABASE] [-a ANNOTATION_TBL] [-c CLS]
+					  [-tbl DATASETS_TBL] [-id DB_ID] [-i IDENTICAL]
+					  [-l ALIGN_LENGTH] [-m MAX_ALIGNMENTS] [-e E_VALUE]
+					  [-df DUST_FILTER] [-ws WORD_SIZE] [-t TASK] [-n NEW_DB]
+					  [-w WINDOW] [-o OVERLAP] [-pd PROTEIN_DOMAINS]
+					  [-pdb PROTEIN_DATABASE] [-cs CLASSIFICATION] [-wd WIN_DOM]
+					  [-od OVERLAP_DOM] [-thsc THRESHOLD_SCORE] [-lg LOG_FILE]
+					  [-ouf OUTPUT_GFF] [-oug DOMAIN_GFF] [-oun N_GFF]
+					  [-hf HTML_FILE] [-hp HTML_PATH] [-cn COPY_NUMBERS]
+					  [-gs GENOME_SIZE] [-thr THRESHOLD_REPEAT]
+					  [-ths THRESHOLD_SEGMENT] [-td TOOL_DIR] [-jb JBROWSE_BIN]
+
+
+	optional arguments:
+	  -h, --help            show this help message and exit
+
+	required arguments:
+	  -q QUERY, --query QUERY
+							input DNA sequence in (multi)fasta format (default:
+							None)
+	  -d DATABASE, --database DATABASE
+							blast database of all sequencing reads (default: None)
+	  -a ANNOTATION_TBL, --annotation_tbl ANNOTATION_TBL
+							clusters annotation table, tab-separated number of
+							cluster and its classification (default: None)
+	  -c CLS, --cls CLS     cls file containing reads assigned to clusters
+							(hitsort.cls) (default: None)
+
+	alternative required arguments - prepared datasets:
+	  -tbl DATASETS_TBL, --datasets_tbl DATASETS_TBL
+							table with prepared annotation datasets (default:
+							None)
+	  -id DB_ID, --db_id DB_ID
+							annotation dataset ID (first column of datasets table)
+							(default: None)
+
+	optional arguments - BLAST Search:
+	  -i IDENTICAL, --identical IDENTICAL
+							blast filtering option: percentage indentity threshold
+							between query and mapped read from db (default: 95)
+	  -l ALIGN_LENGTH, --align_length ALIGN_LENGTH
+							blast filtering option: minimal alignment length
+							threshold in bp (default: 40)
+	  -m MAX_ALIGNMENTS, --max_alignments MAX_ALIGNMENTS
+							blast filtering option: maximal number of alignments
+							in the output (default: 10000000)
+	  -e E_VALUE, --e_value E_VALUE
+							blast setting option: e-value (default: 1e-15)
+	  -df DUST_FILTER, --dust_filter DUST_FILTER
+							dust filters low-complexity regions during BLAST
+							search (default: '20 64 1')
+	  -ws WORD_SIZE, --word_size WORD_SIZE
+							blast search option: initial word size for alignment
+							(default: 11)
+	  -t TASK, --task TASK  type of blast to be triggered (default: blastn)
+	  -n NEW_DB, --new_db NEW_DB
+							create a new blast database (default: False)
+
+	optional arguments - Parallel Processing:
+	  -w WINDOW, --window WINDOW
+							sliding window size for parallel processing (default:
+							5000)
+	  -o OVERLAP, --overlap OVERLAP
+							overlap for parallely processed regions, set greater
+							than a read size (default: 150)
+
+	optional arguments - Protein Domains:
+	  -pd PROTEIN_DOMAINS, --protein_domains PROTEIN_DOMAINS
+							use module for protein domains (default: True)
+	  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
+							protein domains database (default: None)
+	  -cs CLASSIFICATION, --classification CLASSIFICATION
+							protein domains classification file (default: None)
+	  -wd WIN_DOM, --win_dom WIN_DOM
+							protein domains module: sliding window to process
+							large input sequences sequentially (default: 10000000)
+	  -od OVERLAP_DOM, --overlap_dom OVERLAP_DOM
+							protein domains module: overlap of sequences in two
+							consecutive windows (default: 10000)
+	  -thsc THRESHOLD_SCORE, --threshold_score THRESHOLD_SCORE
+							protein domains module: percentage of the best score
+							within the cluster to significant domains (default:
+							80)
+
+	optional arguments - Output Paths:
+	  -lg LOG_FILE, --log_file LOG_FILE
+							path to log file (default: log.txt)
+	  -ouf OUTPUT_GFF, --output_gff OUTPUT_GFF
+							path to output gff of repetitive regions (default:
+							output_repeats.gff)
+	  -oug DOMAIN_GFF, --domain_gff DOMAIN_GFF
+							path to output gff of protein domains (default:
+							output_domains.gff)
+	  -oun N_GFF, --n_gff N_GFF
+							path to output gff of N regions (default:
+							N_regions.gff)
+	  -hf HTML_FILE, --html_file HTML_FILE
+							path to output html file (default: output.html)
+	  -hp HTML_PATH, --html_path HTML_PATH
+							path to html extra files (default: output_dir)
+
+	optional arguments - Copy Numbers/Hits :
+	  -cn COPY_NUMBERS, --copy_numbers COPY_NUMBERS
+							convert hits to copy numbers (default: False)
+	  -gs GENOME_SIZE, --genome_size GENOME_SIZE
+							genome size is required when converting hits to copy
+							numbers and you use custom data (default: None)
+	  -thr THRESHOLD_REPEAT, --threshold_repeat THRESHOLD_REPEAT
+							threshold for hits/copy numbers per position to be
+							considered repetitive (default: 5)
+	  -ths THRESHOLD_SEGMENT, --threshold_segment THRESHOLD_SEGMENT
+							threshold for the length of repetitive segment to be
+							reported (default: 80)
+
+	optional arguments - Enviroment Variables:
+	  -td TOOL_DIR, --tool_dir TOOL_DIR
+							Galaxy tool data directory in galaxy (default: None)
+	  -jb JBROWSE_BIN, --jbrowse_bin JBROWSE_BIN
+							path to JBrowse bin directory (default: None)
+							
+### ProfRep Data Preparation ###
+
+In case of using custom input datasets these tools can be used for easy obtaining the correct files and to prepare the reduced datasets to speed up the main ProfRep analysis:
+
+* Extract Data For ProfRep (extract_data_for_profrep.py)
+* ProfRep DB Reducing (profrep_db_reducing.py)
+
+### ProfRep Supplementary Tools ###
+
+These additional tools can be used for further work with the ProfRep outputs: 
+
+* ProfRep Refiner (profrep_refining.py) 
+* ProfRep Masker (profrep_masking.py)
+* GFF Region Selector (gff_selection.py)
+
+
+## 2. DANTE ##  
+*- **D**omain based **AN**notation of **T**ransposable **E**lements -* 
+
+There are 2 tools available which also serve as ProfRep modules:
+
+* Protein Domains Finder [protein_domains.py]
 	* Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database.
 	* Domains searching is accomplished engaging LASTAL alignment tool.
-	* Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. 
-		
-		OUTPUT:		
-		
-		* table formatted as GFF3 file of all domains found. Single domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using Protein Domain Filter tool.
-		* summary text file with overview of amounts of domains types in individual sequences
-
+	* Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. 	
 			
 * Proteins Domains Filter [domains_filtering.py]
 	* filters GFF3 output from previous step to obtain certain kind of domain and/or allows to adjust quality filtering  
-	
-		OUTPUT:
-	
-		* filtered GFF3 file
-		* translated protein sequences of the filtered domain regions of original DNA in fasta format
+
 
 Both are implemented on galaxy web enviroment or can be used as standalone python
 scripts from the command line   
@@ -68,7 +189,7 @@ scripts from the command line
 
 * Protein Domains Finder
 
-		usage: protein_domains_pd.py [-h] -q QUERY -pdb PROTEIN_DATABASE -cs
+		usage: protein_domains.py [-h] -q QUERY -pdb PROTEIN_DATABASE -cs
 									 CLASSIFICATION [-oug DOMAIN_GFF] [-nld NEW_LDB]
 									 [-sum SUMMARY_FILE] [-dir OUTPUT_DIR]
 									 [-thsc THRESHOLD_SCORE] [-wd WIN_DOM]
@@ -111,7 +232,7 @@ scripts from the command line
 		
 	HOW TO RUN EXAMPLE:
 
-		./protein_domains_pd.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
+		./protein_domains.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
 		
 	 When running for the first time with a new database use -nld option allowing lastal to create indexed database files:
 

@@ -462,7 +462,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
 			count_region += 1
 ########################################################################
-			#domain_reg.append(domain_type)
+		#domain_reg.append(domain_type)
 		#xminimal_all.append(mins)
 		#xmaximal_all.append(maxs)
 		#domains_all.append(domain_reg)
@@ -647,9 +647,9 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(
 		description='''Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database. Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. Domains searching is accomplished engaging LASTAL alignment tool.
 		
-	DEPENDANCIES:
-		- python 3.4 or higher
-		- python3-numpy package
+	DEPENDENCIES:
+		- python 3.4 or higher with packages:
+			-numpy
 		- lastal 744 or higher [http://last.cbrc.jp/]
 		- configuration.py module
 
@@ -664,6 +664,7 @@ if __name__ == "__main__":
 		''',
 		epilog="""""",
 		formatter_class=CustomFormatter)
+		
 	requiredNamed = parser.add_argument_group('required named arguments')
 	requiredNamed.add_argument("-q","--query", type=str, required=True,
 						help='input DNA sequence to search for protein domains in a fasta format. Multifasta format allowed.')

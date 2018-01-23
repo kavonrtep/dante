@@ -6,7 +6,7 @@ import configuration
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CV, HTML_DATA):
+def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA):
 	''' visualization of repetitive profiles'''
 	#header = seq_repeats.dtype.names
 	#seq_id = header[0]
@@ -30,7 +30,7 @@ def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CV, HTML_DATA):
 				if seq_len_repeat > th_length:
 					include = False
 				else:
-					[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CV)	
+					[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CN)	
 					graphs_dict[seq_id_repeat] = [fig, ax]
 			seq_id_repeats.append(seq_id_repeat)
 			########################################################
@@ -48,7 +48,7 @@ def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CV, HTML_DATA):
 							include = False
 						else:	
 							#if seq_id_repeat not in graphs_dict.keys():
-							[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CV)	
+							[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CN)	
 							graphs_dict[seq_id_repeat] = [fig, ax]
 					seq_id_repeats.append(seq_id_repeat)
 						#fig = graphs_dict[seq_id_repeats[-1]][0]
@@ -75,11 +75,11 @@ def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CV, HTML_DATA):
 	return graphs_dict
 		
 			
-def plot_figure(seq_id, seq_length, CV):
+def plot_figure(seq_id, seq_length, CN):
 	fig = plt.figure(figsize=(18, 8))
 	ax = fig.add_subplot(111)
 	ax.set_xlabel('sequence bp')
-	if CV:
+	if CN:
 		ax.set_ylabel('copy numbers')
 	else:
 		ax.set_ylabel('hits')	

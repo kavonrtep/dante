@@ -1,7 +1,7 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
 <description> Find and classify all protein domains in your DNA sequence based on the database of repetitive elements protein domains </description>
 <command>
-python3 ${__tool_directory__}/protein_domains_pd.py --query ${input} --domain_gff ${DomGff} --protein_database ${__tool_data_path__ }/protein_domains --classification ${__tool_data_path__ }/protein_domains --summary_file ${sum_file};
+python3 ${__tool_directory__}/protein_domains.py --query ${input} --domain_gff ${DomGff} --protein_database ${__tool_data_path__ }/protein_domains --classification ${__tool_data_path__ }/protein_domains --summary_file ${sum_file};
 
 </command>
 <inputs>

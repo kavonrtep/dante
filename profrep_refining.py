@@ -22,8 +22,9 @@ def create_dom_dict(DOM_GFF):
 			dict_domains[seq_id].append((start_dom, end_dom, ann_dom_lineage, strand_dom))
 	return dict_domains
 	
-		
-def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, dict_domains):
+
+##### nepredavat INLCUDE_DOM ale priamo dict_domains		
+def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, dict_domains, domains_classes):
 	with open(OUT_REFINED, "w") as joined_intervals:
 		joined_intervals.write("{}\n".format(configuration.HEADER_GFF))
 		with open(REPEATS_GFF) as repeats:
@@ -47,9 +48,9 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, d
 					if seq_id != seq_id_ini:
 						#if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
 						if INCLUDE_DOM is True and joined is True and configuration.WITH_DOMAINS in ann_ini:
-							dict_domains = dom_refining(joined_intervals, dict_domains, seq_id_ini, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM)
+							dict_domains = dom_refining(joined_intervals, dict_domains, seq_id_ini, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM, domains_classes)
 						else:
-							joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id_ini, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
+							joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id_ini, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, ann_ini))
 						starts_part = [start]
 						ends_part = [end]	
 						joined = False
@@ -65,9 +66,9 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, d
 					else:
 						#if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
 						if INCLUDE_DOM is True and joined is True and configuration.WITH_DOMAINS in ann_ini:
-							dict_domains = dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM)
+							dict_domains = dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM, domains_classes)
 						else:
-							joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
+							joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, ann_ini))
 						starts_part = [start] 
 						ends_part = [end]
 						joined = False
@@ -76,14 +77,14 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, d
 						ann_ini = ann	
 				#if INCLUDE_DOM is True and joined is True and ann_ini not in configuration.WITHOUT_DOM:
 				if INCLUDE_DOM is True and joined is True and configuration.WITH_DOMAINS in ann_ini:
-					dict_domains = dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM)
+					dict_domains = dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM, domains_classes)
 				else:
-					joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
+					joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, ann_ini))
 				del(starts_part)
 				del(ends_part)
 
 
-def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM):
+def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM, domains_classes):
 	count_dom = 0
 	index_dom = 0
 	strands = []
@@ -93,23 +94,30 @@ def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann
 		if dom_attributes[0] >= start_ini and dom_attributes[1] <= end_ini:
 			######################################################################
 			#if ann_dom == ann_ini:
-			if ann_dom == "|".join(ann_ini.split("|")[1:]):
+			repeat_class = "|".join(ann_ini.split("|")[1:])
+			if ann_dom in domains_classes and ann_dom == repeat_class:
 			######################################################################
 				strands.append(dom_attributes[3])
 				count_dom += 1
 			index_dom += 1 
 	if len(set(strands)) <= 1 and count_dom >= DOM_NUM:
-		joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
+		joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, start_ini, end_ini, configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, ann_ini))
 	else:
 		for part_start, part_end in zip(starts_part, ends_part):
-			joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, part_start, part_end, configuration.R_SCORE, configuration.R_STRAND, configuration.R_PHASE, ann_ini))
-	print(start_ini)
-	print(dict_domains)
-	print(index_dom)
-	print(len(dict_domains[seq_id]))
+			joined_intervals.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, configuration.REPEATS_FEATURE, part_start, part_end, configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, ann_ini))
 	del(dict_domains[seq_id][0:index_dom])
 	return dict_domains
 	
+	
+def get_unique_classes(CLASS_TBL):
+	unique_classes = []
+	with open(CLASS_TBL, "r") as class_tbl:
+		for line in class_tbl:
+			line_class = "|".join(line.rstrip().split("\t")[1:])
+			if line_class not in unique_classes:
+				unique_classes.append(line_class)
+	return unique_classes
+
 	
 def main(args):
 	# Command line arguments
@@ -119,12 +127,17 @@ def main(args):
 	DOM_NUM = args.dom_number
 	OUT_REFINED = args.out_refined 
 	INCLUDE_DOM = args.include_dom
+	CLASS_TBL = args.class_tbl
+	
+	if os.path.isdir(CLASS_TBL):
+		CLASS_TBL = os.path.join(CLASS_TBL, configuration.CLASS_FILE)
 	
 	if INCLUDE_DOM is True:
+		unique_classes = get_unique_classes(CLASS_TBL)
 		dict_domains = create_dom_dict(DOM_GFF)
-		joined_intervals = refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, dict_domains)
+		joined_intervals = refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, dict_domains, unique_classes)
 	else:
-		joined_intervals = refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, None)
+		joined_intervals = refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, INCLUDE_DOM, None, None)
 
 		
 if __name__ == "__main__":
@@ -143,5 +156,7 @@ if __name__ == "__main__":
                         help='number of domains present to confirm one element type')
     parser.add_argument('-id', '--include_dom', action='store_true', default=False,
 						help='Include domains information to refine repeats regions output')
+    parser.add_argument('-ct', '--class_tbl',
+						help='Classification table to check the level of classification')
     args = parser.parse_args()
     main(args)

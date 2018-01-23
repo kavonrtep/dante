@@ -4,11 +4,10 @@
     <requirement type="package" version="1.0.0" >profrep</requirement>
 </requirements>
 <command>
-python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output_gff ${ProfGff} --html_file ${html_file}
+python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff} --html_file ${html_file}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff} 
 --protein_database ${__tool_data_path__ }/protein_domains
 --classification ${__tool_data_path__ }/protein_domains
---galaxy_usage True
 --tool_dir ${__tool_data_path__ }/profrep
 --protein_domains $domains_switch
 --jbrowse_bin \${JBROWSE_BIN}
@@ -23,7 +22,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output_gff ${Prof
 	--align_length ${advanced_options.align_length} 
 	--word_size ${advanced_options.word_size} 
 	--e_value ${advanced_options.e_value} 
-	--threshold ${advanced_options.threshold} 
+	--threshold_repeat ${advanced_options.threshold} 
 	--window ${advanced_options.window} 
 	--overlap ${advanced_options.overlap} 
 	#if $advanced_options.dust_filter:
@@ -39,6 +38,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output_gff ${Prof
     --cls ${cls}
     --new_db True
 	#if $custom_data.cn.copy_num:
+		--copy_numbers '$custom_data.cn.copy_num'
         --genome_size ${custom_data.cn.genome_size}
     #end if
  #else
@@ -96,7 +96,7 @@ python3 ${__tool_directory__}/profrep_pd.py --query ${input} --output_gff ${Prof
 	 <filter>domains_switch</filter>
 	</data>
 	<data format="html" name="html_file" label="HTML output, JBrowse visualization ${input.hid}" />
-	<data format="gff3" name="NGff" label="GFF file of unknown bases(N) from dataset ${input.hid}" />
+	<data format="gff3" name="NGff" label="GFF file of unspecified bases (N) from dataset ${input.hid}" />
 	<data format="txt" name="log_file" label="Log file" />
 
  </outputs>
@@ -110,10 +110,23 @@ List of all species with annotated repeats in hierarchical order available `HERE
 .. __: /static/profrep/species_list.html
 
 
+**INPUTS**
+
+This tool uses former clustering output from Repeat Explorer, especially 3 files: 
+1. CLS file (hitsort.cls) - list of all clusters and belonging reads 
+2. classification table - assigns repetitive class to every cluster (preferrably in standard format specified bellow) and 
+3. list of all sequencing reads. 
+
+For selected species (listed above in 'Database of species'), these files are already available as pre-prepared datasets which are used automatically after species selection.
+You can also run ProfRep using custom clustering data - then you have to load all the necessary files. If you run former clustering using Repeat Explorer on Galaxy you can easily get all needed files from the RE output archive using tool 'Extract Data for Profrep'.
+Please keep in mind these have to be in a standardizied format (especially the cluster classification table) so that the analysis runs correctly. 
+You can also use your own classification of clusters - in this case ProfRep. However, if you want to apply further regions joining based on protein domains occurance (ProfRep refining tool), classification strings must follow certain conventions:
+
+
 
 **WHAT IT DOES**
 
-This tool uses former clustering output (.cls files) from Repeat Explorer (list of all clusters and belonging reads), annotation table that assigns repetitive class to every cluster and list of all sequencing reads to create repetitive profile of a sequence as well as to report protein domains. You can either provide your own files or you can exploit our prepared datasets for certain species listed above. At first Blast+ runs similarity search to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate lenght. Other parameters of blast search are also adjustable in "Advanced options". Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be asked to provide genome size of the species so that the sequencing coverage can be calculated. 
+The main task is to create repetitive profile of a sequence. as well as to report protein domains. You can either provide your own files or you can exploit our prepared datasets for certain species listed above. At first Blast+ runs similarity search to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate lenght. Other parameters of blast search are also adjustable in "Advanced options". Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be asked to provide genome size of the species so that the sequencing coverage can be calculated. 
 Protein domains search utilizes LAST tool to find hits between input sequence and our database of protein domains. LAST aligns the input translated into protein sequence to the known domains sequences, possible frameshifts in the alignment are taken into consideration. Only the hits with the highest score are reported within overlapping regions. Domains are subsequently annotated to a repeat class which they come from according to our classification system.
 External visualization tool Jbrowse has been employed to interactively visualize all output features for all input sequences.  
 

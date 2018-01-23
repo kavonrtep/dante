@@ -20,10 +20,10 @@ def main(args):
 	
 	with open(GFF_OUT,"w") as gff_out:
 		with open(GFF_IN, "r") as gff_in:
-			gff_out.write(gff_in.readline())
+			gff_out.write("##gff-version 3\n")
 			gff_out.write("##sequence region {} {} {}\n".format(SEQ_TO_CUT, INT_START, INT_END))
 			for line in gff_in:
-				if line.split("\t")[0] == SEQ_TO_CUT and int(line.split("\t")[3]) >= INT_START and int(line.split("\t")[4]) <= INT_END:
+				if not line.startswith("#") and line.split("\t")[0] == SEQ_TO_CUT and int(line.split("\t")[3]) >= INT_START and int(line.split("\t")[4]) <= INT_END:
 					new_start = int(line.split("\t")[3]) - INT_START + 1
 					new_end = int(line.split("\t")[4]) - INT_START + 1
 					gff_out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(NEW_SEQ_ID, line.split("\t")[1], line.split("\t")[2], new_start, new_end, line.split("\t")[5], line.split("\t")[6],line.split("\t")[7],line.split("\t")[8]))
