@@ -1,24 +1,23 @@
 
 <tool id="gff_select" name="GFF Region Selector" version="1.0.0">
-<description> Tool to polish the raw ProfRep output in order to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
+<description> Tool to select a specific sequence region from a GFF file </description>
 <command>
-python3 ${__tool_directory__}/gff_selection.py  --gff_input ${gff_input} --gff_output ${gff_output} --seq_to_cut ${seq_to_cut} --start ${start} --end ${end} --new_seq_id '${new_seq_id}' 
+python3 ${__tool_directory__}/gff_selection.py  --gff_input ${gff_input} --region ${region} --gff_output ${gff_output} --new_seq_id '${new_seq_id}' 
 
 </command>
 <inputs>
 	<param format="gff" type="data" name="gff_input" label="Choose input GFF3 file to cut" />
-	<param name="seq_to_cut" type="text" label="Type in the name of the sequence you wish to extract the region from" />
-	<param name="start" type="integer" value="" label="Interval starting position" help="" />
-	<param name="end" type="integer" value="" label="Interval ending position" help="" />
-	<param name="new_seq_id" type="text" value="" label="Type in a new sequence name for the cut region" help="In case of using JBrowse it must correspond to the cut reference sequence name" />
+	<param name="region" type="text" label="Choose the sequence and region to cut (including both end positions)" help="for example chr1:1000-2000" />
+	<param name="new_seq_id" type="text" value="" label="Type in a new sequence name for the cut region" help="In case of using JBrowse it must correspond to the cut reference sequence name. If not specified, the original name with cut coordinates will be reported" />
 </inputs>
 <outputs>
- <data format="gff3" name="gff_output" label="Sequence ${seq_to_cut} region ${start}-${end} of GFF3 file ${gff_input.hid}" /> 
+ <data format="gff3" name="gff_output" label="Region ${region} of GFF3 file ${gff_input.hid}" /> 
 </outputs>
 
 <help>
 
-**WHAT IT DOES**
+PLEASE NOTE
+The coordinates of new regions in the modified GFF file will be recalculated with respect to the selected range. Only the GFF records that are entirely inside the selected region will be reported 
 
 In prep.
 
