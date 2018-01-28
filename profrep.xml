@@ -38,13 +38,13 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
     --cls ${cls}
     --new_db True
 	#if $custom_data.cn.copy_num:
-		--copy_numbers '$custom_data.cn.copy_num'
+		--copy_numbers $custom_data.cn.copy_num
         --genome_size ${custom_data.cn.genome_size}
     #end if
  #else
     --datasets_tbl ${__tool_data_path__ }/prepared_datasets.txt
     --db_id ${custom_data.prepared_dataset}  
-    --copy_numbers '$custom_data.copy_numbers'
+    --copy_numbers $custom_data.copy_numbers
  #end if 
 </command> 
 
@@ -59,7 +59,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
      <column name="value" index="0"/>
     </options>
    </param>  
-   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="" checked="true" label="Convert hits to copy numbers"  />  
+   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers"  />  
   </when>
   <when value="true">
    <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="This file  contains reads sequences in fasta format"  />
@@ -77,7 +77,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  <conditional name="advanced_options" >
   <param name="opts" type="boolean" display="checkbox" truevalue="true" falsevalue="false" checked="false" label="Advanced options"/>
   <when value="true">
-   <param name="identical" type="integer" value="95" label="Minimum % identical" help="Blast filtering option: sequence indentity threshold between query and mapped read from db" />
+   <param name="identical" type="integer" value="90" label="Minimum % identical" help="Blast filtering option: sequence indentity threshold between query and mapped read from db" />
    <param name="align_length" type="integer" value="40" label="Minimum alignment length" help="Blast filtering option: minimum alignment length threshold in bp" />
    <param name="e_value" type="text" value="1e-15" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
    <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by Blast for alignment" />  
@@ -95,7 +95,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid}" >
 	 <filter>domains_switch</filter>
 	</data>
-	<data format="html" name="html_file" label="HTML output, JBrowse visualization ${input.hid}" />
+	<data format="html" name="html_file" label="HTML report from ${input.hid}" />
 	<data format="gff3" name="NGff" label="GFF file of unspecified bases (N) from dataset ${input.hid}" />
 	<data format="txt" name="log_file" label="Log file" />
 

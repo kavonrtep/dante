@@ -297,32 +297,31 @@ def repeats_process_dom(OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, xmi
 	else:
 		with open(OUTPUT_GFF, "w") as gff_file:
 			gff_file.write("{}\n".format(configuration.HEADER_GFF))
-	if len(seq_ids_all) <= configuration.MAX_PIC_NUM:
-		################################################################
-		#####################show first 50##############################
-		################################################################
-		graphs_dict = {}
-		if files_dict:	
-			graphs_dict = visualization.vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA)
-		count_seq = 0
-		print(seq_ids_all)
-		print(seq_ids_dom)
-		for seq in seq_ids_all:
-			if seq not in graphs_dict.keys():
-				[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
-				ax.hlines(0, 0, seq_lengths_all[count_seq], color="red", lw=4)
-			else:
-				fig = graphs_dict[seq][0]
-				ax = graphs_dict[seq][1]
-				art = []
-				lgd = ax.legend(bbox_to_anchor=(0.5,-0.1), loc=9, ncol=3)
-				art.append(lgd)
-			if seq in seq_ids_dom:
-				dom_idx = seq_ids_dom.index(seq) 
-				[fig, ax] = visualization.vis_domains(fig, ax, seq, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
-			output_pic_png = "{}/{}.png".format(HTML_DATA, count_seq)
-			fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)
-			count_seq += 1	
+	seqs_all_part = seq_ids_all[0:configuration.MAX_PIC_NUM]
+	graphs_dict = {}
+	seqs_long = []
+	if files_dict:	
+		[graphs_dict, seqs_long] = visualization.vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA, seqs_all_part)
+	count_seq = 0
+	for seq in seqs_all_part:
+		if seq in graphs_dict.keys():
+			fig = graphs_dict[seq][0]
+			ax = graphs_dict[seq][1]
+			art = []
+			lgd = ax.legend(bbox_to_anchor=(0.5,-0.1), loc=9, ncol=3)
+			art.append(lgd)
+		elif seq in seqs_long:
+			[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
+			ax.text(0.3, 0.5, "Graphs are only displayed if sequence is not longer than {} bp".format(configuration.SEQ_LEN_VIZ),transform=ax.transAxes, fontsize=14, verticalalignment='center', color='blue')
+		else:
+			[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
+			ax.hlines(0, 0, seq_lengths_all[count_seq], color="red", lw=4)
+		if seq in seq_ids_dom:
+			dom_idx = seq_ids_dom.index(seq) 
+			[fig, ax] = visualization.vis_domains(fig, ax, seq, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
+		output_pic_png = "{}/{}.png".format(HTML_DATA, count_seq)
+		fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)
+		count_seq += 1	
 	return None
 	
 	
@@ -333,28 +332,29 @@ def repeats_process(OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, CN, seq
 	else:
 		with open(OUTPUT_GFF, "w") as gff_file:
 			gff_file.write("{}\n".format(configuration.HEADER_GFF))
-	if len(seq_ids_all) <= configuration.MAX_PIC_NUM:
-		################################################################
-		##################show first 50#################################
-		################################################################
-		graphs_dict = {}
-		if files_dict:	
-			graphs_dict = visualization.vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA)
-		count_seq = 0
-		for seq in seq_ids_all:
-			if seq not in graphs_dict.keys():
-				[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
-				ax.hlines(0, 0, seq_lengths_all[count_seq], color="red", lw=4)
-			else:
-				fig = graphs_dict[seq][0]
-				ax = graphs_dict[seq][1]
-				art = []
-				lgd = ax.legend(bbox_to_anchor=(0.5,-0.1), loc=9, ncol=3)
-				art.append(lgd)
-			output_pic_png = "{}/{}.png".format(HTML_DATA, count_seq)
-			fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
-			plt.close()
-			count_seq += 1	
+	seqs_all_part = seq_ids_all[0:configuration.MAX_PIC_NUM]
+	graphs_dict = {}
+	seqs_long = []
+	if files_dict:	
+		[graphs_dict, seqs_long] = visualization.vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA, seqs_all_part)
+	count_seq = 0
+	for seq in seqs_all_part:
+		if seq in graphs_dict.keys():
+			fig = graphs_dict[seq][0]
+			ax = graphs_dict[seq][1]
+			art = []
+			lgd = ax.legend(bbox_to_anchor=(0.5,-0.1), loc=9, ncol=3)
+			art.append(lgd)
+		elif seq in seqs_long:
+			[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
+			ax.text(0.3, 0.5, "Graphs are only displayed if sequence is not longer than {} bp".format(configuration.SEQ_LEN_VIZ),transform=ax.transAxes, fontsize=14, verticalalignment='center', color='blue')
+		else:
+			[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
+			ax.hlines(0, 0, seq_lengths_all[count_seq], color="red", lw=4)
+		output_pic_png = "{}/{}.png".format(HTML_DATA, count_seq)
+		fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)	
+		plt.close()
+		count_seq += 1	
 	return None
 	
 
@@ -737,7 +737,7 @@ if __name__ == "__main__":
                         help='annotation dataset ID (first column of datasets table)')  
                          					
 	################ BLAST parameters ##################################
-    blastOpt.add_argument('-i', '--identical', type=float, default=95,
+    blastOpt.add_argument('-i', '--identical', type=float, default=90,
 						help='blast filtering option: percentage indentity threshold between query and mapped read from db')
     blastOpt.add_argument('-l', '--align_length', type=int, default=40,
 						help='blast filtering option: minimal alignment length threshold in bp')

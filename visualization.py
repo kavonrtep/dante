@@ -6,10 +6,11 @@ import configuration
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA):
+
+	
+	
+def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA, seqs_all_part):
 	''' visualization of repetitive profiles'''
-	#header = seq_repeats.dtype.names
-	#seq_id = header[0]
 	graphs_dict = {}	
 	seq_id_repeats = []
 	th_length = configuration.SEQ_LEN_VIZ
@@ -17,48 +18,46 @@ def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA):
 	sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
 	sorted_keys.insert(0, "ALL")
 	plot_num = 0 
+	seqs_long = []
+	seqs_count = 1
+	seqs_max_limit = []
 	for repeat in sorted_keys:
 		with open(files_dict[repeat][0], "r") as repeat_f:
 			positions_all = []
 			hits_all = []
 			include = True
-			##################################!!!!!!!!!!!!!!!!!!!!!!
 			first_line = repeat_f.readline()
 			seq_id_repeat = first_line.rstrip().split("chrom=")[1]
 			seq_len_repeat = seq_lengths_all[seq_ids_all.index(seq_id_repeat)]
 			if seq_id_repeat not in graphs_dict.keys():
 				if seq_len_repeat > th_length:
+					if seq_id_repeat not in seqs_long:
+						seqs_long.append(seq_id_repeat)
 					include = False
 				else:
 					[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CN)	
 					graphs_dict[seq_id_repeat] = [fig, ax]
 			seq_id_repeats.append(seq_id_repeat)
-			########################################################
 			for line in repeat_f:
 				if "chrom" in line:
+					seqs_count += 1
 					if include:
 						graphs_dict = plot_profile(graphs_dict, seq_id_repeats[-1], positions_all, hits_all, repeat, plot_num)
 						positions_all = []
 						hits_all = []
-					####################################################
 					seq_id_repeat = line.rstrip().split("chrom=")[1]
 					seq_len_repeat = seq_lengths_all[seq_ids_all.index(seq_id_repeat)]
 					if seq_id_repeat not in graphs_dict.keys():
 						if seq_len_repeat > th_length:
+							if seq_id_repeat not in seqs_long:
+								seqs_long.append(seq_id_repeat)
 							include = False
 						else:	
-							#if seq_id_repeat not in graphs_dict.keys():
 							[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CN)	
 							graphs_dict[seq_id_repeat] = [fig, ax]
 					seq_id_repeats.append(seq_id_repeat)
-						#fig = graphs_dict[seq_id_repeats[-1]][0]
-						#ax = graphs_dict[seq_id_repeats[-1]][1]
-						#plot_num = graphs_dict[seq_id_repeats[-1]][2] 
-						#print(seq_id_repeats)
-						#if seq_id == seq_id_repeat:
-						
-						#plot_profile(fig, ax, positions_all, hits_all, plot_num)
-						####graphs_dict[seq_id_repeats[-1]][2] += 1	###################	
+					if seq_id_repeat not in seqs_all_part:
+						break
 				else:
 					if include:
 						positions_all.append(line.rstrip().split("\t")[0])
@@ -66,14 +65,81 @@ def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA):
 		if include:
 			graphs_dict = plot_profile(graphs_dict, seq_id_repeats[-1], positions_all, hits_all, repeat, plot_num)
 			seq_id_repeats.append(seq_id_repeat)
-			#if seq_id == seq_id_repeat:
 			positions_all = []
-			hits_all = []
-		#plot_profile(fig, ax, positions_all, hits_all, plot_num)
-		#graphs_dict[seq_id_repeats[-1]][2] += 1		
-		plot_num += 1		
-	return graphs_dict
-		
+			hits_all = []	
+		plot_num += 1	
+	print(seqs_long)
+	print(graphs_dict)	
+	return graphs_dict, seqs_long
+
+		#def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA):
+	#''' visualization of repetitive profiles'''
+	##header = seq_repeats.dtype.names
+	##seq_id = header[0]
+	#graphs_dict = {}	
+	#seq_id_repeats = []
+	#th_length = configuration.SEQ_LEN_VIZ
+	#exclude = set(['ALL'])
+	#sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
+	#sorted_keys.insert(0, "ALL")
+	#plot_num = 0 
+	#for repeat in sorted_keys:
+		#with open(files_dict[repeat][0], "r") as repeat_f:
+			#positions_all = []
+			#hits_all = []
+			#include = True
+			###################################!!!!!!!!!!!!!!!!!!!!!!
+			#first_line = repeat_f.readline()
+			#seq_id_repeat = first_line.rstrip().split("chrom=")[1]
+			#seq_len_repeat = seq_lengths_all[seq_ids_all.index(seq_id_repeat)]
+			#if seq_id_repeat not in graphs_dict.keys():
+				#if seq_len_repeat > th_length:
+					#include = False
+				#else:
+					#[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CN)	
+					#graphs_dict[seq_id_repeat] = [fig, ax]
+			#seq_id_repeats.append(seq_id_repeat)
+			#########################################################
+			#for line in repeat_f:
+				#if "chrom" in line:
+					#if include:
+						#graphs_dict = plot_profile(graphs_dict, seq_id_repeats[-1], positions_all, hits_all, repeat, plot_num)
+						#positions_all = []
+						#hits_all = []
+					#####################################################
+					#seq_id_repeat = line.rstrip().split("chrom=")[1]
+					#seq_len_repeat = seq_lengths_all[seq_ids_all.index(seq_id_repeat)]
+					#if seq_id_repeat not in graphs_dict.keys():
+						#if seq_len_repeat > th_length:
+							#include = False
+						#else:	
+							##if seq_id_repeat not in graphs_dict.keys():
+							#[fig, ax] = plot_figure(seq_id_repeat, seq_len_repeat, CN)	
+							#graphs_dict[seq_id_repeat] = [fig, ax]
+					#seq_id_repeats.append(seq_id_repeat)
+						##fig = graphs_dict[seq_id_repeats[-1]][0]
+						##ax = graphs_dict[seq_id_repeats[-1]][1]
+						##plot_num = graphs_dict[seq_id_repeats[-1]][2] 
+						##print(seq_id_repeats)
+						##if seq_id == seq_id_repeat:
+						
+						##plot_profile(fig, ax, positions_all, hits_all, plot_num)
+						#####graphs_dict[seq_id_repeats[-1]][2] += 1	###################	
+				#else:
+					#if include:
+						#positions_all.append(line.rstrip().split("\t")[0])
+						#hits_all.append(line.rstrip().split("\t")[1])
+		#if include:
+			#graphs_dict = plot_profile(graphs_dict, seq_id_repeats[-1], positions_all, hits_all, repeat, plot_num)
+			#seq_id_repeats.append(seq_id_repeat)
+			##if seq_id == seq_id_repeat:
+			#positions_all = []
+			#hits_all = []
+		##plot_profile(fig, ax, positions_all, hits_all, plot_num)
+		##graphs_dict[seq_id_repeats[-1]][2] += 1		
+		#plot_num += 1		
+	#return graphs_dict
+	
 			
 def plot_figure(seq_id, seq_length, CN):
 	fig = plt.figure(figsize=(18, 8))
