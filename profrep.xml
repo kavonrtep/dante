@@ -51,23 +51,23 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input sequence must be in proper fasta format, multi-fasta allowed" />
  <conditional name="custom_data" >
-  <param name="options_custom_data" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Use custom annotation data" />
-  <when value="false">
+  <param name="options_custom_data" type="boolean" truevalue="True" falsevalue="False" checked="False" label="Use custom annotation data" />
+  <when value="False">
    <param name="prepared_dataset" type="select" label="Choose existing annotation dataset"  help="You can find list of all available species below in the Database section">
     <options from_file="prepared_datasets.txt" >
      <column name="name" index="1"/>
      <column name="value" index="0"/>
     </options>
    </param>  
-   <param name="copy_numbers" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Convert hits to copy numbers"  />  
+   <param name="copy_numbers" type="boolean" truevalue="True" falsevalue="False" checked="True" label="Convert hits to copy numbers"  />  
   </when>
-  <when value="true">
+  <when value="True">
    <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="This file  contains reads sequences in fasta format"  />
    <param format="cls" type="data" name="cls" label="Choose file containing reads assigned to clusters (.cls file of RE clustering output)" help="This file in fasta format contains cluster number as identifier(e.g. >CL100) and belonging reads names as a subsequent line" />
    <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" help="This file contains number of cluster (1st column) and its  repetitive classification (2nd column)" />
    <conditional name="cn">
-    <param name="copy_num" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Convert hits to copy numbers" />
-    <when value="true">
+    <param name="copy_num" type="boolean" truevalue="True" falsevalue="False" checked="False" label="Convert hits to copy numbers" />
+    <when value="True">
      <param name="genome_size" type="float" value="0" min="0.0000001" max ="1000000" label="Enter the genome size in Mbp" />
     </when>
    </conditional>
@@ -75,8 +75,8 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  </conditional>
  <param name="domains_switch" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Show protein domains"/>
  <conditional name="advanced_options" >
-  <param name="opts" type="boolean" display="checkbox" truevalue="true" falsevalue="false" checked="false" label="Advanced options"/>
-  <when value="true">
+  <param name="opts" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="False" label="Advanced options"/>
+  <when value="True">
    <param name="identical" type="integer" value="90" label="Minimum % identical" help="Blast filtering option: sequence indentity threshold between query and mapped read from db" />
    <param name="align_length" type="integer" value="40" label="Minimum alignment length" help="Blast filtering option: minimum alignment length threshold in bp" />
    <param name="e_value" type="text" value="1e-15" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />

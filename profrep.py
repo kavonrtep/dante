@@ -310,15 +310,18 @@ def repeats_process_dom(OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, xmi
 			art = []
 			lgd = ax.legend(bbox_to_anchor=(0.5,-0.1), loc=9, ncol=3)
 			art.append(lgd)
+			if seq in seq_ids_dom:
+				dom_idx = seq_ids_dom.index(seq) 
+				[fig, ax] = visualization.vis_domains(fig, ax, seq, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
 		elif seq in seqs_long:
 			[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
 			ax.text(0.3, 0.5, "Graphs are only displayed if sequence is not longer than {} bp".format(configuration.SEQ_LEN_VIZ),transform=ax.transAxes, fontsize=14, verticalalignment='center', color='blue')
 		else:
 			[fig, ax] = visualization.plot_figure(seq, seq_lengths_all[count_seq], CN)
 			ax.hlines(0, 0, seq_lengths_all[count_seq], color="red", lw=4)
-		if seq in seq_ids_dom:
-			dom_idx = seq_ids_dom.index(seq) 
-			[fig, ax] = visualization.vis_domains(fig, ax, seq, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
+			if seq in seq_ids_dom:
+				dom_idx = seq_ids_dom.index(seq) 
+				[fig, ax] = visualization.vis_domains(fig, ax, seq, xminimal[dom_idx], xmaximal[dom_idx], domains[dom_idx])
 		output_pic_png = "{}/{}.png".format(HTML_DATA, count_seq)
 		fig.savefig(output_pic_png, bbox_inches="tight", format="png", dpi=configuration.IMAGE_RES)
 		count_seq += 1	
@@ -409,7 +412,7 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_
 			sorted_keys.insert(0, "ALL")
 			for repeat_id in sorted_keys:
 				color = configuration.COLORS_RGB[count]
-				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--clientConfig", configuration.JSON_CONF_WIG, "--fgcolor", color, "--out",  jbrowse_data_path])
+				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 				count += 1
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
@@ -640,6 +643,7 @@ def main(args):
 		domains_primary = NamedTemporaryFile(delete=False)
 		protein_domains.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 		domains_primary.close()
+		#[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
 		[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
 		os.unlink(domains_primary.name)
 		log.write("ELAPSED_TIME_DOMAINS = {} s\n".format(time.time() - t_domains))

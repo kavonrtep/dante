@@ -3,6 +3,16 @@
 import argparse
 
 
+def check_file_start(gff_file):
+	count_comment = 0
+	with open(gff_file, "r") as gff_all:
+		line = gff_all.readline()
+		while line.startswith("#"):
+			line = gff_all.readline()
+			count_comment += 1 
+	return count_comment
+
+
 def main(args):
 	# Command line arguments
 	GFF_IN = args.gff_input
@@ -20,9 +30,13 @@ def main(args):
 		
 	if not NEW_SEQ_ID:
 		NEW_SEQ_ID = "{}_cut{}:{}".format(seq_to_cut, int_start, int_end)
+		
 	
+	count_comment = check_file_start(GFF_IN)
 	with open(GFF_OUT,"w") as gff_out:
 		with open(GFF_IN, "r") as gff_in:
+			for comment_idx in range(count_comment):
+				next(gff_in)
 			gff_out.write("##gff-version 3\n")
 			gff_out.write("##sequence region {}\n".format(REGION))
 			for line in gff_in:

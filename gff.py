@@ -40,14 +40,14 @@ def idx_ranges(indices, THRESHOLD_SEGMENT, seq_id, gff_file, feature, att_name):
 		group = list(map(itemgetter(1), group))
 		if len(group) > THRESHOLD_SEGMENT:
 			# Take boundaries of the group vectors
-			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, att_name).encode("utf-8"))
+			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, att_name).encode("utf-8"))
 			
 def idx_ranges_N(indices, THRESHOLD_SEGMENT, seq_id, gff_file, feature, att_name):
 	for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):
 		group = list(map(itemgetter(1), group))
 		if len(group) > THRESHOLD_SEGMENT:
 			# Take boundaries of the group vectors
-			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, att_name))
+			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, att_name))
 
 
 def sort_records(gff_tmp_list, headers, OUTPUT_GFF):

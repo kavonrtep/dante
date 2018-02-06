@@ -1,19 +1,19 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
-<description> Find and classify all protein domains in your DNA sequence based on the database of repetitive elements protein domains </description>
+<description> Primary tool to find and classify all protein domains (NO QUALITY FILTER USED) in a DNA sequence based on the database of repetitive elements protein domains </description>
 <command>
-python3 ${__tool_directory__}/protein_domains.py --query ${input} --domain_gff ${DomGff} --protein_database ${__tool_data_path__ }/protein_domains --classification ${__tool_data_path__ }/protein_domains --summary_file ${sum_file};
-
+python3 ${__tool_directory__}/protein_domains.py --query ${input} --domain_gff ${DomGff} --protein_database ${__tool_data_path__ }/protein_domains --classification ${__tool_data_path__ }/protein_domains;
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
 </inputs>
 
 <outputs>
- <data format="gff3" name="DomGff" label="GFF3 file of all protein domains from dataset ${input.hid}" />
- <data format="txt" name="sum_file" label="Summary amounts of domains from dataset ${input.hid}" />
+ <data format="gff3" name="DomGff" label="Unfiltered GFF3 file of all protein domains from dataset ${input.hid}" />
 </outputs>
 
  <help>
+
+THIS IS A PRIMARY OUTPUT THAT SHOULD UNDERGO FURTHER QUALITY FILTERING TO GET RID OFF FALSE POSITIVE DOMAINS
 
 **WHAT IT DOES**
 

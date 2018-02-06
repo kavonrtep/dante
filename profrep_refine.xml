@@ -2,11 +2,10 @@
 <tool id="profrep_refine" name="ProfRep Refiner" version="1.0.0">
 <description> Tool to polish the raw ProfRep output in order to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
 <command>
-python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} --out_refined ${out_refined} --gap_threshold ${gap_th}
+python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} --out_refined ${out_refined} --gap_threshold ${gap_th} --include_dom ${include_domains.domains}
  #if $include_domains.domains:
     --domains_gff ${include_domains.dom_gff} 
     --dom_number ${include_domains.dom_num}
-    --include_dom
     --class_tbl ${__tool_data_path__ }/protein_domains
  #end if
 </command>
