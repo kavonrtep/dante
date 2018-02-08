@@ -28,6 +28,7 @@ import re
 from Bio import SeqIO
 import sys
 import pickle
+import shutil
 
 t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
@@ -396,6 +397,32 @@ def html_output(total_length, seq_lengths_all, seq_names, HTML, DB_NAME, REF, RE
 		html_file.write(html_str)
 
 
+def adjust_tracklist(jbrowse_data_path):
+	tracklist_temp = NamedTemporaryFile(delete=False)
+	ending_lines = []
+	with open(tracklist_temp.name, "w") as track_tmp:
+		with open(os.path.join(jbrowse_data_path, "trackList.json"), "r") as trc_list:		
+			#line = trc_list.readline()
+			end = False
+			for line in trc_list:
+				if not "]" in line:
+					if not end:
+						track_tmp.write(line)
+					else:
+						ending_lines.append(line)
+				else:
+					ending_lines.append(line)
+					end = True
+			#while not "]" in line:
+				#track_tmp.write(line)
+				#line = trc_list.readline()
+			#ending_lines.append(line)
+			#for line in trc_list:
+				#ending_lines.append(line)
+	shutil.move(tracklist_temp.name, os.path.join(jbrowse_data_path, "trackList.json"))
+	return ending_lines
+				
+				
 def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN, files_dict):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
 	jbrowse_data_path = os.path.join(HTML_DATA, configuration.jbrowse_data_dir)
@@ -410,10 +437,38 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_
 			exclude = set(['ALL'])
 			sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
 			sorted_keys.insert(0, "ALL")
+			############################################################
+			#adjust_tracklist(jbrowse_data_path)
+			ending_lines = adjust_tracklist(jbrowse_data_path)
+			print(ending_lines)
+			############################################################
 			for repeat_id in sorted_keys:
-				color = configuration.COLORS_RGB[count]
-				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+				color = configuration.COLORS_HEX[count]
+				#subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 				count += 1
+				#######################################################
+				bw_name = "{}.bw".format(re.sub('[\/\|]','_',repeat_id))
+				subprocess.call(["wigToBigWig", files_dict[repeat_id][0], os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE), os.path.join(jbrowse_data_path, bw_name)])
+				with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
+					track_list.write("\t,{\n")
+					track_list.write('''
+						\t"storeClass" : "JBrowse/Store/SeqFeature/BigWig",
+						\t"urlTemplate" : "{}",
+						\t"type" : "JBrowse/View/Track/Wiggle/XYPlot",
+						\t"label" : "{}",
+						\t"key" : "{}",
+						\t"style": {}
+						\t\t"pos_color": "{}"
+						\t {},
+						\t"scale" : "log"
+				'''.format(bw_name, repeat_id, repeat_id, "{", color, "}"))
+					track_list.write("\t}\n")
+				##### if end ############################################
+			with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
+				for line in ending_lines:
+					track_list.write(line)
+			
+			########################################################
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
 	
@@ -470,9 +525,13 @@ def prepared_data(TBL, DB_ID, TOOL_DATA_DIR):
 				REF_LINK = line.split("\t")[7]
 	return DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK
 
+def seq_sizes_file(seq_ids, seq_lengths_all, HTML_DATA):
+	chrom_sizes = os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE)
+	with open(chrom_sizes, "w") as chroms:
+		for seq_id, seq_length in zip(seq_ids, seq_lengths_all):
+			chroms.write("{}\t{}\n".format(seq_id, seq_length)) 
 	
 def main(args):
-	
 	## Command line arguments
 	QUERY = args.query
 	BLAST_DB = args.database
@@ -636,6 +695,9 @@ def main(args):
 	Ngff.close()
 	log.write("ELAPSED_TIME_BLAST = {} s\n".format(time.time() - t_blast))
 	log.write("TOTAL_LENGHT_ANALYZED = {} bp\n".format(total_length))
+	
+	## Create file containing size of sequences to convert wig to bigwig
+	seq_sizes_file(headers, seq_lengths_all, HTML_DATA)
 	
 	## Protein domains module
 	t_domains=time.time()

@@ -519,7 +519,6 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		adjust_gff(OUTPUT_DOMAIN, dom_tmp.name, WIN_DOM, OVERLAP_DOM, step)
 		################################################################
 	else:
-		print("not long enough")
 		shutil.move(dom_tmp.name, OUTPUT_DOMAIN)
 		## skopirovat do OUTPUT_DOMAIN
 		###### os.unlink ###############################################
@@ -669,8 +668,8 @@ def main(args):
 	OVERLAP_DOM = args.overlap_dom
 	
 	####################################################################
-	WIN_DOM = 100000
-	OVERLAP_DOM = 3000
+	#WIN_DOM = 100000
+	#OVERLAP_DOM = 3000
 	####################################################################
 
 	#if SUMMARY is None:

@@ -95,7 +95,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid}" >
 	 <filter>domains_switch</filter>
 	</data>
-	<data format="html" name="html_file" label="HTML report from ${input.hid}" />
+	<data format="html" name="html_file" label="HTML report, Data Directory from ${input.hid}" />
 	<data format="gff3" name="NGff" label="GFF file of unspecified bases (N) from dataset ${input.hid}" />
 	<data format="txt" name="log_file" label="Log file" />
 
