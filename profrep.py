@@ -29,10 +29,11 @@ from Bio import SeqIO
 import sys
 import pickle
 import shutil
+import warnings
 
 t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
-
+warnings.filterwarnings("ignore", module="matplotlib")
 
 def get_version(path):
 	branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True, cwd=path).decode('ascii').strip()
@@ -397,31 +398,49 @@ def html_output(total_length, seq_lengths_all, seq_names, HTML, DB_NAME, REF, RE
 		html_file.write(html_str)
 
 
-def adjust_tracklist(jbrowse_data_path):
-	tracklist_temp = NamedTemporaryFile(delete=False)
-	ending_lines = []
-	with open(tracklist_temp.name, "w") as track_tmp:
-		with open(os.path.join(jbrowse_data_path, "trackList.json"), "r") as trc_list:		
-			#line = trc_list.readline()
-			end = False
-			for line in trc_list:
-				if not "]" in line:
-					if not end:
-						track_tmp.write(line)
-					else:
-						ending_lines.append(line)
-				else:
-					ending_lines.append(line)
-					end = True
-			#while not "]" in line:
-				#track_tmp.write(line)
-				#line = trc_list.readline()
-			#ending_lines.append(line)
+#def adjust_tracklist(jbrowse_data_path):
+	#tracklist_temp = NamedTemporaryFile(delete=False)
+	#ending_lines = []
+	#with open(tracklist_temp.name, "w") as track_tmp:
+		#with open(os.path.join(jbrowse_data_path, "trackList.json"), "r") as trc_list:		
+			##line = trc_list.readline()
+			#end = False
 			#for line in trc_list:
-				#ending_lines.append(line)
-	shutil.move(tracklist_temp.name, os.path.join(jbrowse_data_path, "trackList.json"))
-	return ending_lines
+				#if not "]" in line:
+					#if not end:
+						#track_tmp.write(line)
+					#else:
+						#ending_lines.append(line)
+				#else:
+					#ending_lines.append(line)
+					#end = True
+			##while not "]" in line:
+				##track_tmp.write(line)
+				##line = trc_list.readline()
+			##ending_lines.append(line)
+			##for line in trc_list:
+				##ending_lines.append(line)
+	#shutil.move(tracklist_temp.name, os.path.join(jbrowse_data_path, "trackList.json"))
+	#return ending_lines
 				
+				
+				
+def adjust_tracklist(jbrowse_data_path):
+	starting_lines = []
+	ending_lines = []
+	end = False
+	with open(os.path.join(jbrowse_data_path, "trackList.json"), "r") as track_list:
+		for line in track_list:
+			if "]" not in line and not end:
+				starting_lines.append(line)
+			else:
+				end = True
+				ending_lines.append(line)
+	with open(os.path.join(jbrowse_data_path, "trackList.json"), "w") as track_list:
+		for line in starting_lines:
+			track_list.write(line)
+	return ending_lines
+	
 				
 def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN, files_dict):
 	''' Set up the paths, link and convert output data to be displayed as tracks in Jbrowse '''
@@ -433,7 +452,8 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 		count = 0
 		# Control the total length processed, if above threshold, dont create wig image tracks 
-		if total_length <= configuration.WIG_TH and files_dict:
+		#if total_length <= configuration.WIG_TH and files_dict:
+		if files_dict:
 			exclude = set(['ALL'])
 			sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
 			sorted_keys.insert(0, "ALL")
@@ -463,7 +483,7 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_
 						\t"scale" : "log"
 				'''.format(bw_name, repeat_id, repeat_id, "{", color, "}"))
 					track_list.write("\t}\n")
-				##### if end ############################################
+					##### if end ############################################
 			with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
 				for line in ending_lines:
 					track_list.write(line)
@@ -481,15 +501,51 @@ def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN,
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", OUTPUT_GFF, "--trackLabel", "GFF_repeats", "--config", configuration.JSON_CONF_R, "--out",  jbrowse_data_path])
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 		count = 0
-		# Control the total length processed, if above threshold, dont create wig image tracks 
-		if total_length <= configuration.WIG_TH and files_dict:
+		## Control the total length processed, if above threshold, dont create wig image tracks 
+		#if total_length <= configuration.WIG_TH and files_dict:
+			#exclude = set(['ALL'])
+			#sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
+			#sorted_keys.insert(0, "ALL")
+			#for repeat_id in sorted_keys:
+				#color = configuration.COLORS_RGB[count]
+				#subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+				#count += 1
+		if files_dict:
 			exclude = set(['ALL'])
 			sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
 			sorted_keys.insert(0, "ALL")
+			############################################################
+			#adjust_tracklist(jbrowse_data_path)
+			ending_lines = adjust_tracklist(jbrowse_data_path)
+			print(ending_lines)
+			############################################################
 			for repeat_id in sorted_keys:
-				color = configuration.COLORS_RGB[count]
-				subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
+				color = configuration.COLORS_HEX[count]
+				#subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 				count += 1
+				#######################################################
+				bw_name = "{}.bw".format(re.sub('[\/\|]','_',repeat_id))
+				subprocess.call(["wigToBigWig", files_dict[repeat_id][0], os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE), os.path.join(jbrowse_data_path, bw_name)])
+				with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
+					track_list.write("\t,{\n")
+					track_list.write('''
+						\t"storeClass" : "JBrowse/Store/SeqFeature/BigWig",
+						\t"urlTemplate" : "{}",
+						\t"type" : "JBrowse/View/Track/Wiggle/XYPlot",
+						\t"label" : "{}",
+						\t"key" : "{}",
+						\t"style": {}
+						\t\t"pos_color": "{}"
+						\t {},
+						\t"scale" : "log"
+				'''.format(bw_name, repeat_id, repeat_id, "{", color, "}"))
+					track_list.write("\t}\n")
+					##### if end ############################################
+			with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
+				for line in ending_lines:
+					track_list.write(line)
+			
+			########################################################
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
 	

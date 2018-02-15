@@ -9,7 +9,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 --protein_database ${__tool_data_path__ }/protein_domains
 --classification ${__tool_data_path__ }/protein_domains
 --tool_dir ${__tool_data_path__ }/profrep
---protein_domains $domains_switch
+--protein_domains ${domains_switch}
 --jbrowse_bin \${JBROWSE_BIN}
 --log_file ${log_file}
 

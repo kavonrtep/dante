@@ -5,9 +5,6 @@ import numpy as np
 import configuration
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-
-
-	
 	
 def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA, seqs_all_part):
 	''' visualization of repetitive profiles'''
