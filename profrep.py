@@ -137,7 +137,7 @@ def annot_profile(annotation_keys, part):
 	return subprofile
 
 
-def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, subsets_num, subset_index):
+def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, BITSCORE, DUST_FILTER, last_index, subsets_num, subset_index):
 	''' Run parallel function to process the input sequence in windows
 		Run blast for subsequence defined by the input index and window size
  		Create and increment subprofile vector based on reads aligned within window '''
@@ -150,18 +150,18 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 		subprofile = annot_profile(annotation_keys, WINDOW + 1)
 	
 	# Find HSP records for every window defined by query location and parse the tabular stdout:
-	# 1. query, 2. database read, 3. %identical, 4. alignment length, 5. alignment start, 6. alignment end
-	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -dust {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid pident length qstart qend'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, DUST_FILTER, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
+	# 1. query, 2. database read, 3. alignment start, 4. alignment end, 5. bitscore
+	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -dust {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid qstart qend bitscore'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, DUST_FILTER, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
 	for line in p.stdout:
 		column = line.decode("utf-8").rstrip().split("\t")
-		if float(column[2]) >= MIN_IDENTICAL and int(column[3]) >= MIN_ALIGN_LENGTH:
+		if float(column[4]) >= BITSCORE:
 			read = column[1]				# ID of individual aligned read
 			if "reduce" in read:
 				reads_representation = int(read.split("reduce")[-1])
 			else:
 				reads_representation = 1
-			qstart = int(column[4])			# starting position of alignment
-			qend = int(column[5])			# ending position of alignemnt
+			qstart = int(column[2])			# starting position of alignment
+			qend = int(column[3])			# ending position of alignemnt
 			if read in reads_annotations:
 				annotation = reads_annotations[read]								
 			else:
@@ -593,8 +593,7 @@ def main(args):
 	BLAST_DB = args.database
 	CL_ANNOTATION_TBL = args.annotation_tbl 
 	CLS = args.cls
-	MIN_IDENTICAL = args.identical
-	MIN_ALIGN_LENGTH = args.align_length
+	BITSCORE = args.bit_score
 	E_VALUE = args.e_value
 	WORD_SIZE = args.word_size
 	WINDOW = args.window
@@ -737,7 +736,7 @@ def main(args):
 		last_index = subset_index[-1]
 		index_range = range(len(subset_index))
 		for chunk_index in index_range[0::configuration.MAX_FILES_SUBPROFILES]:
-			multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, MIN_IDENTICAL, MIN_ALIGN_LENGTH, DUST_FILTER, last_index, len(subset_index))
+			multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, BITSCORE, DUST_FILTER, last_index, len(subset_index))
 			subprofiles_all = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + configuration.MAX_FILES_SUBPROFILES])
 			## Join partial profiles to the final profile of the sequence 
 			if CN:							
@@ -859,13 +858,11 @@ if __name__ == "__main__":
                         help='annotation dataset ID (first column of datasets table)')  
                          					
 	################ BLAST parameters ##################################
-    blastOpt.add_argument('-i', '--identical', type=float, default=90,
-						help='blast filtering option: percentage indentity threshold between query and mapped read from db')
-    blastOpt.add_argument('-l', '--align_length', type=int, default=40,
-						help='blast filtering option: minimal alignment length threshold in bp')
+    blastOpt.add_argument('-bs', '--bit_score', type=float, default=50,
+						help='bitscore threshold')
     blastOpt.add_argument('-m', '--max_alignments', type=int, default=10000000,
 						help='blast filtering option: maximal number of alignments in the output')
-    blastOpt.add_argument('-e', '--e_value', type=str, default=1e-15,
+    blastOpt.add_argument('-e', '--e_value', type=str, default=0.1,
 						help='blast setting option: e-value')
     blastOpt.add_argument('-df', '--dust_filter', type=str, default="'20 64 1'",
 						help='dust filters low-complexity regions during BLAST search')

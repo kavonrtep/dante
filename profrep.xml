@@ -17,9 +17,8 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 	--domain_gff ${DomGff}
  #end if
 
- #if $advanced_options.opts:
-	--identical ${advanced_options.identical}  
-	--align_length ${advanced_options.align_length} 
+ #if $advanced_options.opts:  
+	--bit_score ${advanced_options.bit_score} 
 	--word_size ${advanced_options.word_size} 
 	--e_value ${advanced_options.e_value} 
 	--threshold_repeat ${advanced_options.threshold} 
@@ -77,15 +76,14 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  <conditional name="advanced_options" >
   <param name="opts" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="False" label="Advanced options"/>
   <when value="True">
-   <param name="identical" type="integer" value="90" label="Minimum % identical" help="Blast filtering option: sequence indentity threshold between query and mapped read from db" />
-   <param name="align_length" type="integer" value="40" label="Minimum alignment length" help="Blast filtering option: minimum alignment length threshold in bp" />
-   <param name="e_value" type="text" value="1e-15" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
+   <param name="bit_score" type="float" value="50" label="Bitscore" help="Blast filtering option: BITSCORE" />
+   <param name="e_value" type="text" value="0.1" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
    <param name="word_size" type="integer" value="11" min="7" max="20" label="Initial word size" help="Initial word size used by Blast for alignment" />  
    <param name="dust_filter" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Use DUST filter" help="Filters query sequence for low-complexity regions with DUST filter" >
    </param>
    <param name="window" type="integer" value="5000" min="5000" label="Sliding window size" help="Use when having a long input sequence so that it can be processed in parallel" />
    <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
-   <param name="threshold" type="integer" value="10" min="1" label="Repetitive threshold" help="Threshold for copy numbers/hits at certain position to be reported as repetitive in GFF format"  />
+   <param name="threshold" type="integer" value="5" min="1" label="Repetitive threshold" help="Threshold for copy numbers/hits at certain position to be reported as repetitive in GFF format"  />
   </when>
  </conditional>
 </inputs>
@@ -95,7 +93,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid}" >
 	 <filter>domains_switch</filter>
 	</data>
-	<data format="html" name="html_file" label="HTML report, Data Directory from ${input.hid}" />
+	<data format="html" name="html_file" label="HTML report, JBrowse Data Directory from ${input.hid}" />
 	<data format="gff3" name="NGff" label="GFF file of unspecified bases (N) from dataset ${input.hid}" />
 	<data format="txt" name="log_file" label="Log file" />
 

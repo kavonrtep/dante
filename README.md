@@ -9,10 +9,12 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 
 ### Dependencies ###
 
+
 * python 3.4 or higher with packages:
 	* numpy
 	* matplotlib
 * [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
+* [wigToBigWig](http://hgdownload.cse.ucsc.edu/admin/exe/)
 * ProfRep Modules:
 	* gff.py
 	* visualization.py
