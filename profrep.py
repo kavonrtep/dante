@@ -132,8 +132,8 @@ def annot_profile(annotation_keys, part):
 	repetitive profiles defined by parallel process '''
 	subprofile = {} 				
 	for key in annotation_keys:
-		subprofile[key] = np.zeros(part, dtype=int)
-	subprofile["ALL"] = np.zeros(part, dtype=int)
+		subprofile[key] = [np.zeros(part, dtype=int), np.zeros(part, dtype=int)]
+	subprofile["ALL"] = [np.zeros(part, dtype=int), np.zeros(part, dtype=int)]
 	return subprofile
 
 
@@ -151,10 +151,12 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 	
 	# Find HSP records for every window defined by query location and parse the tabular stdout:
 	# 1. query, 2. database read, 3. alignment start, 4. alignment end, 5. bitscore
-	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -dust {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid qstart qend bitscore'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, DUST_FILTER, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
+	p = subprocess.Popen("blastn -query {} -query_loc {}-{} -db {} -evalue {} -word_size {} -dust {} -task {} -num_alignments {} -outfmt '6 qseqid sseqid qstart qend bitscore pident'".format(subfasta, loc_start, loc_end, BLAST_DB, E_VALUE, WORD_SIZE, DUST_FILTER, BLAST_TASK, MAX_ALIGNMENTS), stdout=subprocess.PIPE, shell=True)
+	count_hits = 0
 	for line in p.stdout:
 		column = line.decode("utf-8").rstrip().split("\t")
 		if float(column[4]) >= BITSCORE:
+			count_hits += 1
 			read = column[1]				# ID of individual aligned read
 			if "reduce" in read:
 				reads_representation = int(read.split("reduce")[-1])
@@ -166,8 +168,19 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 				annotation = reads_annotations[read]								
 			else:
 				annotation = "ALL"
-			subprofile[annotation][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][qstart-subset_index-1 : qend-subset_index] + reads_representation
-	subprofile["ALL"] = sum(subprofile.values())
+			subprofile[annotation][0][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][0][qstart-subset_index-1 : qend-subset_index] + reads_representation
+			subprofile[annotation][1][qstart-subset_index-1 : qend-subset_index] = subprofile[annotation][1][qstart-subset_index-1 : qend-subset_index] + float(column[5])*reads_representation
+	#subprofile["ALL"] = sum(subprofile.values())
+	#subprofile["ALL"] = sum(subprofile.values())
+	#print(subprofile["ALL"])
+	subprofile["ALL"][0] = sum([item[0] for item in subprofile.values()])
+	#################### FLOAT ###############################################
+	subprofile["ALL"][1] = sum([item[1] for item in subprofile.values()])
+	for repeat in subprofile.keys():
+		subprofile[repeat][1] = [int(round(quality/hits_num)) if hits_num !=0 else quality for hits_num, quality in zip(subprofile[repeat][0], subprofile[repeat][1])]
+	print(subprofile[repeat][1])
+	#print(float(column[5]))
+	#print(subprofile["ALL"])
 	if subset_index == 0: 
 		if subsets_num == 1:
 			subprf_name = subprofile_single(subprofile, subset_index)
@@ -181,7 +194,7 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 	
 	
 def subprofile_single(subprofile, subset_index):
-	subprofile['idx'] = list(range(1, len(subprofile["ALL"]) + 1))
+	subprofile['idx'] = list(range(1, len(subprofile["ALL"][0]) + 1))
 	subprf_dict = NamedTemporaryFile(suffix='{}_.pickle'.format(subset_index),delete=False)
 	with open(subprf_dict.name, 'wb') as handle:
 		pickle.dump(subprofile, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -191,7 +204,8 @@ def subprofile_single(subprofile, subset_index):
 
 def subprofile_first(subprofile, subset_index, WINDOW, OVERLAP):
 	for key in subprofile.keys():
-		subprofile[key] = subprofile[key][0 : -OVERLAP//2-1]
+		subprofile[key][0] = subprofile[key][0][0 : -OVERLAP//2-1]
+		subprofile[key][1] = subprofile[key][1][0 : -OVERLAP//2-1]
 	subprofile['idx'] = list(range(subset_index + 1, subset_index + WINDOW-OVERLAP//2 + 1))
 	subprf_dict = NamedTemporaryFile(suffix='{}_.pickle'.format(subset_index),delete=False)
 	with open(subprf_dict.name, 'wb') as handle:
@@ -202,7 +216,8 @@ def subprofile_first(subprofile, subset_index, WINDOW, OVERLAP):
 	
 def subprofiles_middle(subprofile, subset_index, WINDOW, OVERLAP):
 	for key in subprofile.keys():
-		subprofile[key] = subprofile[key][OVERLAP//2 : -OVERLAP//2-1]
+		subprofile[key][0] = subprofile[key][0][OVERLAP//2 : -OVERLAP//2-1]
+		subprofile[key][1] = subprofile[key][1][OVERLAP//2 : -OVERLAP//2-1]
 	subprofile['idx'] = list(range(subset_index + OVERLAP//2 + 1, subset_index + WINDOW-OVERLAP//2 + 1))
 	subprf_dict = NamedTemporaryFile(suffix='{}_.pickle'.format(subset_index),delete=False)
 	with open(subprf_dict.name, 'wb') as handle:
@@ -212,9 +227,10 @@ def subprofiles_middle(subprofile, subset_index, WINDOW, OVERLAP):
 
 
 def subprofile_last(subprofile, subset_index, OVERLAP):
-	len_subprofile = len(subprofile['ALL'])
+	len_subprofile = len(subprofile['ALL'][0])
 	for key in subprofile.keys():
-		subprofile[key] = subprofile[key][OVERLAP//2:]
+		subprofile[key][0] = subprofile[key][0][OVERLAP//2:]
+		subprofile[key][1] = subprofile[key][1][OVERLAP//2:]
 	subprofile['idx'] = list(range(subset_index + OVERLAP//2 + 1, subset_index + len_subprofile +1))
 	subprf_dict = NamedTemporaryFile(suffix='{}_.pickle'.format(subset_index),delete=False)
 	with open(subprf_dict.name, 'wb') as handle:
@@ -223,29 +239,64 @@ def subprofile_last(subprofile, subset_index, OVERLAP):
 	return subprf_dict.name
 	
 											
+#def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA):
+	#for subprofile in subprofiles_all:
+		#with open(subprofile, 'rb') as handle:
+			#individual_dict = pickle.load(handle)
+			#exclude = set(["idx"])
+			#for key in set(individual_dict.keys()).difference(exclude):
+				#if any(individual_dict[key][0]):
+					#indices = handle_zero_lines(individual_dict[key][0])
+					#if key not in files_dict.keys():
+						#prf_name = "{}/{}.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
+						#with open(prf_name, "a") as prf_file:
+							#prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+							#for i in indices:
+								#prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
+						#files_dict[key] = [prf_name,[seq_id]]
+					#else:
+						#prf_name = files_dict[key][0]
+						#with open(prf_name, "a") as prf_file:
+							#if seq_id not in files_dict[key][1]:
+								#prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+								#files_dict[key][1].append(seq_id)
+							#for i in indices:
+								#prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
+	#return files_dict
+	
+	
 def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA):
 	for subprofile in subprofiles_all:
 		with open(subprofile, 'rb') as handle:
 			individual_dict = pickle.load(handle)
 			exclude = set(["idx"])
 			for key in set(individual_dict.keys()).difference(exclude):
-				if any(individual_dict[key]):
-					indices = handle_zero_lines(individual_dict[key])
+				if any(individual_dict[key][0]):
+					indices = handle_zero_lines(individual_dict[key][0])
 					if key not in files_dict.keys():
 						prf_name = "{}/{}.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
+						prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
 						with open(prf_name, "a") as prf_file:
 							prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
 							for i in indices:
-								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][i]))
-						files_dict[key] = [prf_name,[seq_id]]
+								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
+						with open(prf_qual_name, "a") as prf_q_file:
+							prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+							for i in indices:
+								prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
+						files_dict[key] = [prf_name,[seq_id], prf_qual_name]
 					else:
 						prf_name = files_dict[key][0]
+						prf_qual_name = files_dict[key][2]
 						with open(prf_name, "a") as prf_file:
-							if seq_id not in files_dict[key][1]:
-								prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-								files_dict[key][1].append(seq_id)
-							for i in indices:
-								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][i]))
+							with open(prf_qual_name, "a") as prf_q_file:
+								if seq_id not in files_dict[key][1]:
+									prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+									prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+									files_dict[key][1].append(seq_id)
+								for i in indices:
+									prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
+									prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
 	return files_dict
 
 
@@ -255,23 +306,38 @@ def concatenate_prof_CN(CV, subprofiles_all, files_dict, seq_id, HTML_DATA):
 			individual_dict = pickle.load(handle)
 			exclude = set(["idx"])
 			for key in set(individual_dict.keys()).difference(exclude):
-				if any(individual_dict[key]):
-					indices = handle_zero_lines(individual_dict[key])
+				if any(individual_dict[key][0]):
+					indices = handle_zero_lines(individual_dict[key][0])
 					if key not in files_dict.keys():
 						prf_name = "{}/{}.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
+						prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
 						with open(prf_name, "a") as prf_file:
 							prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
 							for i in indices:
-								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][i]/CV)))
-						files_dict[key] = [prf_name,[seq_id]]
+								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][0][i]/CV)))
+						with open(prf_qual_name, "a") as prf_q_file:
+							prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+							for i in indices:
+								prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
+						files_dict[key] = [prf_name,[seq_id], prf_qual_name]
 					else:
 						prf_name = files_dict[key][0]
+						prf_qual_name = files_dict[key][2]
+						################ OPEN ###############################################################################################
 						with open(prf_name, "a") as prf_file:
-							if seq_id not in files_dict[key][1]:
-								prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-								files_dict[key][1].append(seq_id)
-							for i in indices:
-								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][i]/CV)))
+							with open(prf_qual_name, "a") as prf_q_file:
+								if seq_id not in files_dict[key][1]:
+									prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+									prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+									files_dict[key][1].append(seq_id)
+								for i in indices:
+									prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][0][i]/CV)))
+									prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
+						#with open(prf_qual_name, "a") as prf_q_file:
+							#if seq_id not in files_dict[key][1]:
+								#prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+							#for i in indices:
+								#prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i]/CV)))
 	return files_dict
 		
 
@@ -374,56 +440,10 @@ def html_output(total_length, seq_lengths_all, seq_names, HTML, DB_NAME, REF, RE
 	else:
 		ref_string = "Custom Data"
 	pictures = "\n\t\t".join(['<img src="{}.png" width=1800>'.format(pic)for pic in range(len(seq_names))[:configuration.MAX_PIC_NUM]])
-	html_str = '''
-	<!DOCTYPE html>
-	<html>
-	<body>
-		<h2>PROFREP OUTPUT</h2>
-		<h4> Sequences processed: </h4>
-		{}
-		<h4> Total length: </h4>
-		<pre> {} bp </pre>
-		<h4> Database: </h4>
-		<pre> {} </pre>
-		<hr>
-		<h3> Repetitive profile(s)</h3> </br>
-		{} <br/>
-		<h4>References: </h4>
-		{}
-		</h6>
-	</body>
-	</html>
-	'''.format(info, total_length, DB_NAME, pictures, ref_string)
+	html_str = configuration.HTML_STR.format(info, total_length, DB_NAME, pictures, ref_string)
 	with open(HTML,"w") as html_file:
 		html_file.write(html_str)
-
-
-#def adjust_tracklist(jbrowse_data_path):
-	#tracklist_temp = NamedTemporaryFile(delete=False)
-	#ending_lines = []
-	#with open(tracklist_temp.name, "w") as track_tmp:
-		#with open(os.path.join(jbrowse_data_path, "trackList.json"), "r") as trc_list:		
-			##line = trc_list.readline()
-			#end = False
-			#for line in trc_list:
-				#if not "]" in line:
-					#if not end:
-						#track_tmp.write(line)
-					#else:
-						#ending_lines.append(line)
-				#else:
-					#ending_lines.append(line)
-					#end = True
-			##while not "]" in line:
-				##track_tmp.write(line)
-				##line = trc_list.readline()
-			##ending_lines.append(line)
-			##for line in trc_list:
-				##ending_lines.append(line)
-	#shutil.move(tracklist_temp.name, os.path.join(jbrowse_data_path, "trackList.json"))
-	#return ending_lines
-				
-				
+		
 				
 def adjust_tracklist(jbrowse_data_path):
 	starting_lines = []
@@ -452,43 +472,21 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 		count = 0
 		# Control the total length processed, if above threshold, dont create wig image tracks 
-		#if total_length <= configuration.WIG_TH and files_dict:
 		if files_dict:
 			exclude = set(['ALL'])
 			sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
 			sorted_keys.insert(0, "ALL")
-			############################################################
-			#adjust_tracklist(jbrowse_data_path)
 			ending_lines = adjust_tracklist(jbrowse_data_path)
-			print(ending_lines)
-			############################################################
 			for repeat_id in sorted_keys:
 				color = configuration.COLORS_HEX[count]
-				#subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 				count += 1
-				#######################################################
 				bw_name = "{}.bw".format(re.sub('[\/\|]','_',repeat_id))
 				subprocess.call(["wigToBigWig", files_dict[repeat_id][0], os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE), os.path.join(jbrowse_data_path, bw_name)])
 				with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
-					track_list.write("\t,{\n")
-					track_list.write('''
-						\t"storeClass" : "JBrowse/Store/SeqFeature/BigWig",
-						\t"urlTemplate" : "{}",
-						\t"type" : "JBrowse/View/Track/Wiggle/XYPlot",
-						\t"label" : "{}",
-						\t"key" : "{}",
-						\t"style": {}
-						\t\t"pos_color": "{}"
-						\t {},
-						\t"scale" : "log"
-				'''.format(bw_name, repeat_id, repeat_id, "{", color, "}"))
-					track_list.write("\t}\n")
-					##### if end ############################################
+					track_list.write(configuration.TRACK_LIST.format("{", bw_name, repeat_id, repeat_id, "{", color, "}", "}"))
 			with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
 				for line in ending_lines:
 					track_list.write(line)
-			
-			########################################################
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
 	
@@ -502,50 +500,22 @@ def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN,
 		subprocess.call(["{}/flatfile-to-json.pl".format(JBROWSE_BIN), "--gff", N_GFF, "--trackLabel", "N_regions", "--config", configuration.JSON_CONF_N, "--out",  jbrowse_data_path])		 
 		count = 0
 		## Control the total length processed, if above threshold, dont create wig image tracks 
-		#if total_length <= configuration.WIG_TH and files_dict:
-			#exclude = set(['ALL'])
-			#sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
-			#sorted_keys.insert(0, "ALL")
-			#for repeat_id in sorted_keys:
-				#color = configuration.COLORS_RGB[count]
-				#subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
-				#count += 1
 		if files_dict:
 			exclude = set(['ALL'])
 			sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
 			sorted_keys.insert(0, "ALL")
-			############################################################
-			#adjust_tracklist(jbrowse_data_path)
 			ending_lines = adjust_tracklist(jbrowse_data_path)
-			print(ending_lines)
-			############################################################
 			for repeat_id in sorted_keys:
 				color = configuration.COLORS_HEX[count]
-				#subprocess.call(["{}/wig-to-json.pl".format(JBROWSE_BIN), "--wig", "{}".format(files_dict[repeat_id][0]), "--trackLabel", repeat_id, "--fgcolor", color, "--out",  jbrowse_data_path])
 				count += 1
-				#######################################################
 				bw_name = "{}.bw".format(re.sub('[\/\|]','_',repeat_id))
 				subprocess.call(["wigToBigWig", files_dict[repeat_id][0], os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE), os.path.join(jbrowse_data_path, bw_name)])
+				############ APPEND? ###################################
 				with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
-					track_list.write("\t,{\n")
-					track_list.write('''
-						\t"storeClass" : "JBrowse/Store/SeqFeature/BigWig",
-						\t"urlTemplate" : "{}",
-						\t"type" : "JBrowse/View/Track/Wiggle/XYPlot",
-						\t"label" : "{}",
-						\t"key" : "{}",
-						\t"style": {}
-						\t\t"pos_color": "{}"
-						\t {},
-						\t"scale" : "log"
-				'''.format(bw_name, repeat_id, repeat_id, "{", color, "}"))
-					track_list.write("\t}\n")
-					##### if end ############################################
+					track_list.write(configuration.TRACK_LIST.format("{", bw_name, repeat_id, repeat_id, "{", color, "}", "}"))
 			with open(os.path.join(jbrowse_data_path, "trackList.json"), "a") as track_list:
 				for line in ending_lines:
 					track_list.write(line)
-			
-			########################################################
 		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
 	return None
 	
@@ -682,20 +652,22 @@ def main(args):
 	
 	path = os.path.dirname(os.path.realpath(__file__))
 	version_string = get_version(path)
-	with open(LOG_FILE, "w") as log:
-		log.write(version_string)
-	log = open(LOG_FILE,"a")
 	
+	log = os.open(LOG_FILE, os.O_RDWR|os.O_CREAT)
+	
+	os.write(log, version_string.encode("utf-8"))
 	
 	## Define parameters for parallel process
 	STEP = WINDOW - OVERLAP		
 	NUM_CORES = multiprocessing.cpu_count()	
-	log.write("NUM_OF_CORES = {}\n".format(NUM_CORES))
+	#log.write("NUM_OF_CORES = {}\n".format(NUM_CORES))
+	os.write(log, "NUM_OF_CORES = {}\n".format(NUM_CORES).encode("utf-8"))
 	
 	## Convert genome size to coverage
 	if CN and GS:
 		CV = genome2coverage(GS, BLAST_DB)
-		log.write("COVERAGE = {}\n".format(CV))
+		#log.write("COVERAGE = {}\n".format(CV))
+		os.write(log, "COVERAGE = {}\n".format(CV).encode("utf-8"))
 	
 	parallel_pool = Pool(NUM_CORES)
 
@@ -717,12 +689,16 @@ def main(args):
 	seq_lengths_all = [] 
 	with open(N_GFF, "w") as Ngff:
 		Ngff.write("{}\n".format(configuration.HEADER_GFF))
+	########################### APPEND ??? #############################
 	Ngff = open(N_GFF,"a")
 		
 	## Find hits for each fasta sequence separetely
 	t_blast=time.time()	
 	for subfasta in fasta_list:
 		[header, sequence] = fasta_read(subfasta)
+		#log.write("Sequence {} is being processed...\n".format(header))
+		os.write(log, "Sequence {} is being processed...\n".format(header).encode("utf-8"))
+		os.fsync(log)
 		indices_N = [indices + 1 for indices, n in enumerate(sequence) if n == "n" or n == "N"]
 		if indices_N:
 			gff.idx_ranges_N(indices_N, configuration.N_segment, header, Ngff, configuration.N_NAME, configuration.N_FEATURE)
@@ -738,6 +714,8 @@ def main(args):
 		for chunk_index in index_range[0::configuration.MAX_FILES_SUBPROFILES]:
 			multiple_param = partial(parallel_process, WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotations, subfasta, BLAST_DB, E_VALUE, WORD_SIZE, BLAST_TASK, MAX_ALIGNMENTS, BITSCORE, DUST_FILTER, last_index, len(subset_index))
 			subprofiles_all = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + configuration.MAX_FILES_SUBPROFILES])
+			print(list(subprofiles_all))
+			#sys.exit(0)
 			## Join partial profiles to the final profile of the sequence 
 			if CN:							
 				files_dict = concatenate_prof_CN(CV, subprofiles_all, files_dict, header, HTML_DATA)
@@ -748,8 +726,8 @@ def main(args):
 		total_length += seq_length 
 		seq_lengths_all.append(seq_length)
 	Ngff.close()
-	log.write("ELAPSED_TIME_BLAST = {} s\n".format(time.time() - t_blast))
-	log.write("TOTAL_LENGHT_ANALYZED = {} bp\n".format(total_length))
+	os.write(log, "ELAPSED_TIME_BLAST = {} s\n".format(time.time() - t_blast).encode("utf-8"))
+	os.write(log, "TOTAL_LENGHT_ANALYZED = {} bp\n".format(total_length).encode("utf-8"))
 	
 	## Create file containing size of sequences to convert wig to bigwig
 	seq_sizes_file(headers, seq_lengths_all, HTML_DATA)
@@ -757,41 +735,45 @@ def main(args):
 	## Protein domains module
 	t_domains=time.time()
 	if DOMAINS:
+		os.write(log, "Domains module has started...\n". encode("utf-8"))
+		os.fsync(log)
 		domains_primary = NamedTemporaryFile(delete=False)
 		protein_domains.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 		domains_primary.close()
-		#[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
 		[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
 		os.unlink(domains_primary.name)
-		log.write("ELAPSED_TIME_DOMAINS = {} s\n".format(time.time() - t_domains))
+		os.write(log, "ELAPSED_TIME_DOMAINS = {} s\n".format(time.time() - t_domains).encode("utf-8"))
 		
 		# Process individual sequences from the input file sequentially
 		t_gff_vis = time.time() 
 		repeats_process_dom(OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, xminimal, xmaximal, domains, seq_ids_dom, CN, headers, seq_lengths_all, files_dict)
-		log.write("ELAPSED_TIME_GFF_VIS = {} s\n".format(time.time() - t_gff_vis))
+		os.write(log, "ELAPSED_TIME_GFF_VIS = {} s\n".format(time.time() - t_gff_vis).encode("utf-8"))
 		
 		# Prepare data for html output
 		t_jbrowse=time.time()
-		jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN, files_dict)	
-		log.write("ELAPSED_TIME_JBROWSE_PREP = {} s\n".format(time.time() - t_jbrowse))	
+		os.write(log, "JBrowse tracks are being prepared...\n".encode("utf-8"))
+		os.fsync(log)
+		jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN, files_dict)		
+		os.write(log, "ELAPSED_TIME_JBROWSE_PREP = {} s\n".format(time.time() - t_jbrowse).encode("utf-8"))	
 	else:
 		# Process individual sequences from the input file sequentially
 		t_gff_vis = time.time() 
 		repeats_process(OUTPUT_GFF, THRESHOLD, THRESHOLD_SEGMENT, HTML_DATA, CN, headers, seq_lengths_all, files_dict)
-		log.write("ELAPSED_TIME_GFF_VIS = {} s\n".format(time.time() - t_gff_vis))
+		os.write(log, "ELAPSED_TIME_GFF_VIS = {} s\n".format(time.time() - t_gff_vis). encode("utf-8"))
 		
 		# Prepare data for html output
 		t_jbrowse=time.time()
 		jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN, files_dict)		
-		log.write("ELAPSED_TIME_JBROWSE_PREP = {} s\n".format(time.time() - t_jbrowse))
+		os.write(log, "ELAPSED_TIME_JBROWSE_PREP = {} s\n".format(time.time() - t_jbrowse).encode("utf-8"))
 	
 	# Create HTML output
 	t_html=time.time()
+	os.write(log, "HTML output and JBrowse data structure are being prepared...\n".encode("utf-8"))
+	os.fsync(log)
 	html_output(total_length, seq_lengths_all, headers, HTML, DB_NAME, REF, REF_LINK)
-	log.write("ELAPSED_TIME_HTML = {} s\n".format(time.time() - t_html))
-	
-	log.write("ELAPSED_TIME_PROFREP = {} s\n".format(time.time() - t_profrep))
-	log.close()
+	os.write(log, "ELAPSED_TIME_HTML = {} s\n".format(time.time() - t_html).encode("utf-8"))
+	os.write(log, "ELAPSED_TIME_PROFREP = {} s\n".format(time.time() - t_profrep).encode("utf-8"))
+	os.close(log)
 
 	
 	for subfasta in fasta_list:
@@ -837,7 +819,7 @@ if __name__ == "__main__":
     Required = parser.add_argument_group('required arguments')
     altRequired = parser.add_argument_group('alternative required arguments - prepared datasets')
     blastOpt = parser.add_argument_group('optional arguments - BLAST Search')
-    parallelOpt  = parser.add_argument_group('optional arguments - Parallel Processing')
+    parallelOpt = parser.add_argument_group('optional arguments - Parallel Processing')
     protOpt = parser.add_argument_group('optional arguments - Protein Domains')
     outOpt = parser.add_argument_group('optional arguments - Output Paths')
     cnOpt = parser.add_argument_group('optional arguments - Copy Numbers/Hits ')

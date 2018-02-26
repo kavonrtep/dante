@@ -15,18 +15,24 @@ def create_gff(THRESHOLD, THRESHOLD_SEGMENT, OUTPUT_GFF, files_dict, headers):
 	gff_tmp_list = []
 	for repeat in sorted(set(files_dict.keys()).difference(exclude)):
 		gff_tmp = NamedTemporaryFile(delete=False)
-		positions = [] 
-		with open(files_dict[repeat][0],"r") as repeat_f:
-			for line in repeat_f:
-				if "chrom" in line:
-					idx_ranges(positions, THRESHOLD_SEGMENT, seq_id, gff_tmp, configuration.REPEATS_FEATURE, repeat)
-					seq_id = line.rstrip().split("chrom=")[1]
-					positions = []
+		pos_seq_dict = {}
+		#positions = [] 
+		print(files_dict)
+		with open(files_dict[repeat][0], "r") as repeat_f,  open(files_dict[repeat][2], "r") as quality_f:
+			for line_r, line_q in zip(repeat_f, quality_f):
+				if "chrom" in line_r:
+					#idx_ranges(positions, THRESHOLD_SEGMENT, seq_id, gff_tmp, configuration.REPEATS_FEATURE, repeat, pos_seq_dict)
+					idx_ranges(THRESHOLD_SEGMENT, seq_id, gff_tmp, configuration.REPEATS_FEATURE, repeat, pos_seq_dict)
+					seq_id = line_r.rstrip().split("chrom=")[1]
+					#positions = []
+					pos_seq_dict = {}
 				else:
-					hits = int(line.rstrip().split("\t")[1])
+					hits = int(line_r.rstrip().split("\t")[1])
 					if hits >= THRESHOLD:
-						positions.append(int(line.rstrip().split("\t")[0]))
-		idx_ranges(positions, THRESHOLD_SEGMENT, seq_id, gff_tmp, configuration.REPEATS_FEATURE, repeat)
+						#positions.append(int(line.rstrip().split("\t")[0]))
+						position = int(line_r.rstrip().split("\t")[0])
+						pos_seq_dict[position] = line_q.rstrip().split("\t")[1]
+		idx_ranges(THRESHOLD_SEGMENT, seq_id, gff_tmp, configuration.REPEATS_FEATURE, repeat, pos_seq_dict)
 		gff_tmp_list.append(gff_tmp.name)
 		gff_tmp.close()
 	print(gff_tmp_list)
@@ -35,12 +41,20 @@ def create_gff(THRESHOLD, THRESHOLD_SEGMENT, OUTPUT_GFF, files_dict, headers):
 		os.unlink(tmp)
 		
                                 
-def idx_ranges(indices, THRESHOLD_SEGMENT, seq_id, gff_file, feature, att_name):
+def idx_ranges(THRESHOLD_SEGMENT, seq_id, gff_file, feature, repeat, pos_seq_dict):
+	indices = sorted(pos_seq_dict.keys(), key=int)
+	print(indices)
+	#sum_qual = 0
+	#### len group == 0 ??? ############################################
 	for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):
 		group = list(map(itemgetter(1), group))
 		if len(group) > THRESHOLD_SEGMENT:
+			sum_qual = 0
+			for position in group:
+				sum_qual += int(pos_seq_dict[position])
+			qual_per_reg = sum_qual/len(group)
 			# Take boundaries of the group vectors
-			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={}\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, att_name).encode("utf-8"))
+			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={},Average_PID={}%\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, repeat, round(qual_per_reg)).encode("utf-8"))
 			
 def idx_ranges_N(indices, THRESHOLD_SEGMENT, seq_id, gff_file, feature, att_name):
 	for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):

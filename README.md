@@ -161,7 +161,7 @@ These additional tools can be used for further work with the ProfRep outputs:
 * GFF Region Selector (gff_selection.py)
 
 
-## 2. DANTE ##  
+## 2. DANTE ##
 *- **D**omain based **AN**notation of **T**ransposable **E**lements -* 
 
 There are 2 tools available which also serve as ProfRep modules:
@@ -183,7 +183,8 @@ scripts from the command line
 * python3.4 or higher with packages:	
 	* numpy
 * [lastal](http://last.cbrc.jp/doc/last.html) 744 or higher
-* configuration.py 
+* ProfRep/DANTE modules:
+	* configuration.py 
 
 
 ### Running the scripts ###
