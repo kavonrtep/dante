@@ -12,6 +12,10 @@ def check_file_start(gff_file):
 			count_comment += 1 
 	return count_comment
 
+def check_inputs(REGION):
+	if ":" and "-" not in REGION:
+		raise ValueError('Use correct format for region selection! seq_id:start-end')
+
 
 def main(args):
 	# Command line arguments
@@ -19,11 +23,10 @@ def main(args):
 	GFF_OUT = args.gff_output
 	REGION = args.region
 	NEW_SEQ_ID = args.new_seq_id
-	
-	print(REGION)
-	seq_to_cut = REGION.split(":")[0]
-	int_start = int(REGION.split(":")[1].split("-")[0])
-	int_end = int(REGION.split(":")[1].split("-")[1])
+	check_inputs(REGION)
+	seq_to_cut = ":".join(REGION.split(":")[:-1])
+	int_start = int(REGION.split(":")[-1].split("-")[0])
+	int_end = int(REGION.split(":")[-1].split("-")[1])
 	
 	if GFF_OUT is None:
 		GFF_OUT = "{}_cut{}:{}.gff3".format(GFF_IN, int_start, int_end)

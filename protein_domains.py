@@ -314,40 +314,8 @@ def filter_params(db, query, protein_len):
 	align_similarity = round(count_similarity/len(db),2)
 	## number of interruptions per 100 bp
 	relat_interrupt = round(count_interrupt/math.ceil((len(query)/100)),2)
-	return align_identity, align_similarity, relat_align_len, relat_interrupt, 	
+	return align_identity, align_similarity, relat_align_len, relat_interrupt
 
-def get_version(path):
-	branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True, cwd=path).decode('ascii').strip()
-	shorthash = subprocess.check_output("git log --pretty=format:'%h' -n 1  ", shell=True, cwd=path).decode('ascii').strip()
-	revcount = len(subprocess.check_output("git log --oneline", shell=True,  cwd=path).decode('ascii').split())
-	version_string = ("-------------------------------------"
-		"-------------------------------------\n"
-							  "PIPELINE VERSION         : "
-		"{branch}-rv-{revcount}({shorthash})\n"
-							  "PROTEIN DATABASE VERSION : {PD}\n"
-		"-------------------------------------"
-		"-------------------------------------\n").format(
-								  branch=branch,
-								  shorthash=shorthash,
-								  revcount=revcount,
-								  PD=configuration.LAST_DB_FILE
-                      )
-	return(version_string)
-
-def domains_stat(domains_all, seq_ids, SUMMARY):
-	'''  Create a file containing amounts of individual domains types'''
-	path = os.path.dirname(os.path.realpath(__file__))
-	version_string = get_version(path)
-	with open(SUMMARY, "w") as sumfile:
-		sumfile.write(version_string)
-		count_seq = 0 
-		if seq_ids == []:
-			sumfile.write("NO DOMAINS")
-		for seq_id in seq_ids:
-			sumfile.write("{}\n".format(seq_id))
-			dom_in_seq = Counter(domains_all[count_seq])
-			[sumfile.write("\t{}:{}\n".format(k,v)) for k,v in dom_in_seq.items()]
-			count_seq += 1
 
 
 def line_generator(tab_pipe, maf_pipe, start):
@@ -380,10 +348,6 @@ def line_generator(tab_pipe, maf_pipe, start):
 		raise RuntimeError
 	else:
 		return
-	
-	
-########################################################################################################
-#####################UNDER RECONSTRUCTION ##############################################################
 
 
 def get_version(path):
@@ -430,15 +394,6 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 	
 
 	seq_ids = []
-	domain_reg = []
-	#xminimal_all = []
-	#xmaximal_all = []
-	#domains_all = []
-	#header_gff = "##gff-version 3"
-	#with open(OUTPUT_DOMAIN, "w") as gff:
-		#gff.write("{}\n".format(configuration.HEADER_GFF))
-	#gff = open(OUTPUT_DOMAIN, "a")
-	
 	dom_tmp = NamedTemporaryFile(delete=False)
 	with open(dom_tmp.name, "w") as dom_gff_tmp:
 		path = os.path.dirname(os.path.realpath(__file__))
@@ -500,29 +455,16 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				strand_gff = "-"
 			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
 			count_region += 1
-########################################################################
-		#domain_reg.append(domain_type)
-		#xminimal_all.append(mins)
-		#xmaximal_all.append(maxs)
-		#domains_all.append(domain_reg)
-########################################################################
-		domain_reg = []
 		seq_ids.append(seq_id)
 	os.unlink(query_temp)
 	gff.close()
 	print(gff)
 	dom_tmp.close()
 	if any("DANTE_PART" in x for x in seq_ids):
-		################################################################
-		#[xminimal_all, xmaximal_all, domains_all, seq_ids] = adjust_gff(OUTPUT_DOMAIN, WIN_DOM, OVERLAP_DOM, step)
-		print(gff)
 		adjust_gff(OUTPUT_DOMAIN, dom_tmp.name, WIN_DOM, OVERLAP_DOM, step)
-		################################################################
 	else:
 		shutil.move(dom_tmp.name, OUTPUT_DOMAIN)
-		## skopirovat do OUTPUT_DOMAIN
 		###### os.unlink ###############################################
-	#return xminimal_all, xmaximal_all, domains_all, seq_ids
 	
 def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 	''' Original gff file is adjusted in case of containing cut parts 
@@ -531,23 +473,13 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 	Duplicate domains going through the middle of the overlap are removed.
 	First and the last part (marked as LAST) of a certain sequence are 
 	handled separately as the are overlapped from one side only '''
-	#xminimal_all = []
-	#xmaximal_all = []
-	#dom_all = []
+
 	seq_id_all = []
-	#xminimal = []
-	#xmaximal = []
-	#dom  = []
-	
 	class_dict = defaultdict(int)
 	seen = set()
-	#adjusted = NamedTemporaryFile(suffix='_adj', delete=False)
-	#adjusted_file = adjusted.name
 	print(gff)
-	with open(OUTPUT_DOMAIN, "w") as adjusted_gff:
-		#adjusted_gff.write("##gff-version 3\n")	
+	with open(OUTPUT_DOMAIN, "w") as adjusted_gff:	
 		with open(gff, "r") as primary_gff:
-			#next(primary_gff)
 			start = True
 			for line in primary_gff:
 				if line.startswith("#"):
@@ -564,12 +496,6 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 						part = int(split_line[0].split("_DANTE_PART")[1].split(":")[0].split("_")[0])
 						if seq_id != seq_id_all[-1]:
 							seq_id_all.append(seq_id)
-							#xminimal_all.append(xminimal)
-							#xmaximal_all.append(xmaximal)
-							#dom_all.append(dom)
-							#xminimal = []
-							#xmaximal = []
-							#dom = []
 							
 						## first part of the sequence
 						if part == 1:
@@ -578,16 +504,10 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 								if line_without_id not in seen:
 									adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 									class_dict[classification] += 1
-									#xminimal.append(int(split_line[3]))
-									#xmaximal.append(int(split_line[4]))
-									#dom.append(split_line[-1].split(";")[0].split("=")[1])
 									seen.add(line_without_id)
 							elif int(split_line[4]) < cut_end:
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								class_dict[classification] += 1
-								#xminimal.append(int(split_line[3]))
-								#xmaximal.append(int(split_line[4]))
-								#dom.append(split_line[-1].split(";")[0].split("=")[1])
 									
 						## last part of the sequence
 						elif "LAST" in split_line[0]:
@@ -596,17 +516,11 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 								if line_without_id not in seen:
 									adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 									class_dict[classification] += 1
-									#xminimal.append(int(split_line[3]))
-									#xmaximal.append(int(split_line[4]))
-									#dom.append(split_line[-1].split(";")[0].split("=")[1])
 									seen.add(line_without_id)
 							elif int(split_line[3]) > cut_start: 
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								class_dict[classification] += 1
-								#xminimal.append(int(split_line[3]))
-								#xmaximal.append(int(split_line[4]))
-								#dom.append(split_line[-1].split(";")[0].split("=")[1])
-								
+
 						## middle part of the sequence
 						else:
 							cut_start = OVERLAP_DOM/2 + (part-1)*step
@@ -615,16 +529,10 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 								if line_without_id not in seen:
 									adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 									class_dict[classification] += 1
-									#xminimal.append(int(split_line[3]))
-									#xmaximal.append(int(split_line[4]))
-									#dom.append(split_line[-1].split(";")[0].split("=")[1])
 									seen.add(line_without_id)
 							elif int(split_line[3]) > cut_start and int(split_line[4]) < cut_end:
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								class_dict[classification] += 1
-								#xminimal.append(int(split_line[3]))
-								#xmaximal.append(int(split_line[4]))
-								#dom.append(split_line[-1].split(";")[0].split("=")[1])	
 					
 					## not divived
 					############################### NOT NECESSARY ????!!!! #############
@@ -633,23 +541,8 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 					else:
 						if seq_id != seq_id_all[-1]:
 							seq_id_all.append(seq_id)
-							#xminimal_all.append(xminimal)
-							#xmaximal_all.append(xmaximal)
-							#dom_all.append(dom)
-							#xminimal = []
-							#xmaximal = []
-							#dom = []
 						adjusted_gff.write(line)
-						class_dict[classification] += 1
-						#xminimal.append(int(split_line[3]))
-						#xmaximal.append(int(split_line[4]))
-						#dom.append(split_line[-1].split(";")[0].split("=")[1])		
-		#xminimal_all.append(xminimal)
-		#xmaximal_all.append(xmaximal)
-		#dom_all.append(dom)
-		#adjusted.close()
-		#shutil.move(adjusted_file, OUTPUT_DOMAIN)
-		#return xminimal_all, xmaximal_all, dom_all, seq_id_all 		
+						class_dict[classification] += 1	
 		
 	
 	
@@ -666,14 +559,7 @@ def main(args):
 	THRESHOLD_SCORE = args.threshold_score
 	WIN_DOM = args.win_dom
 	OVERLAP_DOM = args.overlap_dom
-	
-	####################################################################
-	#WIN_DOM = 100000
-	#OVERLAP_DOM = 3000
-	####################################################################
 
-	#if SUMMARY is None:
-		#SUMMARY = configuration.DOM_SUMMARY
 	if OUTPUT_DOMAIN is None:
 		OUTPUT_DOMAIN = configuration.DOMAINS_GFF
 	if os.path.isdir(LAST_DB):
@@ -693,12 +579,8 @@ def main(args):
 			if not os.path.exists(OUTPUT_DIR): 
 				os.makedirs(OUTPUT_DIR)
 		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
-		SUMMARY = os.path.join(OUTPUT_DIR, os.path.basename(SUMMARY))
-	####################################################################
-	#[xminimal, xmaximal, domains_all, seq_ids] = domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 	domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
-	####################################################################
-	#domains_stat(domains_all, seq_ids, SUMMARY)
+
 	
 	
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t))

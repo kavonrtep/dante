@@ -210,7 +210,6 @@ def main(args):
 			OUTPUT_DIR = os.path.dirname(os.path.abspath(OUTPUT_DOMAIN))
 		FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
 		DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
-		ELEM_TABLE = os.path.join(OUTPUT_DIR, os.path.basename(ELEM_TABLE))
 
 	[xminimals_all, xmaximals_all, domains_all, seq_ids_all] = filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT)
 	get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ)
