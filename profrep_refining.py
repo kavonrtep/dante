@@ -6,6 +6,9 @@ import os
 from tempfile import NamedTemporaryFile
 from collections import defaultdict
 import configuration
+import sys
+
+
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -14,6 +17,7 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected')
+
 
 def check_dom_gff(DOM_GFF):
 	with open(DOM_GFF) as domains_f:
@@ -36,7 +40,6 @@ def create_dom_dict(DOM_GFF):
 			next(domains)
 		for line in domains:
 			seq_id = line.split("\t")[0]
-			#ann_dom_lineage = line.split("\t")[8].split(";")[1].split("=")[-1].split("|")[-1]
 			ann_dom_lineage = line.split("\t")[8].split(";")[1].split("=")[-1]
 			start_dom = int(line.split("\t")[3])      
 			end_dom = int(line.split("\t")[4])
@@ -44,7 +47,6 @@ def create_dom_dict(DOM_GFF):
 			dict_domains[seq_id].append((start_dom, end_dom, ann_dom_lineage, strand_dom))
 	return dict_domains
 	
-
 
 def check_file_start(gff_file):
 	count_comment = 0
@@ -56,13 +58,12 @@ def check_file_start(gff_file):
 	return count_comment
 
 	
-def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, dict_domains, domains_classes):
+def refining_intervals(OUT_REFINED, gff_removed, GAP_TH, DOM_NUM, dict_domains, domains_classes):
 	with open(OUT_REFINED, "w") as joined_intervals:
-		joined_intervals.write("{}\n".format(configuration.HEADER_GFF))
-		start_line = check_file_start(REPEATS_GFF)
-		with open(REPEATS_GFF, "r") as repeats:
+		start_line = check_file_start(gff_removed)
+		with open(gff_removed, "r") as repeats:
 			for comment_idx in range(start_line):
-				next(repeats)
+				joined_intervals.write(repeats.readline())
 			joined = False
 			inicial = repeats.readline()
 			print(inicial)
@@ -70,14 +71,14 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, dict_domains, 
 				seq_id_ini = inicial.rstrip().split("\t")[0] 
 				start_ini = int(inicial.rstrip().split("\t")[3])
 				end_ini = int(inicial.rstrip().split("\t")[4]) 
-				ann_ini = inicial.rstrip().split("\t")[8].split("=")[-1]
+				ann_ini = inicial.rstrip().split("\t")[8].split(";")[0].split("=")[-1]
 				starts_part = [start_ini]
 				ends_part = [end_ini]
 				for line in repeats:
 					seq_id = line.rstrip().split("\t")[0]
 					start = int(line.rstrip().split("\t")[3])
 					end = int(line.rstrip().split("\t")[4])
-					ann = line.rstrip().split("\t")[8].split("=")[-1]
+					ann = line.rstrip().split("\t")[8].split(";")[0].split("=")[-1]
 					if seq_id != seq_id_ini:
 						if dict_domains and joined is True and configuration.WITH_DOMAINS in ann_ini:
 							dict_domains = dom_refining(joined_intervals, dict_domains, seq_id_ini, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM, domains_classes)
@@ -114,6 +115,62 @@ def refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, dict_domains, 
 				del(ends_part)
 
 
+def create_clusters(REPEATS_GFF, BORDERS):
+	start_line = check_file_start(REPEATS_GFF)
+	cluster = []
+	end_cluster = 0
+	seq_id_ini = None
+	gff_removed_parts = NamedTemporaryFile(delete=False)
+	with open(REPEATS_GFF, "r") as repeats:
+		for comment_idx in range(start_line):
+			gff_removed_parts.write(repeats.readline().encode("utf-8"))
+		for interval in repeats:
+			seq_id = interval.split("\t")[0]
+			start = int(interval.split("\t")[3])
+			end = int(interval.split("\t")[4])
+			ann = interval.split("\t")[8].split(";")[0].split("=")[-1]
+			pid = int(interval.rstrip().split("\t")[8].split(";")[1].split("=")[-1].rstrip("%"))
+			if seq_id != seq_id_ini:
+				if len(cluster) > 1:
+					remove_low_qual(cluster, BORDERS, gff_removed_parts)
+				elif cluster:
+					gff_removed_parts.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Average_PID={}%\n".format(cluster[0][0], configuration.SOURCE_PROFREP, configuration.REPEATS_FEATURE, cluster[0][1], cluster[0][2], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, cluster[0][3], cluster[0][4]).encode("utf-8"))
+				seq_id_ini = seq_id
+			if start <= end_cluster or end_cluster == 0:
+				cluster.append([seq_id, start, end, ann, pid])
+				if end > end_cluster:
+					end_cluster = end
+			else:
+				if len(cluster) > 1:			
+					remove_low_qual(cluster, BORDERS, gff_removed_parts)
+				elif cluster:
+					gff_removed_parts.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Average_PID={}%\n".format(cluster[0][0], configuration.SOURCE_PROFREP, configuration.REPEATS_FEATURE, cluster[0][1], cluster[0][2], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, cluster[0][3], cluster[0][4]).encode("utf-8"))
+				end_cluster = end
+				cluster = [[seq_id, start, end, ann, pid]]
+	if cluster:
+		remove_low_qual(cluster, BORDERS, gff_removed_parts)
+	gff_removed_parts.close()
+	print(gff_removed_parts.name)
+	return gff_removed_parts.name
+
+
+def remove_low_qual(cluster, BORDERS, gff_removed_parts):
+	score_sorted = sorted(cluster, key=lambda x: int(x[4]), reverse=True)
+	for interval in score_sorted:
+		start_toler = interval[1] - BORDERS
+		end_toler =  interval[2] + BORDERS
+		score_best = interval[4]
+		## difference
+		for item in score_sorted[:]:
+			if item[1] >= start_toler and item[2] <= end_toler:
+				if item[4] <= 0.95 * score_best: ### 5% off
+					score_sorted.remove(item)
+	position_sorted = sorted(score_sorted, key=lambda x: int(x[1]))
+	for interval_refined in position_sorted:
+		gff_removed_parts.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Average_PID={}%\n".format(interval_refined[0], configuration.SOURCE_PROFREP, configuration.REPEATS_FEATURE, interval_refined[1], interval_refined[2], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, interval_refined[3], interval_refined[4]).encode("utf-8"))
+
+	
+
 def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann_ini, starts_part, ends_part, DOM_NUM, domains_classes):
 	count_dom = 0
 	index_dom = 0
@@ -122,11 +179,8 @@ def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann
 	for dom_attributes in dict_domains[seq_id]:
 		ann_dom = dom_attributes[2]
 		if dom_attributes[0] >= start_ini and dom_attributes[1] <= end_ini:
-			######################################################################
-			#if ann_dom == ann_ini:
 			repeat_class = "|".join(ann_ini.split("|")[1:])
 			if ann_dom in domains_classes and ann_dom == repeat_class:
-			######################################################################
 				strands.append(dom_attributes[3])
 				count_dom += 1
 			index_dom += 1 
@@ -158,16 +212,20 @@ def main(args):
 	OUT_REFINED = args.out_refined 
 	INCLUDE_DOM = args.include_dom
 	CLASS_TBL = args.class_tbl
+	BORDERS = args.borders
 	
 	if CLASS_TBL and os.path.isdir(CLASS_TBL):
 		CLASS_TBL = os.path.join(CLASS_TBL, configuration.CLASS_FILE)
-	
+
+	gff_removed = create_clusters(REPEATS_GFF, BORDERS)
+
 	if INCLUDE_DOM:
 		unique_classes = get_unique_classes(CLASS_TBL)
 		dict_domains = create_dom_dict(DOM_GFF)
-		joined_intervals = refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, dict_domains, unique_classes)
+		joined_intervals = refining_intervals(OUT_REFINED, gff_removed, GAP_TH, DOM_NUM, dict_domains, unique_classes)
 	else:
-		joined_intervals = refining_intervals(OUT_REFINED, REPEATS_GFF, GAP_TH, DOM_NUM, None, None)
+		joined_intervals = refining_intervals(OUT_REFINED, gff_removed, GAP_TH, DOM_NUM, None, None)
+	os.unlink(gff_removed.name)
 
 		
 if __name__ == "__main__":
@@ -178,15 +236,17 @@ if __name__ == "__main__":
 						help='query sequence to be processed')
     parser.add_argument('-dom_gff', '--domains_gff', type=str,
 						help='query sequence to be processed')
-    parser.add_argument('-gth', '--gap_threshold', type=int, default=500,
+    parser.add_argument('-gth', '--gap_threshold', type=int, default=200,
 						help='query sequence to be processed')
     parser.add_argument('-or', '--out_refined', type=str, default="output_refined.gff",
 						help='query sequence to be processed')
-    parser.add_argument('-dn', '--dom_number', type=int, default=1,
+    parser.add_argument('-dn', '--dom_number', type=int, default=3,
                         help='number of domains present to confirm one element type')
     parser.add_argument('-id', '--include_dom', type=str2bool, default=False,
 						help='Include domains information to refine repeats regions output')
     parser.add_argument('-ct', '--class_tbl',
 						help='Classification table to check the level of classification')
+    parser.add_argument('-br', '--borders', type=int, default=10,
+						help='Number of bp to be tolerated from one or the other side of two overlaping regions when comparing quality ')
     args = parser.parse_args()
     main(args)

@@ -11,12 +11,12 @@ python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} -
 </command>
 <inputs>
 	<param format="gff" type="data" name="repeats_gff" label="Choose repeats GFF3 file from ProfRep" />
-	<param name="gap_th" type="integer" value="100" label="Threshold for tolerated gap between two repeat regions to be joined" help="" />
+	<param name="gap_th" type="integer" value="200" label="Threshold for tolerated gap between two repeat regions to be joined" help="" />
 	<conditional name="include_domains">
 	 <param name="domains" type="boolean" display="checkbox" truevalue="true" falsevalue="false" checked="true" label="Include protein domains information" help = "This helps to improve the accuracy of repeats regions joining" />
      <when value="true">
 	   <param format="gff" type="data" name="dom_gff" label="Choose GFF3 file containing protein domains" help="" />
-       <param name="dom_num" type="integer" value="4" min="0" max="10" label="Minimum domains" help="Number of domains at least present per element to confirm the regions joining" />
+       <param name="dom_num" type="integer" value="3" min="0" max="10" label="Minimum domains" help="Number of domains at least present per element to confirm the regions joining" />
      </when>
 	</conditional>
 </inputs>
