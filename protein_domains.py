@@ -458,13 +458,15 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		seq_ids.append(seq_id)
 	os.unlink(query_temp)
 	gff.close()
-	print(gff)
 	dom_tmp.close()
+	
 	if any("DANTE_PART" in x for x in seq_ids):
 		adjust_gff(OUTPUT_DOMAIN, dom_tmp.name, WIN_DOM, OVERLAP_DOM, step)
 	else:
-		shutil.move(dom_tmp.name, OUTPUT_DOMAIN)
-		###### os.unlink ###############################################
+		shutil.copy2(dom_tmp.name, OUTPUT_DOMAIN)
+	os.unlink(dom_tmp.name)
+
+		
 	
 def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 	''' Original gff file is adjusted in case of containing cut parts 
@@ -477,7 +479,6 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 	seq_id_all = []
 	class_dict = defaultdict(int)
 	seen = set()
-	print(gff)
 	with open(OUTPUT_DOMAIN, "w") as adjusted_gff:	
 		with open(gff, "r") as primary_gff:
 			start = True
@@ -533,18 +534,13 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 							elif int(split_line[3]) > cut_start and int(split_line[4]) < cut_end:
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								class_dict[classification] += 1
-					
-					## not divived
-					############################### NOT NECESSARY ????!!!! #############
-					####################################################################
-					####################################################################
+					# not divived
 					else:
 						if seq_id != seq_id_all[-1]:
 							seq_id_all.append(seq_id)
 						adjusted_gff.write(line)
 						class_dict[classification] += 1	
 		
-	
 	
 def main(args):
 	

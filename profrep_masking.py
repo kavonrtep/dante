@@ -49,7 +49,7 @@ def lower_mask(QUERY, repeats_all, MASKED):
 
 
 def N_mask(QUERY, repeats_all, MASKED):
-	allSeqs = list(SeqIO.parse(QUERY,'fasta'))
+	allSeqs = list(SeqIO.parse(QUERY, 'fasta'))
 	for singleSeq in allSeqs:
 		mutable = MutableSeq(str(singleSeq.seq),  generic_dna)
 		for index in repeats_all[singleSeq.id]:

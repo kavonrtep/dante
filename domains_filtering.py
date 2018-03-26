@@ -55,7 +55,7 @@ def get_version(path):
 
 	
 def write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict, dom_dict, version_string):
-	with open(FILT_DOM_GFF,"w") as filt_gff:
+	with open(FILT_DOM_GFF, "w") as filt_gff:
 		filt_gff.write("{}\n".format(configuration.HEADER_GFF))
 		filt_gff.write(version_string)
 		filt_gff.write("##SEQ\tDOMAIN\tCOUNTS\n")
@@ -95,12 +95,10 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 	with open(OUTPUT_DOMAIN, "r") as gff_all:
 		for comment_idx in range(count_comment):
 				next(gff_all)
-		################ TMP filtered ##################################
 		filt_dom_tmp = NamedTemporaryFile(delete=False)
 		dom_dict = defaultdict(lambda: defaultdict(int))
 		orig_class_dict = defaultdict(int)
 		filt_class_dict = defaultdict(int)
-		################################################################
 		with open(filt_dom_tmp.name, "w") as gff_filtered:
 			seq_ids_all = [] 
 			xminimals = []
@@ -114,18 +112,15 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 				attributes = line.rstrip().split("\t")[-1]
 				classification = attributes.split(";")[1].split("=")[1]
 				orig_class_dict[classification] += 1
-				##################### SEQ ID DORIESIT ##############
 				if classification != configuration.AMBIGUOUS_TAG:
 					al_identity = float(attributes.split(";")[-4].split("=")[1])
 					al_similarity = float(attributes.split(";")[-3].split("=")[1])
 					al_length = float(attributes.split(";")[-2].split("=")[1])
 					relat_interrupt = float(attributes.split("\t")[-1].split(";")[-1].split("=")[1])
 					dom_type = attributes.split(";")[0].split("=")[1]
-					####################################################
 					seq_id = line.split("\t")[0]
 					xminimal = int(line.split("\t")[3])	
-					xmaximal = int(line.split("\t")[4])		
-					####################################################		
+					xmaximal = int(line.split("\t")[4])			
 					if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and (ELEMENT in classification):			
 						gff_filtered.writelines(line)
 						filt_class_dict[classification] += 1
@@ -141,20 +136,15 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 							xminimals = []
 							xmaximals = []
 							domains = []
-						
-						############################################
 						xminimals.append(xminimal)
 						xmaximals.append(xmaximal)
 						domains.append(dom_type)	
-	####################################################################	
 	path = os.path.dirname(os.path.realpath(__file__))
 	version_string = get_version(path)
-	###### ??????????? #################################################
-	#filt_dom_tmp.close()
+	filt_dom_tmp.close()
 	write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict, dom_dict, version_string)	
 	print(filt_dom_tmp.name)
 	os.unlink(filt_dom_tmp.name)
-	####################################################################
 	xminimals_all.append(xminimals)
 	xmaximals_all.append(xmaximals)
 	domains_all.append(domains)	

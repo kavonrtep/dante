@@ -150,7 +150,6 @@ def create_clusters(REPEATS_GFF, BORDERS):
 	if cluster:
 		remove_low_qual(cluster, BORDERS, gff_removed_parts)
 	gff_removed_parts.close()
-	print(gff_removed_parts.name)
 	return gff_removed_parts.name
 
 

@@ -87,9 +87,10 @@ READS_ALL_REDUCED = "reads_all_reduced"
 ######### PROFREP_REFINING #############################################
 WITH_DOMAINS = "mobile_element"
 
-######### PROTEIN DOMAINS ##############################################
+######### DANTE ##############################################
 MAIN_GIT_DIR = os.path.dirname(os.path.realpath(__file__)) 
 DOMAINS_DATA = os.path.join(MAIN_GIT_DIR, "domains_data")
+TMP = "tmp"
 SC_MATRIX = os.path.join(DOMAINS_DATA, "blosum80.txt")
 AMBIGUOUS_TAG = "Ambiguous_domain"
 ## IO
