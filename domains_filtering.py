@@ -58,14 +58,7 @@ def write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict, dom
 	with open(FILT_DOM_GFF, "w") as filt_gff:
 		filt_gff.write("{}\n".format(configuration.HEADER_GFF))
 		filt_gff.write(version_string)
-		filt_gff.write("##SEQ\tDOMAIN\tCOUNTS\n")
-		if not dom_dict:
-			filt_gff.write("##NO DOMAINS\n")
-		for seq in sorted(dom_dict.keys()):
-			for dom, count in sorted(dom_dict[seq].items()):
-				filt_gff.write("##{}\t{}\t{}\n".format(seq, dom, count))
-		filt_gff.write("##-----------------------------------------------\n"
-		"##CLASSIFICATION\tORIGINAL_COUNTS\tFILTERED_COUNTS\n")
+		filt_gff.write("##CLASSIFICATION\tORIGINAL_COUNTS\tFILTERED_COUNTS\n")
 		if not orig_class_dict:
 			filt_gff.write("##NO DOMAINS CLASSIFICATIONS\n")
 		for classification in sorted(orig_class_dict.keys()):
@@ -73,6 +66,13 @@ def write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict, dom
 				filt_gff.write("##{}\t{}\t{}\n".format(classification, orig_class_dict[classification], filt_class_dict[classification]))
 			else:
 				filt_gff.write("##{}\t{}\t{}\n".format(classification, orig_class_dict[classification], 0 ))
+		filt_gff.write("##-----------------------------------------------\n"
+		"##SEQ\tDOMAIN\tCOUNTS\n")
+		if not dom_dict:
+			filt_gff.write("##NO DOMAINS\n")
+		for seq in sorted(dom_dict.keys()):
+			for dom, count in sorted(dom_dict[seq].items()):
+				filt_gff.write("##{}\t{}\t{}\n".format(seq, dom, count))
 		filt_gff.write("##-----------------------------------------------\n")
 		with open(filt_dom_tmp.name, "r") as filt_tmp:
 			for line in filt_tmp:

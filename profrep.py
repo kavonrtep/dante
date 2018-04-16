@@ -30,6 +30,7 @@ import sys
 import pickle
 import shutil
 import warnings
+import random
 
 t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
@@ -440,8 +441,13 @@ def jbrowse_prep_dom(HTML_DATA, QUERY, OUT_DOMAIN_GFF, OUTPUT_GFF, N_GFF, total_
 			sorted_keys.insert(0, "ALL")
 			ending_lines = adjust_tracklist(jbrowse_data_path)
 			track_list = open(os.path.join(jbrowse_data_path, "trackList.json"), "a")
+			color_avail = len(configuration.COLORS_HEX)
 			for repeat_id in sorted_keys:
-				color = configuration.COLORS_HEX[count]
+				if count <= color_aval-1
+					color = configuration.COLORS_HEX[count]
+				else:
+					r = lambda: random.randint(0,255)
+					color = '#%02X%02X%02X' % (r(),r(),r())
 				count += 1
 				bw_name = "{}.bw".format(re.sub('[\/\|]','_',repeat_id))
 				subprocess.call(["wigToBigWig", files_dict[repeat_id][0], os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE), os.path.join(jbrowse_data_path, bw_name)])
@@ -467,8 +473,13 @@ def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN,
 			sorted_keys.insert(0, "ALL")
 			ending_lines = adjust_tracklist(jbrowse_data_path)
 			track_list = open(os.path.join(jbrowse_data_path, "trackList.json"), "a")
+			color_avail = len(configuration.COLORS_HEX)
 			for repeat_id in sorted_keys:
-				color = configuration.COLORS_HEX[count]
+				if count <= color_aval-1
+					color = configuration.COLORS_HEX[count]
+				else:
+					r = lambda: random.randint(0,255)
+					color = '#%02X%02X%02X' % (r(),r(),r())
 				count += 1
 				bw_name = "{}.bw".format(re.sub('[\/\|]','_',repeat_id))
 				subprocess.call(["wigToBigWig", files_dict[repeat_id][0], os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE), os.path.join(jbrowse_data_path, bw_name)])

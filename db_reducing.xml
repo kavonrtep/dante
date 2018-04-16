@@ -1,3 +1,5 @@
+
+
 <tool id="db_reducing" name="ProfRep DB Reducing" version="1.0.0">
 <description> Tool to reduce database of reads sequences based on the reads similarity in order to speed up ProfRep analysis </description>
 <requirements>
@@ -21,6 +23,8 @@ python3 ${__tool_directory__}/profrep_db_reducing.py --reads_all ${reads_all} --
  <help>
 
 **WHAT IT DOES**
+
+This tool will reduce the database of all reads based on similarities between them. Basically, it creates clusters of similar reads and the reduced database will then be composed of one representative read for all from the cluster, also indicating the number of reads that it represents. As the new reads database is produced, CLS file containing reads connected to clusters has to be modified as well. The actual reduction level depends on number of clusters envolved and how big they are. Default value for cluster size to be involved in reducing is 1000, which means all clusters containing 1000 and more reads are going to be reduced. 
 
  </help>
 </tool>

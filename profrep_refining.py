@@ -9,7 +9,6 @@ import configuration
 import sys
 
 
-
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
@@ -235,11 +234,11 @@ if __name__ == "__main__":
 						help='query sequence to be processed')
     parser.add_argument('-dom_gff', '--domains_gff', type=str,
 						help='query sequence to be processed')
-    parser.add_argument('-gth', '--gap_threshold', type=int, default=200,
+    parser.add_argument('-gth', '--gap_threshold', type=int, default=250,
 						help='query sequence to be processed')
     parser.add_argument('-or', '--out_refined', type=str, default="output_refined.gff",
 						help='query sequence to be processed')
-    parser.add_argument('-dn', '--dom_number', type=int, default=3,
+    parser.add_argument('-dn', '--dom_number', type=int, default=2,
                         help='number of domains present to confirm one element type')
     parser.add_argument('-id', '--include_dom', type=str2bool, default=False,
 						help='Include domains information to refine repeats regions output')
