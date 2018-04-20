@@ -350,7 +350,7 @@ def line_generator(tab_pipe, maf_pipe, start):
 		return
 
 
-def get_version(path):
+def get_version(path, LAST_DB):
 	branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True, cwd=path).decode('ascii').strip()
 	shorthash = subprocess.check_output("git log --pretty=format:'%h' -n 1  ", shell=True, cwd=path).decode('ascii').strip()
 	revcount = len(subprocess.check_output("git log --oneline", shell=True,  cwd=path).decode('ascii').split())
@@ -362,7 +362,7 @@ def get_version(path):
 								  branch=branch,
 								  shorthash=shorthash,
 								  revcount=revcount,
-								  PD=configuration.LAST_DB_FILE
+								  PD=os.path.basename(LAST_DB)
                       )
 	return version_string
 
@@ -379,7 +379,6 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 	- MAF format to gain alignment and original sequence
 	'''		
 	
-	print(OUTPUT_DOMAIN)
 	
 	step = WIN_DOM - OVERLAP_DOM
 	[headers, above_win, below_win, lens_above_win, seq_starts, seq_ends] = characterize_fasta(QUERY, WIN_DOM)
@@ -397,7 +396,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 	dom_tmp = NamedTemporaryFile(delete=False)
 	with open(dom_tmp.name, "w") as dom_gff_tmp:
 		path = os.path.dirname(os.path.realpath(__file__))
-		version_string = get_version(path)
+		version_string = get_version(path, LAST_DB)
 		write_info(dom_gff_tmp, version_string)
 	gff = open(dom_tmp.name, "a")
 	start = True

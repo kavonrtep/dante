@@ -6,15 +6,20 @@
 <command>
 python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff} --html_file ${html_file}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff} 
---protein_database ${__tool_data_path__ }/protein_domains
---classification ${__tool_data_path__ }/protein_domains
 --tool_dir ${__tool_data_path__ }/profrep
---protein_domains ${domains_switch}
+--protein_domains ${dm.domains_switch}
 --jbrowse_bin \${JBROWSE_BIN}
 --log_file ${log_file}
 
- #if $domains_switch:
+ #if $dm.domains_switch:
 	--domain_gff ${DomGff}
+	#if $dm.db_type == 'vir':
+		--protein_database ${__tool_data_path__ }/protein_domains/Viridiplantae_pdb
+		--classification ${__tool_data_path__ }/protein_domains/Viridiplantae_class
+	#elif $dm.db_type == 'met'
+		--protein_database ${__tool_data_path__ }/protein_domains/Metazoa_pdb
+		--classification ${__tool_data_path__ }/protein_domains/Metazoa_class
+	#end if
  #end if
 
  #if $advanced_options.opts:  
@@ -72,7 +77,15 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
    </conditional>
   </when>
  </conditional>
+ <conditional name="dm" >
  <param name="domains_switch" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Show protein domains"/>
+  <when value="True">
+	<param name="db_type" type="select" label="Select protein domains database" help="">
+     <option value="vir">Viridiplantae</option>
+     <option value="met">Metazoa</option>
+	</param>
+  </when>
+ </conditional>
  <conditional name="advanced_options" >
   <param name="opts" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="False" label="Advanced options"/>
   <when value="True">
