@@ -75,7 +75,7 @@ CHROM_SIZES_FILE = "chrom_sizes.txt"
 ######### EXTRACT_DATA_DOR_PROFREP #####################################
 HITSORT_CLS = "seqclust/clustering/hitsort.cls"
 READS_ALL = "seqclust/sequences/sequences.fasta"
-ANNOTATION = "CLUSTER_TABLE.csv"
+ANNOTATION = "PROFREP_CLASSIFICATION_TEMPLATE.csv"
 
 ######### PROFREP_DB_REDUCING ##########################################
 MEM_LIM = 1500 # MB

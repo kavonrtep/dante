@@ -1,6 +1,6 @@
 
 <tool id="profrep_refine" name="ProfRep Refiner" version="1.0.0">
-<description> Tool to polish the raw ProfRep output in order to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
+<description> Tool to polish the raw ProfRep output in order to evaluate nested regions of different classifications and to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
 <command>
 python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} --out_refined ${out_refined} --gap_threshold ${gap_th} --include_dom ${include_domains.domains}
  #if $include_domains.domains:
@@ -29,9 +29,12 @@ python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} -
 **WHAT IT DOES**
 
 Refining process of repeats regions run in two consecutive steps:
-1. Prior the regions interconnecting, it is necessary to filter out some nested regions of different classifcation which can disrupt the process. To differentiate those from the ones that we want to preserve because they can be of some importance we set the following rules: At first clusters of all overlapping repeat regions are created. Within a cluster, regions are gradually checked based on descending PID. All the other regions occuring inside the current one, with some borders tolerance on each side (defaultly 10 bp), are removed in case their PID is more than 5% lower than the current region. Otherwise it will be preserved.
-The region is removed if it is inside another region However, the default quality filtering is not too stringent and to differentiate these situations from lower quality regions and allow   These situations are not necessarily connected with low sensitivity of similarity search and false positive hits. 
-2. Then the actual region joining follows in the next step. It searches for consecutive repeats to create segments with the same classification that are not further from each other than a gap threshold (defaultly 100). These segments cannot be corrupted by repeats of different classification. The confidence of such region is defaultly supported by the domain information. A certain minimum amount of protein domains of equal orientation must be present inside the new region and their classification must correspond to the repeats classification. The classification must be also unambiguous in a way, that individual parts are classified to the very last classification level (checked based on domains classification table). Repetitive elements which are not coded by protein domains, such as satellites or MITes (i.e. not mobile elements), are not checked for the additional domains information and the regions are connected only based on the gap criterion.
+
+	1. Prior the regions interconnecting, it is necessary to filter out some nested regions of different classifcation which can disrupt the process. To differentiate those from the ones that we want to preserve because they can be of some importance we set the following rules: At first clusters of all overlapping repeat regions are created. Within a cluster, regions are gradually checked based on descending PID. All the other regions occuring inside the current one, with some borders tolerance on each side (defaultly 10 bp), are removed in case their PID is more than 5% lower than the current region. Otherwise it will be preserved.
+	
+	!NOTE Average PID (perentage of identity) is counted as the mean of uniform classification hit's PIDs per each position and then it is averaged within the whole region reported in repeats GFF. 
+
+	2. Then the actual region joining follows in the next step. It searches for consecutive repeats to create segments with the same classification that are not further from each other than a gap threshold (defaultly 100). These segments cannot be corrupted by repeats of different classification. The confidence of such region is defaultly supported by the domain information. A certain minimum amount of protein domains of equal orientation must be present inside the new region and their classification must correspond to the repeats classification. The classification must be also unambiguous in a way, that individual parts are classified to the very last classification level (checked based on domains classification table). Repetitive elements which are not encoded by protein domains, such as satellites or MITes (i.e. not mobile elements), are not checked for the additional domains information and the regions are connected only based on the gap criterion.
 
 </help>
 </tool>

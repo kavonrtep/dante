@@ -124,8 +124,6 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 					xmaximals.append(xmaximal)
 					domains.append(dom_type)	
 	path = os.path.dirname(os.path.realpath(__file__))
-	####################################################################
-	filt_dom_tmp.close()
 	write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict, dom_dict, version_lines)	
 	print(filt_dom_tmp.name)
 	os.unlink(filt_dom_tmp.name)

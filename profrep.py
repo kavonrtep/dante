@@ -853,7 +853,7 @@ if __name__ == "__main__":
                         help='convert hits to copy numbers')
     cnOpt.add_argument('-gs', '--genome_size', type=float,
                         help='genome size is required when converting hits to copy numbers and you use custom data')
-    cnOpt.add_argument('-thr', '--threshold_repeat', type=int, default=5,
+    cnOpt.add_argument('-thr', '--threshold_repeat', type=int, default=3,
 						help='threshold for hits/copy numbers per position to be considered repetitive')
     cnOpt.add_argument('-ths', '--threshold_segment', type=int, default=80,
                         help='threshold for the length of repetitive segment to be reported')                       

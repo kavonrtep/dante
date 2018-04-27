@@ -134,6 +134,23 @@ Please keep in mind these have to be in a standardizied format (especially the c
 You can also use your own classification of clusters - in this case ProfRep. However, if you want to apply further regions joining based on protein domains occurance (ProfRep refining tool), classification strings must follow certain conventions:
 
 
+**Classification table** 
+
+- TAB-separated list of cluster numbers and their repetitive classification. The list does not have to necessarily contain all the clusters. The clusters can be classified either automatically (RE output) or manually - classification may be an arbitrary custom string. However, it is highly desirable to use the **classification consensus**, specifically it is demanded for *ProfRep Refiner* when joining fragmented segments based on **protein domains**. This means:
+
+* individual classification levels are separated by a pipe character "|"		
+* the first classification level is derived from the origin of the repetitive sequence, i.e. repeat, organelle.
+* mobile elements classification should follow protein domains classification 
+* for the rest of repeats (e.g. satellites, MITEs) arbitrary custom classification with any number of levels is allowed
+
+Example:
+
+		42      repeat|mobile_element|Class_I|LTR|Ty1/copia|SIRE
+		43      repeat|mobile_element|Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Ogre/Tat|TatIV/Ogre
+		45      repeat|mobile_element|Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Athila
+		48      repeat|satellite|PisTR/B
+		134     organelle|plastid
+
 
 **WHAT IT DOES**
 

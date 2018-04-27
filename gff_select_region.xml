@@ -7,7 +7,7 @@ python3 ${__tool_directory__}/gff_selection.py  --gff_input ${gff_input} --regio
 </command>
 <inputs>
 	<param format="gff" type="data" name="gff_input" label="Choose input GFF3 file to cut" />
-	<param name="region" type="text" label="Choose the sequence and region to cut (including both end positions)" help="for example chr1:1000-2000" />
+	<param name="region" type="text" label="Choose the sequence and region to cut (including both end positions)" help="for example chr1 or chr1:1000-2000" />
 	<param name="new_seq_id" type="text" value="" label="Type in a new sequence name for the cut region" help="In case of using JBrowse it must correspond to the cut reference sequence name. If not specified, the original name with cut coordinates will be reported" />
 </inputs>
 <outputs>
@@ -15,11 +15,21 @@ python3 ${__tool_directory__}/gff_selection.py  --gff_input ${gff_input} --regio
 </outputs>
 
 <help>
+	
+**WHAT IT DOES**
 
-PLEASE NOTE
-The coordinates of new regions in the modified GFF file will be recalculated with respect to the selected range. Only the GFF records that are entirely inside the selected region will be reported 
+This tools enables to extract a region of interest from input GFF. It facilitates e.g. comparing features in several GFF files but for fraction of whole data. Use arbitrary GFF as an input. You can extract all records for individual sequence or select specific region. Type in the selected region and the corresponding seq ID to extract in the following form:
 
-In prep.
+	**original_seq_name (e.g. chr1)**
+
+	or
+
+	**original_seq_name:start-end (e.g. chr1:1000-2000)**
+
+!PLEASE NOTE! Only the GFF records that are entirely inside the selected region will be reported.
+
+The coordinates of new regions in the modified GFF file will be recalculated with respect to the selected range. 
+
 
 </help>
 </tool>

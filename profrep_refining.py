@@ -223,7 +223,7 @@ def main(args):
 		joined_intervals = refining_intervals(OUT_REFINED, gff_removed, GAP_TH, DOM_NUM, dict_domains, unique_classes)
 	else:
 		joined_intervals = refining_intervals(OUT_REFINED, gff_removed, GAP_TH, DOM_NUM, None, None)
-	os.unlink(gff_removed.name)
+	os.unlink(gff_removed)
 
 		
 if __name__ == "__main__":

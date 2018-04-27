@@ -2,7 +2,7 @@
 
 
 ## 1. PROFREP ##
-*- Sequences **PROF**iles of **REP**etitive elements -* 
+*- **PROF**iles of **REP**eats -* 
 
 
 The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation in DNA sequences (typically assemblies but not necessarily). Moreover, it provides repetitive profiles of the sequence, pointing out quantitative representation of individual repeats along the sequence as well as the overall repetitiveness.
