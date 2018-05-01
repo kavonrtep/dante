@@ -96,7 +96,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
    </param>
    <param name="window" type="integer" value="5000" min="5000" label="Sliding window size" help="Use when having a long input sequence so that it can be processed in parallel" />
    <param name="overlap" type="integer" value="150" min="150" max="500" label="Windows overlap" help="Must be greater than read length" />
-   <param name="threshold" type="integer" value="5" min="1" label="Repetitive threshold" help="Threshold for copy numbers/hits at certain position to be reported as repetitive in GFF format"  />
+   <param name="threshold" type="integer" value="3" min="1" label="Repetitive threshold" help="Threshold for copy numbers/hits at certain position to be reported as repetitive in GFF format"  />
   </when>
  </conditional>
 </inputs>
@@ -113,12 +113,6 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  </outputs>
 
  <help>
-	 
-**DATABASE OF SPECIES**
-
-List of all species with annotated repeats in hierarchical order available `HERE`__.
-
-.. __: /static/profrep/species_list.html
 
 
 **INPUTS**
