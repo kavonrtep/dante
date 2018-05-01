@@ -15,6 +15,10 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 	* matplotlib
 * [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
 * [wigToBigWig](http://hgdownload.cse.ucsc.edu/admin/exe/)
+* [wigToBigWig](http://hgdownload.cse.ucsc.edu/admin/exe/)
+* [cd-hit](http://weizhongli-lab.org/cd-hit/)
+* [JBrowse](http://jbrowse.org/install/) - **Only bin needed, does not have to be installed under a web server**
+  
 * ProfRep Modules:
 	* gff.py
 	* visualization.py
@@ -305,51 +309,70 @@ scripts from the command line
 
 * python3.4 or higher with packages:	
 	* numpy
+	* matplotlib
+* [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279671/) or higher
 * [LAST](http://last.cbrc.jp/doc/last.html) 744 or higher:
 	* [download](http://last.cbrc.jp/)
 	* [install](http://last.cbrc.jp/doc/last.html)
+* [wigToBigWig](http://hgdownload.cse.ucsc.edu/admin/exe/)
+* [cd-hit](http://weizhongli-lab.org/cd-hit/)
+* [JBrowse](http://jbrowse.org/install/) - **Only bin needed, does not have to be installed under a web server**
 
-	
-#### Source #####
+#### Source ######
 
-Clone Profrep GIT repository to "profrep" tool directory
+https://nina_h@bitbucket.org/nina_h/profrep.git
 
-	git clone https://bitbucket.org/nina_h/profrep.git
-
-Go to GIT repository and switch branch to "protein_domains_base_by_base"
-
-	git checkout protein_domains_base_by_base
-
+branch "cerit"
 
 #### Configuration #####
 
-To *GALAXY_DIR/config/tool_conf.xml add:
+Add tools
 
-	<section id="domains" name="Protein Domains Tools">
-        <tool file="profrep/protein_domains.xml" />
-        <tool file="profrep/domains_filtering.xml" />
+	<section id="experimental" name="Experimental Tools" >
+		<label id="profrep_prepare" text="ProfRep Data Preparation" />
+		  <tool file="profrep/extract_data_for_profrep.xml" />
+		  <tool file="profrep/db_reducing.xml" />
+		<label id="profrep_main" text="Profrep" />
+		  <tool file="profrep/profrep.xml" />
+		<label id="profrep_supplementary" text="Profrep Supplementary" />
+		  <tool file="profrep/profrep_refine.xml" />
+		  <tool file="profrep/profrep_masking.xml" />
+		  <tool file="profrep/gff_select_region.xml" />
 	</section>
 	
+to 
+
+	$__root_dir__/config/tool_conf.xml
+	
+------------------------------------------------------------------------
+
+Place PROFREP_DB files to
+
+	$__tool_data_path__/profrep
 
 
+Place DANTE_DB files to
+
+	$__tool_data_path__/protein_domains
+
+------------------------------------------------------------------------	
+	
+Create
+	
+	$__root_dir__/database/dependencies/profrep/1.0.0/env.sh
+	
+containing:
+	
+	export JBROWSE_BIN=PATH_TO_JBROWSE_DIR/bin
+
+------------------------------------------------------------------------	
+	
 Link the following file into galaxy tool-data dir
 
-	ln -s GALAXY_DIR/tools/profrep/domains_data/select_domain.txt GALAXY_DIR/tool-data
-
-Create directory
+	ln -s $__tool_directory__/profrep/domains_data/select_domain.txt $__tool_data_path__
 	
-	mkdir GALAXY_DIR/tool-data/protein_domains
 	
-and copy the indexed db files for LASTAL and classification table (will be handed separately) into it
 
-#### Testing #####
-
-Testing data are taking place in profrep/test_data
-
-Use "vyber-Ty1_01.fasta" to test Protein Domains Finder tool and then its GFF output to test Protein Domains Filter tool 
-
---------------------------------------------------------------
-*! Replace the uppercase by real path of GALAXY main directory
 
 
 
