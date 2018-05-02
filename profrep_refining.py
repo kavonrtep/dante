@@ -212,8 +212,8 @@ def main(args):
 	CLASS_TBL = args.class_tbl
 	BORDERS = args.borders
 	
-	if CLASS_TBL and os.path.isdir(CLASS_TBL):
-		CLASS_TBL = os.path.join(CLASS_TBL, configuration.CLASS_FILE)
+	#if CLASS_TBL and os.path.isdir(CLASS_TBL):
+		#CLASS_TBL = os.path.join(CLASS_TBL, configuration.CLASS_FILE)
 
 	gff_removed = create_clusters(REPEATS_GFF, BORDERS)
 
