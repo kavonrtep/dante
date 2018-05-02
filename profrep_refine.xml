@@ -6,7 +6,11 @@ python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} -
  #if $include_domains.domains:
     --domains_gff ${include_domains.dom_gff} 
     --dom_number ${include_domains.dom_num}
-    --class_tbl ${__tool_data_path__ }/protein_domains
+    #if $include_domains.db_type == 'vir':
+		--class_tbl ${__tool_data_path__ }/protein_domains/Viridiplantae_class
+	#elif $include_domains.db_type == 'met'
+		--class_tbl ${__tool_data_path__ }/protein_domains/Metazoa_class
+	#end if
  #end if
 </command>
 <inputs>
@@ -17,6 +21,10 @@ python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} -
      <when value="true">
 	   <param format="gff" type="data" name="dom_gff" label="Choose GFF3 file containing protein domains" help="" />
        <param name="dom_num" type="integer" value="2" min="0" max="10" label="Minimum domains" help="Number of domains at least present per element to confirm the regions joining" />
+       <param name="db_type" type="select" label="Select protein domains database" help="">
+			<option value="vir">Viridiplantae</option>
+			<option value="met">Metazoa</option>
+		</param>
      </when>
 	</conditional>
 </inputs>
