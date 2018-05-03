@@ -367,9 +367,10 @@ containing:
 
 ------------------------------------------------------------------------	
 	
-Link the following file into galaxy tool-data dir
+Link the following files into galaxy tool-data dir
 
 	ln -s $__tool_directory__/profrep/domains_data/select_domain.txt $__tool_data_path__
+	ln -s $__tool_directory__/profrep/profrep_data/prepared_datasets.txt $__tool_data_path__
 	
 	
 
