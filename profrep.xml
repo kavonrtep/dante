@@ -67,7 +67,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
   </when>
   <when value="True">
    <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="This file  contains reads sequences in fasta format"  />
-   <param format="cls" type="data" name="cls" label="Choose file containing reads assigned to clusters (.cls file of RE clustering output)" help="This file in fasta format contains cluster number as identifier(e.g. >CL100) and belonging reads names as a subsequent line" />
+   <param format="fasta" type="data" name="cls" label="Choose file containing reads assigned to clusters (.cls file of RE clustering output)" help="This file in fasta format contains cluster number as identifier(e.g. >CL100) and belonging reads names as a subsequent line" />
    <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" help="This file contains number of cluster (1st column) and its  repetitive classification (2nd column)" />
    <conditional name="cn">
     <param name="copy_num" type="boolean" truevalue="True" falsevalue="False" checked="False" label="Convert hits to copy numbers" />

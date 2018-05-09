@@ -13,8 +13,8 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 * python 3.4 or higher with packages:
 	* numpy
 	* matplotlib
+	* biopython
 * [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
-* [wigToBigWig](http://hgdownload.cse.ucsc.edu/admin/exe/)
 * [wigToBigWig](http://hgdownload.cse.ucsc.edu/admin/exe/)
 * [cd-hit](http://weizhongli-lab.org/cd-hit/)
 * [JBrowse](http://jbrowse.org/install/) - **Only bin needed, does not have to be installed under a web server**
@@ -310,6 +310,7 @@ scripts from the command line
 * python3.4 or higher with packages:	
 	* numpy
 	* matplotlib
+	* biopython
 * [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279671/) or higher
 * [LAST](http://last.cbrc.jp/doc/last.html) 744 or higher:
 	* [download](http://last.cbrc.jp/)
