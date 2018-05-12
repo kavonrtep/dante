@@ -1,5 +1,5 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
-<description> Primary tool to find and classify all protein domains (NO QUALITY FILTER USED) in a DNA sequence based on the database of repetitive elements protein domains </description>
+<description> Primary tool to find and classify all protein domains in a DNA sequence based on the database of transposable elements protein domains (NO QUALITY FILTER USED) </description>
 <command>
 python3 ${__tool_directory__}/protein_domains.py --query ${input} --domain_gff ${DomGff}
  #if $db_type == 'vir':
@@ -24,11 +24,11 @@ python3 ${__tool_directory__}/protein_domains.py --query ${input} --domain_gff $
 
  <help>
 
-THIS IS A PRIMARY OUTPUT THAT SHOULD UNDERGO FURTHER QUALITY FILTERING TO GET RID OFF FALSE POSITIVE DOMAINS
+THIS IS A PRIMARY OUTPUT THAT SHOULD UNDERGO FURTHER QUALITY FILTERING TO GET RID OFF POTENTIAL FALSE POSITIVE DOMAINS
 
 **WHAT IT DOES**
 
-This tool uses external aligning programme `LAST`_ and **RepeatExplorer database of Viridiplantae TE protein domains (! in case of non-Viridiplantae species classification might not be reliable !)** 
+This tool uses external aligning programme `LAST`_ and RepeatExplorer database of TE protein domains (Viridiplantae and Metazoa)
 
 .. _LAST: http://last.cbrc.jp/  
 

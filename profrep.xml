@@ -53,7 +53,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 </command> 
 
 <inputs>
- <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input sequence must be in proper fasta format, multi-fasta allowed" />
+ <param format="fasta" type="data" name="input" label="DNA sequence to annotate" help="Input sequence in multi-fasta format" />
  <conditional name="custom_data" >
   <param name="options_custom_data" type="boolean" truevalue="True" falsevalue="False" checked="False" label="Use custom annotation data" />
   <when value="False">
@@ -66,9 +66,9 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
    <param name="copy_numbers" type="boolean" truevalue="True" falsevalue="False" checked="True" label="Convert hits to copy numbers"  />  
   </when>
   <when value="True">
-   <param format="fasta" type="data" name="reads" label="Choose file of all reads" help="This file  contains reads sequences in fasta format"  />
-   <param format="fasta" type="data" name="cls" label="Choose file containing reads assigned to clusters (.cls file of RE clustering output)" help="This file in fasta format contains cluster number as identifier(e.g. >CL100) and belonging reads names as a subsequent line" />
-   <param format="tabular" type="data" name="annotations" label="Choose clusters annotation file" help="This file contains number of cluster (1st column) and its  repetitive classification (2nd column)" />
+   <param format="fasta" type="data" name="reads" label="NGS reads" help="Input file of fasta-formatted reads sequences"  />
+   <param format="fasta" type="data" name="cls" label="RE list of clusters and belonging reads (hitsort.cls)" help="fasta-formatted list of all clusters reported by RE and reads identifiers that belong to them" />
+   <param format="tabular" type="data" name="annotations" label="Clusters classification" help="Table containing numbers of clusters and corresponding classifications" />
    <conditional name="cn">
     <param name="copy_num" type="boolean" truevalue="True" falsevalue="False" checked="False" label="Convert hits to copy numbers" />
     <when value="True">
@@ -78,7 +78,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
   </when>
  </conditional>
  <conditional name="dm" >
- <param name="domains_switch" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Show protein domains"/>
+ <param name="domains_switch" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Report protein domains"/>
   <when value="True">
 	<param name="db_type" type="select" label="Select protein domains database" help="">
      <option value="vir">Viridiplantae</option>
@@ -87,7 +87,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
   </when>
  </conditional>
  <conditional name="advanced_options" >
-  <param name="opts" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="False" label="Advanced options"/>
+  <param name="opts" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="False" label="Advanced searching options"/>
   <when value="True">
    <param name="bit_score" type="float" value="50" label="Bitscore" help="Blast filtering option: BITSCORE" />
    <param name="e_value" type="text" value="0.1" label="e-value cut-off" help="Blast filtering option: statistical significance threshold for reporting hits" />
@@ -114,55 +114,51 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 
  <help>
 
+	**HELP**
+	
+	**Input data**
 
-**INPUTS**
-
-This tool uses former clustering output from Repeat Explorer, especially 3 files: 
-1. CLS file (hitsort.cls) - list of all clusters and belonging reads 
-2. classification table - assigns repetitive class to every cluster (preferrably in standard format specified bellow) and 
-3. list of all sequencing reads. 
-
-For selected species (listed above in 'Database of species'), these files are already available as pre-prepared datasets which are used automatically after species selection.
-You can also run ProfRep using custom clustering data - then you have to load all the necessary files. If you run former clustering using Repeat Explorer on Galaxy you can easily get all needed files from the RE output archive using tool 'Extract Data for Profrep'.
-Please keep in mind these have to be in a standardizied format (especially the cluster classification table) so that the analysis runs correctly. 
-You can also use your own classification of clusters - in this case ProfRep. However, if you want to apply further regions joining based on protein domains occurance (ProfRep refining tool), classification strings must follow certain conventions:
-
-
-**Classification table** 
-
-- TAB-separated list of cluster numbers and their repetitive classification. The list does not have to necessarily contain all the clusters. The clusters can be classified either automatically (RE output) or manually - classification may be an arbitrary custom string. However, it is highly desirable to use the **classification consensus**, specifically it is demanded for *ProfRep Refiner* when joining fragmented segments based on **protein domains**. This means:
-
-* individual classification levels are separated by a pipe character "|"		
-* the first classification level is derived from the origin of the repetitive sequence, i.e. repeat, organelle.
-* mobile elements classification should follow protein domains classification 
-* for the rest of repeats (e.g. satellites, MITEs) arbitrary custom classification with any number of levels is allowed
-
-Example:
-
-		42      repeat|mobile_element|Class_I|LTR|Ty1/copia|SIRE
-		43      repeat|mobile_element|Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Ogre/Tat|TatIV/Ogre
-		45      repeat|mobile_element|Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Athila
-		48      repeat|satellite|PisTR/B
-		134     organelle|plastid
-
-
-**WHAT IT DOES**
-
-The main task is to create repetitive profile of a sequence. as well as to report protein domains. You can either provide your own files or you can exploit our prepared datasets for certain species listed above. At first Blast+ runs similarity search to find hits in a given sequence from the reads database which are subsequently filtered to gain only that ones which possess high similarity and appropriate lenght. Other parameters of blast search are also adjustable in "Advanced options". Using window parameter can speed up the analysis especially in case of having large input data as it allows paralell processing of the sequence with a certain overlap. When using our annotation datasets copy numbers are reported by default, if you wish to convert hits to copy numbers in your custom annotation data you will be asked to provide genome size of the species so that the sequencing coverage can be calculated. 
-Protein domains search utilizes LAST tool to find hits between input sequence and our database of protein domains. LAST aligns the input translated into protein sequence to the known domains sequences, possible frameshifts in the alignment are taken into consideration. Only the hits with the highest score are reported within overlapping regions. Domains are subsequently annotated to a repeat class which they come from according to our classification system.
-External visualization tool Jbrowse has been employed to interactively visualize all output features for all input sequences.  
-
-**OUTPUTS** 
-
-	- table reporting hits/copy numbers at every position for all repeats occuring in the sequence
-	- GFF file reporting N regions in the sequence
-	- GFF file reporting repetitive regions of a certain length and above copy numbers/hits threshold
-	- GFF file reporting protein domains, classification of domain, chain orientation and alignment sequence
-	- HTML reporting domains and profiles summary visualization that can be further explored using a link to JBrowse
+	1. list of NGS reads 
+		[RE archive: seqclust -> sequences -> sequences.fasta]
+	2. list of all clusters and belonging reads 
+		[RE archive: seqclust -> clustering -> hitsort.cls]
+	3. clusters classification table
+		[RE archive: PROFREP_CLASSIFICATION_TEMPLATE.csv (**! automatic classification - needs to be manually inspected**)]
+		
+		*REQUIREMENTS for custom classification table:*
+		
+		TAB-separated list of cluster numbers and their repetitive classification. The list does not have to necessarily contain all the clusters. Classification may be an arbitrary custom string, but it is highly desirable to use the standardized format, especially for downstream analysis of the output (ProfRep Refiner Tool):
+		
+	- individual classification levels are separated by a pipe character "|"		
+	- the first classification level is derived from the origin of the repetitive sequence, i.e. repeat, organelle.
+	- mobile elements classification should follow protein domains classification 
+	- for the rest of repeats (e.g. satellites, MITEs) arbitrary custom classification with any number of levels is allowed
+			
+		Example::
+		
+				42      repeat|mobile_element|Class_I|LTR|Ty1/copia|SIRE
+				43	repeat|mobile_element|Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Ogre/Tat|TatIV/Ogre
+				45      repeat|mobile_element|Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Athila
+				48      repeat|satellite|PisTR/B
+				134     organelle|plastid
+	
+	All the files are available from RE clustering archive. For Galaxy manipulation you can use **'Extract Data for Profrep'** tool to easily extract them. For selected species these files will already be available as prepared datasets - at present this option is only available for Pisum sativum Terno (Macas et al 2015))
 	
 
- </help>
+	**Principle**
 
+	The main ProfRep tool runs Blast+ similarity search on given DNA against the database of all reads (low coverage sequencing). The reported hits are filtered to get only the ones with significant similarity and appropriate length. These and other search parameters are all adjustable (Advanced options in Galaxy formular). The similarity search runs in parallel which lowers the computing times significantly especially when working with large input data - it defaultly uses all the sources available. The parallelization sliding window is set to 5kb with 150b overlap, but both parameters are adjustable. When changing them, make sure that the overlap is at least of reads length so that the hits on borders are covered. The hits for every position are recorded and classified based on to which cluster the corresponding read belongs. The summed profile ALL is created based on all individual profiles plus profiles of all mapped (but unclustered or unclassified) reads, keeping track of the overal sequence representation of repeats. Protein domains search is accomplished by DANTE, running defaultly as a ProfRep module (can be switched off). The reported domains are quality filtered. 
+
+	**Outputs** 
+
+		- **HTML summary report, JBrowse Data Directory** showing basic information and repetitive profile graphs as well as protein domains (optional) for individual sequences (up to 50). This output also serves as an data directory for [JBrowse](https://jbrowse.org/) genome browser. You can create a standalone JBrowse instance for further detailed visualization of the output tracks using Galaxy-integrated tool. This output can also be downloaded as an archive containing all relevant data for visualization via locally installed JBrowse server (see more about visualization in OUTPUT VISUALIZATION below)
+		- **Ns GFF** - reports unspecified (N) bases regions in the sequence
+		- **Repeats GFF** - reports repetitive regions of a certain length (defaultly **80**) and above hits/copy numbers threshold (defaultly **5**)
+		- **Domains GFF** - reports protein domains, classification of domain, chain orientation and alignment sequences
+		- **Log file**
+		
+
+ </help>
  
 </tool>
 

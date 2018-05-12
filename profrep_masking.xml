@@ -1,5 +1,5 @@
 <tool id="profrep_mask" name="ProfRep Masker" version="1.0.0">
-<description> Tool to mask repetitive regions of a given sequence(s) based on the repeats GFF (ProfRep output) </description>
+<description> Tool to mask repetitive regions of original DNA seq based on the repeat regions reported by ProfRep </description>
 <requirements>
     <requirement type="package" version="1.0.0" >profrep</requirement>
 </requirements>
@@ -22,6 +22,6 @@ python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_gff ${rp
 
 <help>
 **WHAT IT DOES**
- This tool will mask repetitive regions of the given DNA fasta sequence(s) based on repeats GFF which is laso output of ProfRep tool. You can choose either lowercase(sequence will be preserved) or "N" mode of masking.
+ This tool will mask repetitive regions of the original DNA sequence(s) based on repeats GFF. You can choose either lowercase(sequence will be preserved) or "N" mode of masking.
 </help>
 </tool>

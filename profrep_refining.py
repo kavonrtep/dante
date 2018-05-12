@@ -177,7 +177,7 @@ def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann
 	for dom_attributes in dict_domains[seq_id]:
 		ann_dom = dom_attributes[2]
 		if dom_attributes[0] >= start_ini and dom_attributes[1] <= end_ini:
-			repeat_class = "|".join(ann_ini.split("|")[1:])
+			repeat_class = "|".join(ann_ini.split("|")[2:])
 			if ann_dom in domains_classes and ann_dom == repeat_class:
 				strands.append(dom_attributes[3])
 				count_dom += 1
@@ -198,6 +198,7 @@ def get_unique_classes(CLASS_TBL):
 			line_class = "|".join(line.rstrip().split("\t")[1:])
 			if line_class not in unique_classes:
 				unique_classes.append(line_class)
+	print(unique_classes)
 	return unique_classes
 
 	
@@ -212,8 +213,6 @@ def main(args):
 	CLASS_TBL = args.class_tbl
 	BORDERS = args.borders
 	
-	#if CLASS_TBL and os.path.isdir(CLASS_TBL):
-		#CLASS_TBL = os.path.join(CLASS_TBL, configuration.CLASS_FILE)
 
 	gff_removed = create_clusters(REPEATS_GFF, BORDERS)
 
