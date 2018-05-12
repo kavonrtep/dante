@@ -20,9 +20,6 @@ python3 ${__tool_directory__}/extract_data_for_profrep.py --re_archive ${re_arch
 This tool will extract all the necessary input data that are needed for ProfRep from RE output archive.
 Use if the species is not already provided in our internal database (ProfRep drop-down menu -> Choose existing annotation dataset)
 
-! NOTE the classification of clusters from RE was done automatically - you should always inspect the clusters and adjust the classification manually. You can also provide your own classification table - in this case, please keep the formatting of the file and classification specified in ProfRep tool.
-
-
 
  </help>
 </tool>

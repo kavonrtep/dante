@@ -18,17 +18,15 @@ python3 ${__tool_directory__}/gff_selection.py  --gff_input ${gff_input} --regio
 	
 **WHAT IT DOES**
 
-This tools enables to extract a region of interest from input GFF. It facilitates e.g. comparing features in several GFF files but for fraction of whole data. Use arbitrary GFF as an input. You can extract all records for individual sequence or select specific region. Type in the selected region and the corresponding seq ID to extract in the following form:
+This tools enables to extract a region of interest from input GFF. It facilitates e.g. comparing features in several GFF files but for fraction of whole data. Use arbitrary GFF as an input. You can extract all records for individual sequence or select specific region. The coordinates of new regions in the modified GFF file will be recalculated with respect to the selected range. Type in the selected region and the corresponding seq ID to extract in the following form:
 
-	**original_seq_name (e.g. chr1)**
+**original_seq_name (e.g. chr1)**
 
-	or
+OR
 
-	**original_seq_name:start-end (e.g. chr1:1000-2000)**
+**original_seq_name:start-end (e.g. chr1:1000-2000)**
 
-!PLEASE NOTE! Only the GFF records that are entirely inside the selected region will be reported.
-
-The coordinates of new regions in the modified GFF file will be recalculated with respect to the selected range. 
+**!PLEASE NOTE** Only the GFF records that are entirely inside the selected region will be reported.
 
 
 </help>
