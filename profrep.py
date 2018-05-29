@@ -5,6 +5,8 @@ import subprocess
 import csv
 import time
 import sys
+import matplotlib
+matplotlib.use("PDF")
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx

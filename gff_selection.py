@@ -29,7 +29,7 @@ def cut_region(GFF_IN, GFF_OUT, REGION, NEW_SEQ_ID):
 			gff_out.write("##gff-version 3\n")
 			gff_out.write("##sequence region {}\n".format(REGION))
 			for line in gff_in:
-				if not line.startswith("#") and line.split("\t")[0] == seq_to_cut and int(line.split("\t")[3]) >= int_start and int(line.split("\t")[4]) <= int_end:
+				if not line.startswith("#") and line.split("\t")[0] == seq_to_cut and int(float(line.split("\t")[3])) >= int_start and int(float((line.split("\t")[4])) <= int_end:
 					new_start = int(line.split("\t")[3]) - int_start + 1
 					new_end = int(line.split("\t")[4]) - int_start + 1
 					gff_out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(NEW_SEQ_ID, line.split("\t")[1], line.split("\t")[2], new_start, new_end, line.split("\t")[5], line.split("\t")[6],line.split("\t")[7],line.split("\t")[8]))
