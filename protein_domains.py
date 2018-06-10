@@ -256,7 +256,7 @@ def best_score(scores, region):
 	return best_idx, best_idx_reg
 
 	
-def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, db_name_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, gff):
+def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, db_name_best, db_starts_best, db_ends_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, gff):
 	''' Record obtained information about domain corresponding to individual cluster to common gff file '''
 	best_start = positions[best_idx][0]
 	best_end = positions[best_idx][1]
@@ -288,7 +288,7 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	if "/" in domain_type:
 		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={};Final_Classification=Ambiguous_domain;Region_Hits_Classifications_={}\n".format(seq_id, SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
 	else:
-		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}%];DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_Length={};Relat_Interruptions={}\n".format(seq_id, SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_interrupt))
+		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}%];Best_Hit_DB_Pos={}:{}of{};DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_Length={};Relat_Interruptions={}\n".format(seq_id, SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_starts_best, db_ends_best, domain_size_best, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_interrupt))
 			
 
 def filter_params(db, query, protein_len):
@@ -406,7 +406,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				warnings.simplefilter("ignore")
 				sequence_hits = np.genfromtxt(line_generator(tab_pipe, maf_pipe, start),
 				names="score, name_db, start_db, al_size_db, strand_db, seq_size_db, name_q, start_q, al_size_q, strand_q, seq_size_q, block1, block2, block3, db_seq, q_seq",
-				usecols="score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db",
+				usecols="score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db, start_db, al_size_db",
 				dtype=None,
 				comments=None)
 		except RuntimeError:
@@ -428,6 +428,8 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		db_seq = sequence_hits['db_seq'].astype("str")
 		query_seq = sequence_hits['q_seq'].astype("str") 
 		domain_size = sequence_hits['seq_size_db'].astype("int")
+		db_start = sequence_hits['start_db'].astype("int") + 1 
+		db_end = sequence_hits['start_db'].astype("int") + sequence_hits['al_size_db'].astype("int")
 		
 		[reverse_strand_idx, positions_plus, positions_minus] = hits_processing(seq_len, start_hit, end_hit, strand)
 		strand_gff = "+"
@@ -442,6 +444,8 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		count_region = 0
 		for region in indices_overal:
 			db_names = domain_db[np.array(region)]
+			db_starts = db_start[np.array(region)]
+			db_ends = db_end[np.array(region)]
 			scores = score[np.array(region)]
 			annotations = domain_annotation(db_names, CLASSIFICATION)
 			[score_matrix, classes_dict] = score_table(mins[count_region], maxs[count_region], data[count_region], annotations, scores, CLASSIFICATION)	
@@ -450,9 +454,11 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 			[best_idx, best_idx_reg] = best_score(scores, region)
 			annotation_best = annotations[best_idx_reg]
 			db_name_best = db_names[best_idx_reg]
+			db_starts_best = db_starts[best_idx_reg]
+			db_ends_best = db_ends[best_idx_reg]
 			if count_region == len(indices_plus):
 				strand_gff = "-"
-			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
+			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, db_starts_best, db_ends_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
 			count_region += 1
 		seq_ids.append(seq_id)
 	os.unlink(query_temp)

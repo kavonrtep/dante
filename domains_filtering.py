@@ -148,7 +148,7 @@ def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
 				dom = attributes.split(";")[0].split("=")[1]
 				dom_class = attributes.split(";")[1].split("=")[1]
 				seq_id = line.rstrip().split("\t")[0]
-				prot_seq_align = line.rstrip().split("\t")[8].split(";")[5].split("=")[1]
+				prot_seq_align = line.rstrip().split("\t")[8].split(";")[6].split("=")[1]
 				prot_seq = prot_seq_align.translate({ord(i):None for i in '/\\-'})
 				header_prot_seq = ">{}:{} {} {}".format(seq_id, positions, dom, dom_class)
 				dom_prot_file.write("{}\n{}\n".format(header_prot_seq, textwrap.fill(prot_seq, configuration.FASTA_LINE)))
