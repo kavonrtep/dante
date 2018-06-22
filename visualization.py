@@ -11,7 +11,6 @@ def vis_profrep(seq_ids_all, files_dict, seq_lengths_all, CN, HTML_DATA, seqs_al
 	graphs_dict = {}	
 	seq_id_repeats = []
 	th_length = configuration.SEQ_LEN_VIZ
-	print(th_length)
 	exclude = set(['ALL'])
 	sorted_keys =  sorted(set(files_dict.keys()).difference(exclude))
 	sorted_keys.insert(0, "ALL")

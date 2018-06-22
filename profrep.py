@@ -152,7 +152,7 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
  		Create and increment subprofile vector based on reads aligned within window '''
 	loc_start = subset_index + 1
 	loc_end = subset_index + WINDOW
-	if loc_end > seq_length:
+	if loc_end >= seq_length:
 		loc_end = seq_length
 		subprofile = annot_profile(annotation_keys, seq_length - loc_start + 1)
 	else:
@@ -183,7 +183,6 @@ def parallel_process(WINDOW, OVERLAP, seq_length, annotation_keys, reads_annotat
 	subprofile["ALL"][1] = sum([item[1] for item in subprofile.values()])
 	for repeat in subprofile.keys():
 		subprofile[repeat][1] = [int(round(quality/hits_num)) if hits_num !=0 else quality for hits_num, quality in zip(subprofile[repeat][0], subprofile[repeat][1])]
-	print(subprofile[repeat][1])
 	if subset_index == 0: 
 		if subsets_num == 1:
 			subprf_name = subprofile_single(subprofile, subset_index)
@@ -242,7 +241,38 @@ def subprofile_last(subprofile, subset_index, OVERLAP):
 	return subprf_dict.name
 	
 	
-def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA):
+#def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA):
+	#for subprofile in subprofiles_all:
+		#with open(subprofile, 'rb') as handle:
+			#individual_dict = pickle.load(handle)
+			#exclude = set(["idx"])
+			#for key in set(individual_dict.keys()).difference(exclude):
+				#if any(individual_dict[key][0]):
+					#indices = handle_zero_lines(individual_dict[key][0])
+					#if key not in files_dict.keys():
+						#prf_name = "{}/{}.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
+						#prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
+						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
+							#prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+							#prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+							#for i in indices:
+								#prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
+								#prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))								
+						#files_dict[key] = [prf_name,[seq_id], prf_qual_name]
+					#else:
+						#prf_name = files_dict[key][0]
+						#prf_qual_name = files_dict[key][2]
+						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
+								#if seq_id not in files_dict[key][1]:
+									#prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+									#prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+									#files_dict[key][1].append(seq_id)
+								#for i in indices:
+									#prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
+									#prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
+	#return files_dict
+
+def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA, wig_files):
 	for subprofile in subprofiles_all:
 		with open(subprofile, 'rb') as handle:
 			individual_dict = pickle.load(handle)
@@ -253,13 +283,19 @@ def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA):
 					if key not in files_dict.keys():
 						prf_name = "{}/{}.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
 						prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
-						with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
-							prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-							prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-							for i in indices:
-								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
-								prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))								
+						prf_file = open(prf_name, "w")
+						prf_q_file = open(prf_qual_name, "w")
+						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
+						prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+						prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+						for i in indices:
+							prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
+							prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))								
 						files_dict[key] = [prf_name,[seq_id], prf_qual_name]
+						wig_files.append(prf_file)
+						wig_files.append(prf_q_file)
+						prf_file.close()
+						prf_q_file.close()
 					else:
 						prf_name = files_dict[key][0]
 						prf_qual_name = files_dict[key][2]
@@ -271,10 +307,10 @@ def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA):
 								for i in indices:
 									prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
 									prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
-	return files_dict
+	return files_dict, wig_files
 
 
-def concatenate_prof_CN(CV, subprofiles_all, files_dict, seq_id, HTML_DATA):
+def concatenate_prof_CN(CV, subprofiles_all, files_dict, seq_id, HTML_DATA, wig_files):
 	for subprofile in subprofiles_all:
 		with open(subprofile, 'rb') as handle:
 			individual_dict = pickle.load(handle)
@@ -285,13 +321,19 @@ def concatenate_prof_CN(CV, subprofiles_all, files_dict, seq_id, HTML_DATA):
 					if key not in files_dict.keys():
 						prf_name = "{}/{}.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
 						prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
-						with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
-							prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-							prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-							for i in indices:
-								prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][0][i]/CV)))
-								prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
+						prf_file = open(prf_name, "w")
+						prf_q_file = open(prf_qual_name, "w")
+						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
+						prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+						prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
+						for i in indices:
+							prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][0][i]/CV)))
+							prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
 						files_dict[key] = [prf_name,[seq_id], prf_qual_name]
+						wig_files.append(prf_file)
+						wig_files.append(prf_q_file)
+						prf_file.close()
+						prf_q_file.close()
 					else:
 						prf_name = files_dict[key][0]
 						prf_qual_name = files_dict[key][2]
@@ -303,7 +345,7 @@ def concatenate_prof_CN(CV, subprofiles_all, files_dict, seq_id, HTML_DATA):
 								for i in indices:
 									prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][0][i]/CV)))
 									prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
-	return files_dict
+	return files_dict, wig_files
 		
 
 def handle_zero_lines(repeat_subhits):
@@ -509,20 +551,17 @@ def genome2coverage(GS, BLAST_DB):
 	return CV
 
 	
-def prepared_data(TBL, DB_ID, TOOL_DATA_DIR):
+def prepared_data(DB_ID):
 	''' Get prepared rep. annotation data from the table based on the selected species ID '''
-	with open(TBL) as datasets:
+	tbl = os.path.join(os.path.dirname(os.path.realpath(__file__)), configuration.PROFREP_DATA, configuration.PROFREP_TBL)
+	with open(tbl) as datasets:
 		for line in datasets:
 			if line.split("\t")[0] == DB_ID:
 				DB_NAME = line.split("\t")[1]
-				BLAST_DB = os.path.join(TOOL_DATA_DIR, line.split("\t")[2])
-				print(BLAST_DB)
-				CLS = os.path.join(TOOL_DATA_DIR, line.split("\t")[3])
-				CL_ANNOTATION_TBL = os.path.join(TOOL_DATA_DIR, line.split("\t")[4])
 				CV = float(line.split("\t")[5])
 				REF = line.split("\t")[6]
 				REF_LINK = line.split("\t")[7]
-	return DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK
+	return DB_NAME, CV, REF, REF_LINK
 
 def seq_sizes_file(seq_ids, seq_lengths_all, HTML_DATA):
 	chrom_sizes = os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE)
@@ -557,11 +596,9 @@ def main(args):
 	CN = args.copy_numbers
 	GS = args.genome_size
 	DB_ID = args.db_id
-	TBL = args.datasets_tbl
 	THRESHOLD_SCORE = args.threshold_score
 	WIN_DOM = args.win_dom
 	OVERLAP_DOM = args.overlap_dom
-	TOOL_DATA_DIR = args.tool_dir
 	JBROWSE_BIN = args.jbrowse_bin
 	DUST_FILTER = args.dust_filter
 	LOG_FILE = args.log_file
@@ -594,8 +631,8 @@ def main(args):
 		subprocess.call("makeblastdb -in {} -dbtype nucl".format(BLAST_DB), shell=True)
 	
 	## Parse prepared annotation data table
-	if TBL:
-		[DB_NAME, BLAST_DB, CLS, CL_ANNOTATION_TBL, CV, REF, REF_LINK] = prepared_data(TBL, DB_ID, TOOL_DATA_DIR)
+	if DB_ID:
+		[DB_NAME, CV, REF, REF_LINK] = prepared_data(DB_ID)
 	else:
 		REF = None
 		REF_LINK = None
@@ -650,6 +687,9 @@ def main(args):
 	fasta_list = multifasta(QUERY)
 	headers=[]
 	files_dict = {}
+	####################################################################
+	wig_files = []
+	####################################################################
 	seq_count = 1
 	start = 1
 	total_length = 0
@@ -679,13 +719,18 @@ def main(args):
 			subprofiles_all = parallel_pool.map(multiple_param, subset_index[chunk_index:chunk_index + configuration.MAX_FILES_SUBPROFILES])
 			## Join partial profiles to the final profile of the sequence 
 			if CN:							
-				files_dict = concatenate_prof_CN(CV, subprofiles_all, files_dict, header, HTML_DATA)
+				[files_dict, wig_files] = concatenate_prof_CN(CV, subprofiles_all, files_dict, header, HTML_DATA, wig_files)
 			else:
-				files_dict = concatenate_prof(subprofiles_all, files_dict, header, HTML_DATA)
+				[files_dict, wig_files] = concatenate_prof(subprofiles_all, files_dict, header, HTML_DATA, wig_files)
 			for subprofile in subprofiles_all:
 				os.unlink(subprofile)
 		total_length += seq_length 
 		seq_lengths_all.append(seq_length)
+	####################################################################
+	print(files_dict)
+	for opened_file in wig_files:
+		opened_file.close()
+	####################################################################
 	Ngff.close()
 	os.write(log, "ELAPSED_TIME_BLAST = {} s\n".format(time.time() - t_blast).encode("utf-8"))
 	os.write(log, "TOTAL_LENGHT_ANALYZED = {} bp\n".format(total_length).encode("utf-8"))
@@ -789,14 +834,12 @@ if __name__ == "__main__":
     ################ INPUTS ############################################
     Required.add_argument('-q', '--query', type=str, required=True,
 						help='input DNA sequence in (multi)fasta format')
-    Required.add_argument('-d', '--database', type=str,
+    Required.add_argument('-d', '--database', type=str, required=True,
 						help='blast database of all sequencing reads')
-    Required.add_argument('-a', '--annotation_tbl', type=str,
+    Required.add_argument('-a', '--annotation_tbl', type=str, required=True,
 						help='clusters annotation table, tab-separated number of cluster and its classification')
-    Required.add_argument('-c', '--cls', type=str, 
+    Required.add_argument('-c', '--cls', type=str, required=True,
 						help='cls file containing reads assigned to clusters (hitsort.cls)')
-    altRequired.add_argument('-tbl', '--datasets_tbl', type=str,
-                        help='table with prepared annotation datasets') 
     altRequired.add_argument('-id', '--db_id', type=str,
                         help='annotation dataset ID (first column of datasets table)')  
                          					
@@ -813,17 +856,17 @@ if __name__ == "__main__":
 						help='blast search option: initial word size for alignment')
     blastOpt.add_argument('-t', '--task', type=str, default="blastn",
 						help='type of blast to be triggered')
-    blastOpt.add_argument('-n', '--new_db', type= str2bool, default=False,
+    blastOpt.add_argument('-n', '--new_db', type= str2bool, default=True,
 						help='create a new blast database')	
 						
-	############### PARARELL PROCESSING ARGUMENTS ######################		
+	############### PARALLEL PROCESSING ARGUMENTS ######################		
     parallelOpt.add_argument('-w', '--window', type=int, default=5000,
 						help='sliding window size for parallel processing')
     parallelOpt.add_argument('-o', '--overlap', type=int, default=150,
 						help='overlap for parallely processed regions, set greater than a read size')
 						
 	################ PROTEIN DOMAINS PARAMETERS ########################
-    protOpt.add_argument('-pd', '--protein_domains', type=str2bool, default=True,
+    protOpt.add_argument('-pd', '--protein_domains', type=str2bool, default=False,
 						help='use module for protein domains')
     protOpt.add_argument('-pdb', '--protein_database', type=str,
                         help='protein domains database')
@@ -847,7 +890,7 @@ if __name__ == "__main__":
 						help='path to output gff of N regions')
     outOpt.add_argument('-hf', '--html_file', type=str, default=HTML,
                         help='path to output html file')
-    outOpt.add_argument('-hp', '--html_path', type=str, default="output_dir",
+    outOpt.add_argument('-hp', '--html_path', type=str, default="profrep_output_dir",
                         help='path to html extra files')
 								
 	################ HITS/COPY NUMBERS ####################################
@@ -860,9 +903,7 @@ if __name__ == "__main__":
     cnOpt.add_argument('-ths', '--threshold_segment', type=int, default=80,
                         help='threshold for the length of repetitive segment to be reported')                       
 	
-	################ GALAXY USAGE + JBrowse ##########################
-    galaxyOpt.add_argument('-td', '--tool_dir', default=None,
-                  		help='Galaxy tool data directory in galaxy')
+	################ JBrowse ##########################
     galaxyOpt.add_argument('-jb', '--jbrowse_bin', type=str,
                   		help='path to JBrowse bin directory')
 

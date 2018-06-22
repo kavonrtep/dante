@@ -37,6 +37,8 @@ N_GFF = "N_regions.gff"
 REPEATS_GFF = "output_repeats.gff"
 HTML = "output.html"
 LOG_FILE = "log.txt"
+PROFREP_DATA = "profrep_data"
+PROFREP_TBL = "prepared_datasets.txt"
 ## JBrowse and Tracks Conf
 jbrowse_data_dir = "data"
 JSON_CONF_R = """{"hooks" : {"modify": "function( track, f, fdiv ) {fdiv.style.backgroundColor = '#278ECF'}"}}"""
