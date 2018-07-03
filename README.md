@@ -168,7 +168,6 @@ These additional tools can be used for further work with the ProfRep outputs:
 ## 2. DANTE ##
 *- **D**omain based **AN**notation of **T**ransposable **E**lements -* 
 
-There are 2 tools available which also serve as ProfRep modules:
 
 * Protein Domains Finder [protein_domains.py]
 	* Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database.
@@ -178,9 +177,6 @@ There are 2 tools available which also serve as ProfRep modules:
 * Proteins Domains Filter [domains_filtering.py]
 	* filters GFF3 output from previous step to obtain certain kind of domain and/or allows to adjust quality filtering  
 
-
-Both are implemented on galaxy web enviroment or can be used as standalone python
-scripts from the command line   
         
 ### Dependencies ###
 
@@ -191,17 +187,14 @@ scripts from the command line
 	* configuration.py 
 
 
-### Running the scripts ###
-
-
-* Protein Domains Finder
+### Protein Domains Finder ###
 
 		usage: protein_domains.py [-h] -q QUERY -pdb PROTEIN_DATABASE -cs
-									 CLASSIFICATION [-oug DOMAIN_GFF] [-nld NEW_LDB]
-									 [-sum SUMMARY_FILE] [-dir OUTPUT_DIR]
-									 [-thsc THRESHOLD_SCORE] [-wd WIN_DOM]
-									 [-od OVERLAP_DOM]
-
+                          CLASSIFICATION [-oug DOMAIN_GFF] [-nld NEW_LDB]
+                          [-dir OUTPUT_DIR] [-thsc THRESHOLD_SCORE]
+                          [-wd WIN_DOM] [-od OVERLAP_DOM]
+		
+		
 		optional arguments:
 			  -h, --help            show this help message and exit
 			  -oug DOMAIN_GFF, --domain_gff DOMAIN_GFF
@@ -209,9 +202,6 @@ scripts from the command line
 			  -nld NEW_LDB, --new_ldb NEW_LDB
 									create indexed database files for lastal in case of
 									working with new protein db (default: False)
-			  -sum SUMMARY_FILE, --summary_file SUMMARY_FILE
-									output summary file containing overview of amount of
-									domains in individual seqs (default: None)
 			  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
 									specify if you want to change the output directory
 									(default: None)
@@ -227,18 +217,18 @@ scripts from the command line
 									(default: 10000)
 
 		required named arguments:
-		  -q QUERY, --query QUERY
-								input DNA sequence to search for protein domains in a
-								fasta format. Multifasta format allowed. (default:
-								None)
-		  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
-								protein domains database file (default: None)
-		  -cs CLASSIFICATION, --classification CLASSIFICATION
-								protein domains classification file (default: None)
+			  -q QUERY, --query QUERY
+									input DNA sequence to search for protein domains in a
+									fasta format. Multifasta format allowed. (default:
+									None)
+			  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
+									protein domains database file (default: None)
+			  -cs CLASSIFICATION, --classification CLASSIFICATION
+									protein domains classification file (default: None)
+
 
 		
-	HOW TO RUN EXAMPLE:
-
+#### HOW TO RUN EXAMPLE ####
 		./protein_domains.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
 		
 	 When running for the first time with a new database use -nld option allowing lastal to create indexed database files:
@@ -247,60 +237,91 @@ scripts from the command line
 
 	use other arguments if you wish to rename your outputs or they will be created automatically with standard names 
 	
-* Protein Domains Filter
+### Protein Domains Filter ###
+		
+The script performs Protein Domains Finder output filtering for quality and/or extracting specific type of protein domain or mobile elements of origin. For the filtered domains it reports their translated protein sequence of original DNA.
 
-		usage: domains_filtering.py [-h] -dom_gff DOMAIN_GFF [-ouf DOMAINS_FILTERED]
-								[-dps DOMAINS_PROT_SEQ] [-cls ELEMENT_TABLE]
-								[-thl {float range 0.0..1.0}]
-								[-thi {float range 0.0..1.0}]
-								[-ths {float range 0.0..1.0}] [-ir INTERRUPTIONS]
-								[-sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}]
-								[-el ELEMENT_TYPE] [-dir OUTPUT_DIR]
+WHEN NO PARAMETERS GIVEN, IT PERFORMS QUALITY FILTERING USING THE DEFAULT PARAMETRES (optimized for Viridiplantae species)
 
+#### DEPENDENCIES ####
+* python 3.4 or higher
+* ProfRep modules:
+	- configuration.py 
+
+#### INPUTS ####
+* GFF3 file produced by protein_domains.py OR already filtered GFF3
+	
+#### Filtering options ####
+* QUALITY: 
+	- Min relative length of alignemnt to the protein domain from DB (without gaps)
+	- Identity 
+	- Similarity (scoring matrix: BLOSUM80)
+	- Interruption in the reading frame (frameshifts + stop codons) per every starting 100 AA
+	- Max alignment proportion to the original length of database domain sequence
+* DOMAIN TYPE: 'Name' attribute in GFF - see choices bellow
+Records for ambiguous domain type (e.g. INT/RH) are filtered out automatically
+
+* MOBILE ELEMENT TYPE:
+arbitrary substring of the element classification ('Final_Classification' attribute in GFF)
+		
+#### OUTPUTS ####
+* filtered GFF3 file
+* fasta file of translated protein sequences for the aligned domains that match the filtering criteria 
+	! as it is taken from the best hit alignment reported by LAST, it does not neccessary cover the whole region reported as domain in GFF
+	
+			
+		usage: domains_filtering.py [-h] -dg DOM_GFF [-ouf DOMAINS_FILTERED]
+                            [-dps DOMAINS_PROT_SEQ]
+                            [-thl {float range 0.0..1.0}]
+                            [-thi {float range 0.0..1.0}]
+                            [-ths {float range 0.0..1.0}] [-ir INTERRUPTIONS]
+                            [-mlen MAX_LEN_PERCENT]
+                            [-sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}]
+                            [-el ELEMENT_TYPE] [-dir OUTPUT_DIR]
 
 
 		optional arguments:
-		  -h, --help            show this help message and exit
-		  -ouf DOMAINS_FILTERED, --domains_filtered DOMAINS_FILTERED
-								output filtered domains gff file (default: None)
-		  -dps DOMAINS_PROT_SEQ, --domains_prot_seq DOMAINS_PROT_SEQ
-								output file containg domains protein sequences
-								(default: None)
-		  -cls ELEMENT_TABLE, --element_table ELEMENT_TABLE
-								output table containing original and filtered domains
-								classification and their amount (default: None)
-		  -thl {float range 0.0..1.0}, --th_length {float range 0.0..1.0}
-								proportion of alignment length threshold (default:
-								0.8)
-		  -thi {float range 0.0..1.0}, --th_identity {float range 0.0..1.0}
-								proportion of alignment identity threshold (default:
-								0.35)
-		  -ths {float range 0.0..1.0}, --th_similarity {float range 0.0..1.0}
-								threshold for alignment proportional similarity
-								(default: 0.45)
-		  -ir INTERRUPTIONS, --interruptions INTERRUPTIONS
-								interruptions (frameshifts + stop codons) tolerance
-								threshold per 100 bp (default: 1)
-		  -sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}, --selected_dom {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}
-								filter output domains based on the domain type
-								(default: All)
-		  -el ELEMENT_TYPE, --element_type ELEMENT_TYPE
-								filter output domains by typing substring from
-								classification (default: )
-		  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
-								specify if you want to change the output directory
-								(default: None)
+			  -h, --help            show this help message and exit
+			  -ouf DOMAINS_FILTERED, --domains_filtered DOMAINS_FILTERED
+									output filtered domains gff file (default: None)
+			  -dps DOMAINS_PROT_SEQ, --domains_prot_seq DOMAINS_PROT_SEQ
+									output file containg domains protein sequences
+									(default: None)
+			  -thl {float range 0.0..1.0}, --th_length {float range 0.0..1.0}
+									proportion of alignment length threshold (default:
+									0.8)
+			  -thi {float range 0.0..1.0}, --th_identity {float range 0.0..1.0}
+									proportion of alignment identity threshold (default:
+									0.35)
+			  -ths {float range 0.0..1.0}, --th_similarity {float range 0.0..1.0}
+									threshold for alignment proportional similarity
+									(default: 0.45)
+			  -ir INTERRUPTIONS, --interruptions INTERRUPTIONS
+									interruptions (frameshifts + stop codons) tolerance
+									threshold per 100 AA (default: 3)
+			  -mlen MAX_LEN_PERCENT, --max_len_percent MAX_LEN_PERCENT
+									maximal percentage of alignment length to the original
+									length of protein domain from database (default: 120)
+			  -sd {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}, --selected_dom {All,GAG,INT,PROT,RH,RT,aRH,CHDCR,CHDII,TPase,YR,HEL1,HEL2,ENDO}
+									filter output domains based on the domain type
+									(default: All)
+			  -el ELEMENT_TYPE, --element_type ELEMENT_TYPE
+									filter output domains by typing substring from
+									classification (default: )
+			  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
+									specify if you want to change the output directory
+									(default: None)
 
-		required named arguments:
-		  -dom_gff DOMAIN_GFF, --domain_gff DOMAIN_GFF
-								basic unfiltered gff file of all domains (default:
-								None)
+			required named arguments:
+			  -dg DOM_GFF, --dom_gff DOM_GFF
+									basic unfiltered gff file of all domains (default:
+									None)
 
 
-
-	HOW TO RUN EXAMPLE
-					
-		./domains_filtering.py -dom_gff PATH_TO_DOM_GFF
+#### HOW TO RUN EXAMPLE #### 
+e.g. getting quality filtered integrase(INT) domains of all gypsy transposable elements:
+	
+	./domains_filtering.py -dom_gff PATH_TO_INPUT_GFF -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE --selected_dom INT --element_type Ty3/gypsy 
 
 
 ### GALAXY implementation ###

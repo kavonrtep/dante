@@ -45,7 +45,7 @@ def idx_ranges(THRESHOLD_SEGMENT, seq_id, gff_file, feature, repeat, pos_seq_dic
 				sum_qual += int(pos_seq_dict[position])
 			qual_per_reg = sum_qual/len(group)
 			# Take boundaries of the group vectors
-			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Average_PID={}%\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, repeat, round(qual_per_reg)).encode("utf-8"))
+			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Average_PID={}\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, repeat, round(qual_per_reg)).encode("utf-8"))
 			
 def idx_ranges_N(indices, THRESHOLD_SEGMENT, seq_id, gff_file, feature, att_name):
 	for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):

@@ -38,6 +38,24 @@ t_profrep = time.time()
 np.set_printoptions(threshold=np.nan)
 warnings.filterwarnings("ignore", module="matplotlib")
 
+class Range():
+    '''
+    This class is used to check float range in argparse
+    '''
+
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+    def __eq__(self, other):
+        return self.start <= other <= self.end
+
+    def __str__(self):
+        return "float range {}..{}".format(self.start, self.end)
+
+    def __repr__(self):
+        return "float range {}..{}".format(self.start, self.end)
+
 def get_version(path):
 	branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True, cwd=path).decode('ascii').strip()
 	shorthash = subprocess.check_output("git log --pretty=format:'%h' -n 1  ", shell=True, cwd=path).decode('ascii').strip()
@@ -241,37 +259,6 @@ def subprofile_last(subprofile, subset_index, OVERLAP):
 	return subprf_dict.name
 	
 	
-#def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA):
-	#for subprofile in subprofiles_all:
-		#with open(subprofile, 'rb') as handle:
-			#individual_dict = pickle.load(handle)
-			#exclude = set(["idx"])
-			#for key in set(individual_dict.keys()).difference(exclude):
-				#if any(individual_dict[key][0]):
-					#indices = handle_zero_lines(individual_dict[key][0])
-					#if key not in files_dict.keys():
-						#prf_name = "{}/{}.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
-						#prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
-						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
-							#prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-							#prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-							#for i in indices:
-								#prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
-								#prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))								
-						#files_dict[key] = [prf_name,[seq_id], prf_qual_name]
-					#else:
-						#prf_name = files_dict[key][0]
-						#prf_qual_name = files_dict[key][2]
-						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
-								#if seq_id not in files_dict[key][1]:
-									#prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-									#prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
-									#files_dict[key][1].append(seq_id)
-								#for i in indices:
-									#prf_file.write("{}\t{}\n".format(individual_dict['idx'][i], individual_dict[key][0][i]))
-									#prf_q_file.write("{}\t{}\n".format(individual_dict['idx'][i], int(individual_dict[key][1][i])))
-	#return files_dict
-
 def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA, wig_files):
 	for subprofile in subprofiles_all:
 		with open(subprofile, 'rb') as handle:
@@ -285,7 +272,6 @@ def concatenate_prof(subprofiles_all, files_dict, seq_id, HTML_DATA, wig_files):
 						prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
 						prf_file = open(prf_name, "w")
 						prf_q_file = open(prf_qual_name, "w")
-						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
 						prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
 						prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
 						for i in indices:
@@ -323,7 +309,6 @@ def concatenate_prof_CN(CV, subprofiles_all, files_dict, seq_id, HTML_DATA, wig_
 						prf_qual_name = "{}/{}_qual.wig".format(HTML_DATA, re.sub('[\/\|]','_',key))
 						prf_file = open(prf_name, "w")
 						prf_q_file = open(prf_qual_name, "w")
-						#with open(prf_name, "a") as prf_file,  open(prf_qual_name, "a") as prf_q_file:
 						prf_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
 						prf_q_file.write("{}{}\n".format(configuration.HEADER_WIG, seq_id))
 						for i in indices:
@@ -525,13 +510,13 @@ def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN,
 					r = lambda: random.randint(0,255)
 					color = '#%02X%02X%02X' % (r(),r(),r())
 				count += 1
-				bw_name = "{}.bw".format(re.sub('[\/\|]','_',repeat_id))
+				bw_name = "{}.bw".format(re.sub('[\/\|]','_', repeat_id))
 				subprocess.call(["wigToBigWig", files_dict[repeat_id][0], os.path.join(HTML_DATA, configuration.CHROM_SIZES_FILE), os.path.join(jbrowse_data_path, bw_name)])
 				track_list.write(configuration.TRACK_LIST.format("{", bw_name, repeat_id, repeat_id, "{", color, "}", "}"))
 			for line in ending_lines:
 					track_list.write(line)
 			track_list.close()
-		distutils.dir_util.copy_tree(dirpath,jbrowse_data_path)
+		distutils.dir_util.copy_tree(dirpath, jbrowse_data_path)
 	return None
 	
 	
@@ -572,8 +557,8 @@ def seq_sizes_file(seq_ids, seq_lengths_all, HTML_DATA):
 def main(args):
 	## Command line arguments
 	QUERY = args.query
-	BLAST_DB = args.database
-	CL_ANNOTATION_TBL = args.annotation_tbl 
+	BLAST_DB = args.reads
+	CL_ANNOTATION_TBL = args.ann_tbl 
 	CLS = args.cls
 	BITSCORE = args.bit_score
 	E_VALUE = args.e_value
@@ -585,6 +570,11 @@ def main(args):
 	NEW_DB = args.new_db
 	THRESHOLD = args.threshold_repeat
 	THRESHOLD_SEGMENT = args.threshold_segment
+	TH_IDENTITY = args.th_identity
+	TH_LENGTH = args.th_length 
+	TH_INTERRUPT = args.interruptions
+	TH_SIMILARITY = args.th_similarity
+	TH_LEN_PERCENT = args.max_len_percent
 	OUTPUT_GFF = args.output_gff
 	DOMAINS = args.protein_domains
 	LAST_DB = args.protein_database
@@ -638,7 +628,7 @@ def main(args):
 		REF_LINK = None
 		DB_NAME = "CUSTOM"	
 	
-	## Create dir to store outputs for html 
+	## Create dir to store outputs for html and JBROWSE
 	if not os.path.exists(HTML_DATA):
 		os.makedirs(HTML_DATA)
 	
@@ -687,15 +677,14 @@ def main(args):
 	fasta_list = multifasta(QUERY)
 	headers=[]
 	files_dict = {}
-	####################################################################
 	wig_files = []
-	####################################################################
 	seq_count = 1
 	start = 1
 	total_length = 0
 	seq_lengths_all = [] 
 	Ngff = open(N_GFF,"w")
 	Ngff.write("{}\n".format(configuration.HEADER_GFF))
+	
 	## Find hits for each fasta sequence separetely
 	t_blast=time.time()	
 	for subfasta in fasta_list:
@@ -726,14 +715,16 @@ def main(args):
 				os.unlink(subprofile)
 		total_length += seq_length 
 		seq_lengths_all.append(seq_length)
-	####################################################################
-	print(files_dict)
-	for opened_file in wig_files:
-		opened_file.close()
-	####################################################################
-	Ngff.close()
+
+	
 	os.write(log, "ELAPSED_TIME_BLAST = {} s\n".format(time.time() - t_blast).encode("utf-8"))
 	os.write(log, "TOTAL_LENGHT_ANALYZED = {} bp\n".format(total_length).encode("utf-8"))
+	
+	## Close opened files
+	for opened_file in wig_files:
+		opened_file.close()
+	Ngff.close()
+	
 	
 	## Create file containing size of sequences to convert wig to bigwig
 	seq_sizes_file(headers, seq_lengths_all, HTML_DATA)
@@ -746,7 +737,7 @@ def main(args):
 		domains_primary = NamedTemporaryFile(delete=False)
 		protein_domains.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 		domains_primary.close()
-		[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF, 0.35, 0.45, 0.8, 3, 'All', "")
+		[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF,  TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, TH_LEN_PERCENT, 'All', "")
 		os.unlink(domains_primary.name)
 		os.write(log, "ELAPSED_TIME_DOMAINS = {} s\n".format(time.time() - t_domains).encode("utf-8"))
 		
@@ -781,7 +772,7 @@ def main(args):
 	os.write(log, "ELAPSED_TIME_PROFREP = {} s\n".format(time.time() - t_profrep).encode("utf-8"))
 	os.close(log)
 
-	
+	## Clean up the temporary fasta files
 	for subfasta in fasta_list:
 		os.unlink(subfasta)
 	
@@ -792,12 +783,13 @@ if __name__ == "__main__":
     class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
 	    pass
     
-    # Default values(command line usage)
+    # Default paths (command line usage)
     HTML = configuration.HTML
     DOMAINS_GFF = configuration.DOMAINS_GFF
     REPEATS_GFF = configuration.REPEATS_GFF
     N_GFF = configuration.N_GFF
     LOG_FILE = configuration.LOG_FILE
+    PROFREP_OUTPUT_DIR = configuration.PROFREP_OUTPUT_DIR
     
     # Command line arguments
     parser = argparse.ArgumentParser(
@@ -807,8 +799,13 @@ if __name__ == "__main__":
 		- python 3.4 or higher with packages:
 			- numpy
 			- matplotlib
- 		- [BLAST 2.2.28+](https://www.ncbi.nlm.nih.gov/books/NBK279690/) or higher
- 		- ProfRep Modules:
+			- biopython
+ 		- BLAST 2.2.28+ or higher
+ 		- LAST 744 or higher
+ 		- wigToBigWig
+ 		- cd-hit
+ 		- JBrowse - ! Only bin needed, does not have to be installed under a web server 
+ 		* ProfRep Modules:
 			- gff.py
 			- visualization.py
 			- configuration.py 
@@ -817,9 +814,9 @@ if __name__ == "__main__":
 
 	EXAMPLE OF USAGE:
 		
-		./protein_domains_pd.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
+		./protein.py --query PATH_TO_DNA_SEQ --reads PATH_TO_READS --ann_tbl PATH_TO_CLUSTERS_CLASSIFICATION  --cls PATH_TO_hitsort.cls [--new_db True]
 		''',
-		epilog="""""", 
+		epilog="""take a look at README for more detailed information""", 
 		formatter_class=CustomFormatter)
 		
     Required = parser.add_argument_group('required arguments')
@@ -834,9 +831,9 @@ if __name__ == "__main__":
     ################ INPUTS ############################################
     Required.add_argument('-q', '--query', type=str, required=True,
 						help='input DNA sequence in (multi)fasta format')
-    Required.add_argument('-d', '--database', type=str, required=True,
+    Required.add_argument('-rdb', '--reads', type=str, required=True,
 						help='blast database of all sequencing reads')
-    Required.add_argument('-a', '--annotation_tbl', type=str, required=True,
+    Required.add_argument('-a', '--ann_tbl', type=str, required=True,
 						help='clusters annotation table, tab-separated number of cluster and its classification')
     Required.add_argument('-c', '--cls', type=str, required=True,
 						help='cls file containing reads assigned to clusters (hitsort.cls)')
@@ -857,7 +854,7 @@ if __name__ == "__main__":
     blastOpt.add_argument('-t', '--task', type=str, default="blastn",
 						help='type of blast to be triggered')
     blastOpt.add_argument('-n', '--new_db', type= str2bool, default=True,
-						help='create a new blast database')	
+						help='create a new blast database, USE THIS OPTION IF YOU RUN PROFREP WITH NEW DATABASE FOR THE FIRST TIME')	
 						
 	############### PARALLEL PROCESSING ARGUMENTS ######################		
     parallelOpt.add_argument('-w', '--window', type=int, default=5000,
@@ -878,6 +875,16 @@ if __name__ == "__main__":
 						help='protein domains module: overlap of sequences in two consecutive windows')
     protOpt.add_argument('-thsc', '--threshold_score', type=int, default=80,
 						help='protein domains module: percentage of the best score within the cluster to  significant domains')
+    protOpt.add_argument("-thl","--th_length", type=float, choices=[Range(0.0, 1.0)],
+						default= 0.8, help="proportion of alignment length threshold")
+    protOpt.add_argument("-thi","--th_identity", type=float, choices=[Range(0.0, 1.0)],
+						default= 0.35, help="proportion of alignment identity threshold")
+    protOpt.add_argument("-ths","--th_similarity", type=float, choices=[Range(0.0, 1.0)],
+						default= 0.45, help="threshold for alignment proportional similarity")
+    protOpt.add_argument("-ir","--interruptions", type=int, default=3,
+						help="interruptions (frameshifts + stop codons) tolerance threshold per 100 AA")
+    protOpt.add_argument("-mlen","--max_len_percent", type=int, default=120,
+						help="maximal percentage of alignment length to the original length of protein domain from database")
 		
 	################ OUTPUTS ###########################################
     outOpt.add_argument('-lg', '--log_file', type=str, default=LOG_FILE,
@@ -890,7 +897,7 @@ if __name__ == "__main__":
 						help='path to output gff of N regions')
     outOpt.add_argument('-hf', '--html_file', type=str, default=HTML,
                         help='path to output html file')
-    outOpt.add_argument('-hp', '--html_path', type=str, default="profrep_output_dir",
+    outOpt.add_argument('-hp', '--html_path', type=str, default=PROFREP_OUTPUT_DIR,
                         help='path to html extra files')
 								
 	################ HITS/COPY NUMBERS ####################################
@@ -900,7 +907,7 @@ if __name__ == "__main__":
                         help='genome size is required when converting hits to copy numbers and you use custom data')
     cnOpt.add_argument('-thr', '--threshold_repeat', type=int, default=3,
 						help='threshold for hits/copy numbers per position to be considered repetitive')
-    cnOpt.add_argument('-ths', '--threshold_segment', type=int, default=80,
+    cnOpt.add_argument('-thsg', '--threshold_segment', type=int, default=80,
                         help='threshold for the length of repetitive segment to be reported')                       
 	
 	################ JBrowse ##########################

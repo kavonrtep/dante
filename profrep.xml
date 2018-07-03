@@ -42,8 +42,8 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  #end if
  
  #if $custom_data.options_custom_data:
-    --database ${reads}
-    --annotation_tbl ${annotations}
+    --reads ${reads}
+    --ann_tbl ${annotations}
     --cls ${cls}
     --new_db True
 	#if $custom_data.cn.copy_num:
@@ -53,8 +53,8 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  #else
     --db_id ${custom_data.prepared_dataset}  
     --copy_numbers $custom_data.copy_numbers  
-    --database $__tool_data_path__/profrep/\$profrep_reads
-    --annotation_tbl $__tool_data_path__/profrep/\$profrep_annotation
+    --reads $__tool_data_path__/profrep/\$profrep_reads
+    --ann_tbl $__tool_data_path__/profrep/\$profrep_annotation
     --cls $__tool_data_path__/profrep/\$profrep_cls  
     --new_db False
  #end if 
@@ -90,7 +90,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
   <when value="True">
 	<param name="db_type" type="select" label="Select protein domains database" help="">
      <option value="vir">Viridiplantae</option>
-     <option value="met">Metazoa</option>
+     <option value="met">Metazoans</option>
 	</param>
   </when>
  </conditional>
@@ -131,7 +131,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 	2. list of all clusters and belonging reads 
 		[RE archive: seqclust -> clustering -> hitsort.cls]
 	3. clusters classification table
-		[RE archive: PROFREP_CLASSIFICATION_TEMPLATE.csv (**! automatic classification - needs to be manually inspected**)]
+		[RE archive: PROFREP_CLASSIFICATION_TEMPLATE.csv (**! automatic classification - needs to be manually adjusted**)]
 		
 		*REQUIREMENTS for custom classification table:*
 		

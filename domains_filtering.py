@@ -38,6 +38,9 @@ def check_file_start(gff_file):
 
 
 def write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict, dom_dict, version_lines):
+	'''
+	Write domains statistics in beginning of filtered GFF
+	'''
 	with open(FILT_DOM_GFF, "w") as filt_gff:
 		for line in version_lines:
 			filt_gff.write(line)
@@ -74,11 +77,11 @@ def get_file_start(gff_file):
 	return count_comment, lines
 
 			
-def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT):
+def filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, TH_LEN_RATIO, SELECTED_DOM, ELEMENT):
 	''' Filter gff output based on domain and quality of alignment '''
-	[count_comment, version_lines] = get_file_start(OUTPUT_DOMAIN)
+	[count_comment, version_lines] = get_file_start(DOM_GFF)
 	filt_dom_tmp = NamedTemporaryFile(delete=False)
-	with open(OUTPUT_DOMAIN, "r") as gff_all,  open(filt_dom_tmp.name, "w") as gff_filtered:
+	with open(DOM_GFF, "r") as gff_all,  open(filt_dom_tmp.name, "w") as gff_filtered:
 		for comment_idx in range(count_comment):
 			next(gff_all)
 		dom_dict = defaultdict(lambda: defaultdict(int))
@@ -96,16 +99,18 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 			attributes = line.rstrip().split("\t")[-1]
 			classification = attributes.split(";")[1].split("=")[1]
 			orig_class_dict[classification] += 1
+			## ambiguous domains filtered out automatically
 			if classification != configuration.AMBIGUOUS_TAG:
-				al_identity = float(attributes.split(";")[-4].split("=")[1])
-				al_similarity = float(attributes.split(";")[-3].split("=")[1])
-				al_length = float(attributes.split(";")[-2].split("=")[1])
-				relat_interrupt = float(attributes.split("\t")[-1].split(";")[-1].split("=")[1])
+				al_identity = float(attributes.split(";")[-5].split("=")[1])
+				al_similarity = float(attributes.split(";")[-4].split("=")[1])
+				al_length = float(attributes.split(";")[-3].split("=")[1])
+				relat_interrupt = float(attributes.split(";")[-2].split("=")[1])
+				db_len_proportion = float(attributes.split(";")[-1].split("=")[1])
 				dom_type = attributes.split(";")[0].split("=")[1]
 				seq_id = line.split("\t")[0]
 				xminimal = int(line.split("\t")[3])	
 				xmaximal = int(line.split("\t")[4])			
-				if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and (ELEMENT in classification):			
+				if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and db_len_proportion <= TH_LEN_RATIO and (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and (ELEMENT in classification):			
 					gff_filtered.writelines(line)
 					filt_class_dict[classification] += 1
 					dom_dict[seq_id][dom_type] += 1
@@ -125,18 +130,17 @@ def filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_
 					domains.append(dom_type)	
 	path = os.path.dirname(os.path.realpath(__file__))
 	write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict, dom_dict, version_lines)	
-	print(filt_dom_tmp.name)
 	os.unlink(filt_dom_tmp.name)
 	xminimals_all.append(xminimals)
 	xmaximals_all.append(xmaximals)
 	domains_all.append(domains)	
-	print(domains_all)			
-	print(dom_dict)
 	return xminimals_all, xmaximals_all, domains_all, seq_ids_all
 									
 	
 def get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ):
-	''' Get the translated protein sequence of original DNA seq for all the filtered domains regions '''
+	''' Get the translated protein sequence of original DNA seq for all the filtered domains regions 
+		The translated sequences are taken from alignment reported by LASTAL (Query_Seq attribute in GFF)	
+	'''
 	count_comment = check_file_start(FILT_DOM_GFF)
 	with open(FILT_DOM_GFF, "r") as filt_gff:
 		for comment_idx in range(count_comment):
@@ -158,12 +162,13 @@ def main(args):
 	
 	t = time.time()
 	
-	OUTPUT_DOMAIN = args.domain_gff
+	DOM_GFF = args.dom_gff
 	DOMAIN_PROT_SEQ = args.domains_prot_seq
 	TH_IDENTITY = args.th_identity
 	TH_LENGTH = args.th_length 
 	TH_INTERRUPT = args.interruptions
 	TH_SIMILARITY = args.th_similarity
+	TH_LEN_RATIO = args.max_len_proportion
 	FILT_DOM_GFF = args.domains_filtered
 	SELECTED_DOM = args.selected_dom
 	OUTPUT_DIR = args.output_dir
@@ -179,11 +184,11 @@ def main(args):
 
 	if not os.path.isabs(FILT_DOM_GFF):	
 		if OUTPUT_DIR is None:
-			OUTPUT_DIR = os.path.dirname(os.path.abspath(OUTPUT_DOMAIN))
+			OUTPUT_DIR = os.path.dirname(os.path.abspath(DOM_GFF))
 		FILT_DOM_GFF = os.path.join(OUTPUT_DIR, os.path.basename(FILT_DOM_GFF))
 		DOMAIN_PROT_SEQ = os.path.join(OUTPUT_DIR, os.path.basename(DOMAIN_PROT_SEQ))
 
-	[xminimals_all, xmaximals_all, domains_all, seq_ids_all] = filter_qual_dom(OUTPUT_DOMAIN, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, SELECTED_DOM, ELEMENT)
+	[xminimals_all, xmaximals_all, domains_all, seq_ids_all] = filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, TH_LEN_RATIO, SELECTED_DOM, ELEMENT)
 	get_domains_protseq(FILT_DOM_GFF, DOMAIN_PROT_SEQ)
 	
 
@@ -199,36 +204,58 @@ if __name__ == "__main__":
 	
 	
 	parser = argparse.ArgumentParser(
-		description='''The script performs filtering of GFF3 file; either output of protein_domains_pd.py (contains all types of domains with basically no quality filtering) or file already filtered by this skript. The filtered output is again a GFF3 format. The script enables to obtain results for specific kinds of domains separately and/or filter out domains that do not reach appropriate length, similarity or have more interruptions(frameshifts or stop codons) per 100 bp than set by threshold. Filtering based on an arbitrary substring of repetitive element classification is posisible as well. Records for ambiguous domain type (e.g. INT/RH) are filtered out automatically. Based on filtered gff file protein sequences are reported in separate file - these translations of original DNA sequence are taken from the LASTAL alignment sequence of the best hit. For this reason it does not have to necessarily cover the whole reported are in GFF3 file. The script also produces a table with representation of all repetive element classifications (Final_Classification attribute) in the input GFF file as well as the filtered one. This can help you to get an overview which kind of elements your sequence might contain and which classifications you can filter.
+		description='''The script performs DANTE's output filtering for quality and/or extracting specific type of protein domain or mobile elements of origin. For the filtered domains it reports their translated protein sequence of original DNA.
+		WHEN NO PARAMETERS GIVEN, IT PERFORMS QUALITY FILTERING USING THE DEFAULT PARAMETRES (optimized for Viridiplantae species)
 		
-	DEPENDANCIES:
+		INPUTS:
+			- GFF3 file produced by protein_domains.py OR already filtered GFF3
+			
+			FILTERING OPTIONS:
+				> QUALITY: - Min relative length of alignemnt to the protein domain from DB (without gaps)
+				   - Identity 
+				   - Similarity (scoring matrix: BLOSUM82)
+				   - Interruption in the reading frame (frameshifts + stop codons) per every starting 100 AA
+				   - Max alignment proportion to the original length of database domain sequence 
+				> DOMAIN TYPE: choose from choices ('Name' attribute in GFF)
+				Records for ambiguous domain type (e.g. INT/RH) are filtered out automatically
+				
+				> MOBILE ELEMENT TYPE:
+				arbitrary substring of the element classification ('Final_Classification' attribute in GFF)
+				
+		OUTPUTS:
+			- filtered GFF3 file
+			- fasta file of translated protein sequences (from original DNA) for the aligned domains that match the filtering criteria 
+		
+	DEPENDENCIES:
 		- python 3.4 or higher
-		- configuration.py module
+		> ProfRep modules:
+			- configuration.py 
 
 	EXAMPLE OF USAGE:
-		
-		./protein_domains_pd.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
+		Getting quality filtered integrase(INT) domains of all gypsy transposable elements:
+		./domains_filtering.py -dom_gff PATH_TO_INPUT_GFF -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE --selected_dom INT --element_type Ty3/gypsy 
 
-	
 		''',
 		epilog="""""",
 		formatter_class=CustomFormatter)
 	requiredNamed = parser.add_argument_group('required named arguments')
-	requiredNamed.add_argument("-dom_gff", "--domain_gff",type=str, required=True,
+	requiredNamed.add_argument("-dg", "--dom_gff", type=str, required=True,
 						help="basic unfiltered gff file of all domains")
-	parser.add_argument("-ouf","--domains_filtered",type=str, 
+	parser.add_argument("-ouf","--domains_filtered", type=str, 
 						help="output filtered domains gff file") 
-	parser.add_argument("-dps","--domains_prot_seq",type=str, 
+	parser.add_argument("-dps","--domains_prot_seq", type=str, 
 						help="output file containg domains protein sequences")
-	parser.add_argument("-thl","--th_length",type=float, choices=[Range(0.0, 1.0)],
+	parser.add_argument("-thl","--th_length", type=float, choices=[Range(0.0, 1.0)],
 						default= 0.8, help="proportion of alignment length threshold")
-	parser.add_argument("-thi","--th_identity",type=float, choices=[Range(0.0, 1.0)],
+	parser.add_argument("-thi","--th_identity", type=float, choices=[Range(0.0, 1.0)],
 						default= 0.35, help="proportion of alignment identity threshold")
-	parser.add_argument("-ths","--th_similarity",type=float, choices=[Range(0.0, 1.0)],
+	parser.add_argument("-ths","--th_similarity", type=float, choices=[Range(0.0, 1.0)],
 						default= 0.45, help="threshold for alignment proportional similarity")
-	parser.add_argument("-ir","--interruptions",type=int, default=3,
+	parser.add_argument("-ir","--interruptions", type=int, default=3,
 						help="interruptions (frameshifts + stop codons) tolerance threshold per 100 AA")
-	parser.add_argument("-sd","--selected_dom",type=str, default="All", choices=[
+	parser.add_argument("-mlen","--max_len_proportion", type=float, default=1.2,
+						help="maximal proportion of alignment length to the original length of protein domain from database")
+	parser.add_argument("-sd","--selected_dom", type=str, default="All", choices=[
 						"All",
 						"GAG",
 						"INT",
@@ -245,9 +272,9 @@ if __name__ == "__main__":
 						"ENDO"
 						],
 						help="filter output domains based on the domain type")
-	parser.add_argument("-el","--element_type",type=str, default="",
+	parser.add_argument("-el","--element_type", type=str, default="",
 						help="filter output domains by typing substring from classification")
-	parser.add_argument("-dir","--output_dir",type=str, default=None,
+	parser.add_argument("-dir","--output_dir", type=str, default=None,
 						help="specify if you want to change the output directory")
 	args = parser.parse_args()
 	main(args)
