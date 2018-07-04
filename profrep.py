@@ -523,7 +523,7 @@ def jbrowse_prep(HTML_DATA, QUERY, OUTPUT_GFF, N_GFF, total_length, JBROWSE_BIN,
 def genome2coverage(GS, BLAST_DB):
 	''' Convert genome size to coverage '''
 	num_of_reads = 0
-	with open(BLAST_DB) as reads_all:
+	with open(BLAST_DB, "r") as reads_all:
 		first_line = reads_all.readline()
 		if first_line.startswith(">"):
 			num_of_reads += 1
@@ -539,7 +539,7 @@ def genome2coverage(GS, BLAST_DB):
 def prepared_data(DB_ID):
 	''' Get prepared rep. annotation data from the table based on the selected species ID '''
 	tbl = os.path.join(os.path.dirname(os.path.realpath(__file__)), configuration.PROFREP_DATA, configuration.PROFREP_TBL)
-	with open(tbl) as datasets:
+	with open(tbl, "r") as datasets:
 		for line in datasets:
 			if line.split("\t")[0] == DB_ID:
 				DB_NAME = line.split("\t")[1]
