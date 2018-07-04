@@ -37,6 +37,9 @@ N_GFF = "N_regions.gff"
 REPEATS_GFF = "output_repeats.gff"
 HTML = "output.html"
 LOG_FILE = "log.txt"
+PROFREP_DATA = "profrep_data"
+PROFREP_TBL = "prepared_datasets.txt"
+PROFREP_OUTPUT_DIR = "profrep_output_dir"
 ## JBrowse and Tracks Conf
 jbrowse_data_dir = "data"
 JSON_CONF_R = """{"hooks" : {"modify": "function( track, f, fdiv ) {fdiv.style.backgroundColor = '#278ECF'}"}}"""
@@ -84,6 +87,7 @@ READS_ALL_REDUCED = "reads_all_reduced"
 
 ######### PROFREP_REFINING #############################################
 WITH_DOMAINS = "mobile_element"
+QUALITY_DIFF_TO_REMOVE = 0.05 # 5% tolerance of PID
 
 ######### DANTE ##############################################
 MAIN_GIT_DIR = os.path.dirname(os.path.realpath(__file__)) 
@@ -94,8 +98,10 @@ AMBIGUOUS_TAG = "Ambiguous_domain"
 ## IO
 CLASS_FILE = "ALL.classification-new"
 LAST_DB_FILE = "ALL_protein-domains_05.fasta"
-DOM_PROT_SEQ = "dom_prot_seq.txt" 
+DOM_PROT_SEQ = "dom_prot_seq.fa" 
 FILT_DOM_GFF = "domains_filtered.gff"
+EXTRACT_DOM_STAT = "domains_counts.txt"
+EXTRACT_OUT_DIR = "extracted_domains"
 
 
 

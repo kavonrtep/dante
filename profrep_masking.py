@@ -10,10 +10,10 @@ def main(args):
 	# Command line arguments
 	QUERY = args.query
 	MODE = args.mode
-	REP_GFF = args.rep_gff
+	REPEAT_GFF = args.repeat_gff
 	MASKED = args.output_masked
 		
-	repeats_all = get_indices(REP_GFF)
+	repeats_all = get_indices(REPEAT_GFF)
 
 	if MODE == "lowercase":
 		lower_mask(QUERY, repeats_all, MASKED)
@@ -21,9 +21,12 @@ def main(args):
 		N_mask(QUERY, repeats_all, MASKED)
 
 	
-def get_indices(REP_GFF):
+def get_indices(REPEAT_GFF):
+	'''
+	Get indices of repeats from GFF file to mask
+	'''
 	repeats_all = {}
-	with open(REP_GFF, "r") as repeats_gff:
+	with open(REPEAT_GFF, "r") as repeats_gff:
 		for line in repeats_gff:
 			if not line.startswith("#"):
 				seq_id = line.split("\t")[0]
@@ -66,7 +69,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-q', '--query', type=str, required=True,
 						help='query sequence to be processed')
-    parser.add_argument('-rg', '--rep_gff', type=str, required=True,
+    parser.add_argument('-rg', '--repeat_gff', type=str, required=True,
 						help='query sequence to be processed')
     parser.add_argument('-m', '--mode', default="lowercase", choices=['lowercase', 'N'],
 						help='query sequence to be processed')

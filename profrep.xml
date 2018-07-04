@@ -4,9 +4,14 @@
     <requirement type="package" version="1.0.0" >profrep</requirement>
 </requirements>
 <command>
+#if not $custom_data.options_custom_data:
+	profrep_reads=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $3}' $__tool_data_path__/prepared_datasets.txt) &amp;&amp;
+	profrep_cls=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $4}' $__tool_data_path__/prepared_datasets.txt) &amp;&amp;
+	profrep_annotation=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $5}' $__tool_data_path__/prepared_datasets.txt) &amp;&amp;
+#end if
+
 python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff} --html_file ${html_file}
 --html_path ${html_file.extra_files_path} --n_gff ${NGff} 
---tool_dir ${__tool_data_path__ }/profrep
 --protein_domains ${dm.domains_switch}
 --jbrowse_bin \${JBROWSE_BIN}
 --log_file ${log_file}
@@ -37,8 +42,8 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  #end if
  
  #if $custom_data.options_custom_data:
-    --database ${reads}
-    --annotation_tbl ${annotations}
+    --reads ${reads}
+    --ann_tbl ${annotations}
     --cls ${cls}
     --new_db True
 	#if $custom_data.cn.copy_num:
@@ -46,9 +51,12 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
         --genome_size ${custom_data.cn.genome_size}
     #end if
  #else
-    --datasets_tbl ${__tool_data_path__ }/prepared_datasets.txt
     --db_id ${custom_data.prepared_dataset}  
-    --copy_numbers $custom_data.copy_numbers
+    --copy_numbers $custom_data.copy_numbers  
+    --reads $__tool_data_path__/profrep/\$profrep_reads
+    --ann_tbl $__tool_data_path__/profrep/\$profrep_annotation
+    --cls $__tool_data_path__/profrep/\$profrep_cls  
+    --new_db False
  #end if 
 </command> 
 
@@ -82,7 +90,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
   <when value="True">
 	<param name="db_type" type="select" label="Select protein domains database" help="">
      <option value="vir">Viridiplantae</option>
-     <option value="met">Metazoa</option>
+     <option value="met">Metazoans</option>
 	</param>
   </when>
  </conditional>
@@ -104,10 +112,10 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
  <outputs>
 	<data format="gff3" name="ProfGff" label="GFF file of repetitive regions from dataset ${input.hid}" />
 	<data format="gff3" name="DomGff" label="GFF file of protein domains from dataset ${input.hid}" >
-	 <filter>domains_switch</filter>
+	 <filter>dm['domains_switch']</filter>
 	</data>
 	<data format="html" name="html_file" label="HTML report, JBrowse Data Directory from ${input.hid}" />
-	<data format="gff3" name="NGff" label="GFF file of unspecified bases (N) from dataset ${input.hid}" />
+	<data format="gff3" name="NGff" label="GFF file of unknown bases (Ns) from dataset ${input.hid}" />
 	<data format="txt" name="log_file" label="Log file" />
 
  </outputs>
@@ -123,7 +131,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 	2. list of all clusters and belonging reads 
 		[RE archive: seqclust -> clustering -> hitsort.cls]
 	3. clusters classification table
-		[RE archive: PROFREP_CLASSIFICATION_TEMPLATE.csv (**! automatic classification - needs to be manually inspected**)]
+		[RE archive: PROFREP_CLASSIFICATION_TEMPLATE.csv (**! automatic classification - needs to be manually adjusted**)]
 		
 		*REQUIREMENTS for custom classification table:*
 		

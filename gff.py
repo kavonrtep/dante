@@ -16,7 +16,6 @@ def create_gff(THRESHOLD, THRESHOLD_SEGMENT, OUTPUT_GFF, files_dict, headers):
 	for repeat in sorted(set(files_dict.keys()).difference(exclude)):
 		gff_tmp = NamedTemporaryFile(delete=False)
 		pos_seq_dict = {}
-		print(files_dict)
 		with open(files_dict[repeat][0], "r") as repeat_f,  open(files_dict[repeat][2], "r") as quality_f:
 			for line_r, line_q in zip(repeat_f, quality_f):
 				if "chrom" in line_r:
@@ -31,7 +30,6 @@ def create_gff(THRESHOLD, THRESHOLD_SEGMENT, OUTPUT_GFF, files_dict, headers):
 		idx_ranges(THRESHOLD_SEGMENT, seq_id, gff_tmp, configuration.REPEATS_FEATURE, repeat, pos_seq_dict)
 		gff_tmp_list.append(gff_tmp.name)
 		gff_tmp.close()
-	print(gff_tmp_list)
 	sort_records(gff_tmp_list, headers, OUTPUT_GFF)
 	for tmp in gff_tmp_list:
 		os.unlink(tmp)
@@ -47,7 +45,7 @@ def idx_ranges(THRESHOLD_SEGMENT, seq_id, gff_file, feature, repeat, pos_seq_dic
 				sum_qual += int(pos_seq_dict[position])
 			qual_per_reg = sum_qual/len(group)
 			# Take boundaries of the group vectors
-			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Average_PID={}%\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, repeat, round(qual_per_reg)).encode("utf-8"))
+			gff_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Average_PID={}\n".format(seq_id, configuration.SOURCE_PROFREP, feature, group[0], group[-1], configuration.GFF_EMPTY, configuration.GFF_EMPTY, configuration.GFF_EMPTY, repeat, round(qual_per_reg)).encode("utf-8"))
 			
 def idx_ranges_N(indices, THRESHOLD_SEGMENT, seq_id, gff_file, feature, att_name):
 	for key, group in groupby(enumerate(indices), lambda index_item: index_item[0] - index_item[1]):

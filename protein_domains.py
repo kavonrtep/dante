@@ -17,11 +17,11 @@ from collections import defaultdict
 
 np.set_printoptions(threshold=np.nan)
 
-def sc_hash():
+def alignment_scoring():
 	''' Create hash table for alignment similarity counting: for every 
 	combination of aminoacids in alignment assign score from protein 
 	scoring matrix defined in configuration file  '''
-	sc_dict = {}
+	score_dict = {}
 	with open(configuration.SC_MATRIX) as smatrix:
 		count = 1
 		for line in smatrix:
@@ -32,10 +32,10 @@ def sc_hash():
 					count_aa = 1
 					line = list(filter(None,line.rstrip().split(" ")))
 					for aa in aa_all:
-						sc_dict["{}{}".format(line[0],aa)] = line[count_aa]
+						score_dict["{}{}".format(line[0],aa)] = line[count_aa]
 						count_aa += 1
 				count += 1
-	return sc_dict
+	return score_dict
 	
 	
 def characterize_fasta(QUERY, WIN_DOM):
@@ -63,10 +63,11 @@ def characterize_fasta(QUERY, WIN_DOM):
 		seq_ends = seq_ends[1:]
 		fasta_lengths.append(fasta_chunk_len)
 		fasta_lengths = fasta_lengths[1:]
-		# control if there are correct (unique) names for individual seqs
+		# control if there are correct (unique) names for individual seqs:
+		# LASTAL takes seqs IDs till the first space which can then create problems with ambiguous records
 		if len(headers) > len(set([header.split(" ")[0] for header in headers])):
 			raise NameError('''Sequences in multifasta format are not named correctly:
-							seq IDs(before the first space) are the same''')
+							seq IDs (before the first space) are the same''')
 
 	above_win = [idx for idx, value in enumerate(fasta_lengths) if value > WIN_DOM]
 	below_win = [idx for idx, value in enumerate(fasta_lengths) if value <= WIN_DOM]
@@ -114,7 +115,7 @@ def split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_
 				count_fasta_not_divided += 1
 		query_temp = ntf.name
 		ntf.close()
-	return(query_temp)
+	return query_temp
 				
 
 def domain_annotation(elements, CLASSIFICATION):
@@ -256,7 +257,7 @@ def best_score(scores, region):
 	return best_idx, best_idx_reg
 
 	
-def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, db_name_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, gff):
+def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, dom_start, dom_end, step, best_idx, annotation_best, db_name_best, db_starts_best, db_ends_best, strand, score, seq_id, db_seq, query_seq, domain_size, positions, gff):
 	''' Record obtained information about domain corresponding to individual cluster to common gff file '''
 	best_start = positions[best_idx][0]
 	best_end = positions[best_idx][1]
@@ -266,7 +267,7 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	db_seq_best = db_seq[best_idx]
 	query_seq_best = query_seq[best_idx]
 	domain_size_best = domain_size[best_idx]
-	[percent_ident, align_similarity, relat_align_len, relat_interrupt] = filter_params(db_seq_best, query_seq_best, domain_size_best)
+	[percent_ident, align_similarity, relat_align_len, relat_interrupt, db_len_proportion] = filter_params(db_seq_best, query_seq_best, domain_size_best)
 	ann_substring = "|".join(ann_substring.split("|")[1:])
 	annotation_best = "|".join([db_name_best] + annotation_best.split("|")[1:])
 	if "DANTE_PART" in seq_id:
@@ -288,12 +289,12 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, 
 	if "/" in domain_type:
 		gff.write("{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={};Final_Classification=Ambiguous_domain;Region_Hits_Classifications_={}\n".format(seq_id, SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, strand, configuration.PHASE, domain_type, unique_annotations))
 	else:
-		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}%];DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_Length={};Relat_Interruptions={}\n".format(seq_id, SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_interrupt))
+		gff.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}percent];Best_Hit_DB_Pos={}:{}of{};DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_Length={};Relat_Interruptions={};Hit_to_DB_Length={}\n".format(seq_id, SOURCE, configuration.DOMAINS_FEATURE, dom_start, dom_end, best_score, strand, configuration.PHASE, domain_type, ann_substring, unique_annotations, annotation_best, best_start, best_end, length_proportion, db_starts_best, db_ends_best, domain_size_best, db_seq_best, query_seq_best, percent_ident, align_similarity, relat_align_len, relat_interrupt, db_len_proportion))
 			
 
 def filter_params(db, query, protein_len):
 	''' Calculate basic statistics of the quality of the alignment '''
-	sc_dict = sc_hash()
+	score_dict = alignment_scoring()
 	num_ident = 0
 	count_interrupt = 0
 	count_similarity = 0 
@@ -304,7 +305,7 @@ def filter_params(db, query, protein_len):
 		if j == "/" or j == "\\" or j == "*":
 			count_interrupt += 1
 		if (i.isalpha() or i == "*") and (j.isalpha() or j == "*"):
-			if int(sc_dict["{}{}".format(i,j)]) > 0:
+			if int(score_dict["{}{}".format(i,j)]) > 0:
 				count_similarity += 1
 	## gapless alignment length proportional to the domain protein length
 	relat_align_len = round((len(db) - db.count("-"))/protein_len, 3) 
@@ -314,7 +315,9 @@ def filter_params(db, query, protein_len):
 	align_similarity = round(count_similarity/len(db),2)
 	## number of interruptions per 100 bp
 	relat_interrupt = round(count_interrupt/math.ceil((len(query)/100)),2)
-	return align_identity, align_similarity, relat_align_len, relat_interrupt
+	## Proportion of alignment to the original length of protein domain from database (indels included)
+	db_len_proportion = round(len(db)/protein_len, 2)
+	return align_identity, align_similarity, relat_align_len, relat_interrupt, db_len_proportion
 
 
 
@@ -383,8 +386,10 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 	step = WIN_DOM - OVERLAP_DOM
 	[headers, above_win, below_win, lens_above_win, seq_starts, seq_ends] = characterize_fasta(QUERY, WIN_DOM)
 	query_temp = split_fasta(QUERY, WIN_DOM, step, headers, above_win, below_win, lens_above_win, seq_starts, seq_ends)
-
+	
+	## TAB output contains all the alignment scores, positions, strands...
 	tab = subprocess.Popen("lastal -F15 {} {} -L 10 -m 70 -p BL80 -f TAB".format(LAST_DB, query_temp), stdout=subprocess.PIPE, shell=True)
+	## MAF output contains alignment sequences
 	maf = subprocess.Popen("lastal -F15 {} {} -L 10 -m 70 -p BL80 -f MAF".format(LAST_DB, query_temp), stdout=subprocess.PIPE, shell=True)
 
 	tab_pipe = tab.stdout
@@ -406,7 +411,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 				warnings.simplefilter("ignore")
 				sequence_hits = np.genfromtxt(line_generator(tab_pipe, maf_pipe, start),
 				names="score, name_db, start_db, al_size_db, strand_db, seq_size_db, name_q, start_q, al_size_q, strand_q, seq_size_q, block1, block2, block3, db_seq, q_seq",
-				usecols="score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db",
+				usecols="score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db, start_db, al_size_db",
 				dtype=None,
 				comments=None)
 		except RuntimeError:
@@ -428,6 +433,8 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		db_seq = sequence_hits['db_seq'].astype("str")
 		query_seq = sequence_hits['q_seq'].astype("str") 
 		domain_size = sequence_hits['seq_size_db'].astype("int")
+		db_start = sequence_hits['start_db'].astype("int") + 1 
+		db_end = sequence_hits['start_db'].astype("int") + sequence_hits['al_size_db'].astype("int")
 		
 		[reverse_strand_idx, positions_plus, positions_minus] = hits_processing(seq_len, start_hit, end_hit, strand)
 		strand_gff = "+"
@@ -442,6 +449,8 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 		count_region = 0
 		for region in indices_overal:
 			db_names = domain_db[np.array(region)]
+			db_starts = db_start[np.array(region)]
+			db_ends = db_end[np.array(region)]
 			scores = score[np.array(region)]
 			annotations = domain_annotation(db_names, CLASSIFICATION)
 			[score_matrix, classes_dict] = score_table(mins[count_region], maxs[count_region], data[count_region], annotations, scores, CLASSIFICATION)	
@@ -450,17 +459,20 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE
 			[best_idx, best_idx_reg] = best_score(scores, region)
 			annotation_best = annotations[best_idx_reg]
 			db_name_best = db_names[best_idx_reg]
+			db_starts_best = db_starts[best_idx_reg]
+			db_ends_best = db_ends[best_idx_reg]
 			if count_region == len(indices_plus):
 				strand_gff = "-"
-			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
+			create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts, mins[count_region], maxs[count_region], step, best_idx, annotation_best, db_name_best, db_starts_best, db_ends_best, strand_gff, score, seq_id, db_seq, query_seq, domain_size, positions, gff)
 			count_region += 1
 		seq_ids.append(seq_id)
 	os.unlink(query_temp)
 	gff.close()
 	dom_tmp.close()
-	
+	## if any sequence from input data was split into windows, merge and adjust the data from individual windows
 	if any("DANTE_PART" in x for x in seq_ids):
 		adjust_gff(OUTPUT_DOMAIN, dom_tmp.name, WIN_DOM, OVERLAP_DOM, step)
+	## otherwise use the temporary output as the final domains gff
 	else:
 		shutil.copy2(dom_tmp.name, OUTPUT_DOMAIN)
 	os.unlink(dom_tmp.name)
@@ -533,7 +545,7 @@ def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
 							elif int(split_line[3]) > cut_start and int(split_line[4]) < cut_end:
 								adjusted_gff.write("{}\t{}".format(seq_id, line_without_id))
 								class_dict[classification] += 1
-					# not divived
+					## not divived
 					else:
 						if seq_id != seq_id_all[-1]:
 							seq_id_all.append(seq_id)
@@ -588,7 +600,7 @@ if __name__ == "__main__":
 		pass
 
 	parser = argparse.ArgumentParser(
-		description='''Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database. Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. Domains searching is accomplished engaging LASTAL alignment tool.
+		description='''Script performs similarity search on given DNA sequence(s) in (multi)fasta against our protein domains database of all Transposable element for certain group of organisms (Viridiplantae or Metazoans). Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. Domains search is accomplished engaging LASTAL alignment tool.
 		
 	DEPENDENCIES:
 		- python 3.4 or higher with packages:
