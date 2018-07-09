@@ -574,7 +574,7 @@ def main(args):
 	TH_LENGTH = args.th_length 
 	TH_INTERRUPT = args.interruptions
 	TH_SIMILARITY = args.th_similarity
-	TH_LEN_PERCENT = args.max_len_percent
+	TH_LEN_RATIO = args.max_len_proportion
 	OUTPUT_GFF = args.output_gff
 	DOMAINS = args.protein_domains
 	LAST_DB = args.protein_database
@@ -737,7 +737,7 @@ def main(args):
 		domains_primary = NamedTemporaryFile(delete=False)
 		protein_domains.domain_search(QUERY, LAST_DB, CLASSIFICATION, domains_primary.name, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
 		domains_primary.close()
-		[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF,  TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, TH_LEN_PERCENT, 'All', "")
+		[xminimal, xmaximal, domains, seq_ids_dom] = domains_filtering.filter_qual_dom(domains_primary.name, OUT_DOMAIN_GFF,  TH_IDENTITY, TH_SIMILARITY, TH_LENGTH, TH_INTERRUPT, TH_LEN_RATIO, 'All', "")
 		os.unlink(domains_primary.name)
 		os.write(log, "ELAPSED_TIME_DOMAINS = {} s\n".format(time.time() - t_domains).encode("utf-8"))
 		
@@ -883,8 +883,8 @@ if __name__ == "__main__":
 						default= 0.45, help="threshold for alignment proportional similarity")
     protOpt.add_argument("-ir","--interruptions", type=int, default=3,
 						help="interruptions (frameshifts + stop codons) tolerance threshold per 100 AA")
-    protOpt.add_argument("-mlen","--max_len_percent", type=int, default=120,
-						help="maximal percentage of alignment length to the original length of protein domain from database")
+    protOpt.add_argument("-mlen","--max_len_proportion", type=float, default=1.2,
+						help="maximal proportion of alignment length to the original length of protein domain from database")
 		
 	################ OUTPUTS ###########################################
     outOpt.add_argument('-lg', '--log_file', type=str, default=LOG_FILE,
