@@ -45,6 +45,8 @@ def create_dom_dict(DOM_GFF):
 			end_dom = int(line.split("\t")[4])
 			strand_dom = line.split("\t")[6]
 			dict_domains[seq_id].append((start_dom, end_dom, ann_dom_lineage, strand_dom))
+	for seq_id in dict_domains.keys():
+		dict_domains[seq_id] = sorted(dict_domains[seq_id], key=lambda x: x[0])
 	return dict_domains
 	
 
@@ -220,7 +222,7 @@ def dom_refining(joined_intervals, dict_domains, seq_id, start_ini, end_ini, ann
 	for dom_attributes in dict_domains[seq_id]:
 		ann_dom = dom_attributes[2]
 		if dom_attributes[0] >= start_ini and dom_attributes[1] <= end_ini:
-			repeat_class = "|".join(ann_ini.split("|")[2:])
+			repeat_class = "|".join(ann_ini.split("|")[1:])
 			if ann_dom in domains_classes and ann_dom == repeat_class:
 				strands.append(dom_attributes[3])
 				count_dom += 1

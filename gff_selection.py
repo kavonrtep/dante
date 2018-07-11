@@ -13,10 +13,19 @@ def check_file_start(gff_file):
 
 
 def cut_region(GFF_IN, GFF_OUT, REGION, NEW_SEQ_ID):
+	'''
+	Extract records for particular sequence and/or region from arbitrary GFF3 file
+	in form: original_seq_name:start-end (e.g. chr1:1000-2000)
+	Write a new GFF containing only records from this region
+	If new SEQ ID for extracted region is not provided, it will be named based on the region to cut
+	! ALLOWS TO CUT ONLY ONE REGION AT ONE TIME
+	'''
+	## cut a particular part of a paritcular sequence
 	if ":" and "-" in REGION:
 		int_start = int(REGION.split(":")[-1].split("-")[0])
 		int_end = int(REGION.split(":")[-1].split("-")[1])	
 		seq_to_cut = ":".join(REGION.split(":")[:-1])
+	## cut the whole sequence if region is not specified 
 	else:
 		int_start = 0
 		int_end = float("inf")
