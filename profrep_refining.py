@@ -45,6 +45,8 @@ def create_dom_dict(DOM_GFF):
 			end_dom = int(line.split("\t")[4])
 			strand_dom = line.split("\t")[6]
 			dict_domains[seq_id].append((start_dom, end_dom, ann_dom_lineage, strand_dom))
+	for seq_id in dict_domains.keys():
+		dict_domains[seq_id] = sorted(dict_domains[seq_id], key=lambda x: x[0])
 	return dict_domains
 	
 

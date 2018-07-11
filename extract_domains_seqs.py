@@ -149,7 +149,7 @@ if __name__ == "__main__":
 						help='GFF file of protein domains')
     parser.add_argument('-cs', '--classification', type=str, required=True, 
                         help='protein domains classification file')
-    parser.add_argument('-out', '--out_dir', type=str, default=configuration.EXTRACT_OUT_DIR
+    parser.add_argument('-out', '--out_dir', type=str, default=configuration.EXTRACT_OUT_DIR,
 						help='output directory')
     parser.add_argument('-ex', '--extended', type=str2bool, default=True,
 						help='extend the domains edges if not the whole datatabase sequence was aligned')
