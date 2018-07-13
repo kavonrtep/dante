@@ -4,7 +4,7 @@
     <requirement type="package" version="1.0.0" >profrep</requirement>
 </requirements>
 <command>
-python3 ${__tool_directory__}/profrep_masking.py --query ${input} --rep_gff ${rp_gff} --mode ${mode} --output_masked ${out_masked}
+python3 ${__tool_directory__}/profrep_masking.py --query ${input} --repeat_gff ${rp_gff} --mode ${mode} --output_masked ${out_masked}
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence to be masked" help="" />
