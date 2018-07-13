@@ -1,8 +1,10 @@
 <tool id="domains_extract" name="Extract Domains Nucleotide Sequences" version="1.0.0">
 <description> Tool to extract nucleotide sequences of protein domains found by DANTE </description>
+<requirements>
+    <requirement type="package" version="1.0.0" >profrep</requirement>
+</requirements>
 <command>
 TEMP_DIR_LINEAGES=\$(mktemp -d) &amp;&amp;
-echo \$TEMP_DIR_LINEAGES &amp;&amp;
 python3 ${__tool_directory__}/extract_domains_seqs.py --domains_gff ${domains_gff} --input_dna ${input_dna} --out_dir \$TEMP_DIR_LINEAGES
 
  #if $extend_edges:
@@ -53,7 +55,7 @@ OUTPUT:
 By default sequences will be EXTENDED if the alignment reported by LASTAL does not cover the whole protein sequence from the database. 
 As the result, the corresponding nucleotide region of the WHOLE aligned database domain will be reported. For every record in the GFF3 file the sequence is reported for the BEST HIT within the domain region under following conditions:
 
-	* The domain cannot be ambiguous, i.e. the FINAL CLASSIFICATION of the domains region corresponds to a last classification level
+	* The domain cannot be ambiguous, i.e. the FINAL CLASSIFICATION of the domains region corresponds to the last classification level
 	* The extracted sequences are not reported in the case they contain any Ns within the extracted region
 
 </help>
