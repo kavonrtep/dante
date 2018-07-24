@@ -18,13 +18,13 @@ def cut_region(GFF_IN, GFF_OUT, REGION, NEW_SEQ_ID):
 	in form: original_seq_name:start-end (e.g. chr1:1000-2000)
 	Write a new GFF containing only records from this region
 	If new SEQ ID for extracted region is not provided, it will be named based on the region to cut
-	! ALLOWS TO CUT ONLY ONE REGION AT ONE TIME
+	! ALLOWS TO CUT ONLY ONE REGION AT A TIME
 	'''
 	## cut a particular part of a paritcular sequence
 	if ":" and "-" in REGION:
-		int_start = int(REGION.split(":")[-1].split("-")[0])
-		int_end = int(REGION.split(":")[-1].split("-")[1])	
 		seq_to_cut = ":".join(REGION.split(":")[:-1])
+		int_start = int(REGION.split(":")[-1].split("-")[0])
+		int_end = int(REGION.split(":")[-1].split("-")[1])		
 	## cut the whole sequence if region is not specified 
 	else:
 		int_start = 0
@@ -38,7 +38,7 @@ def cut_region(GFF_IN, GFF_OUT, REGION, NEW_SEQ_ID):
 			gff_out.write("##gff-version 3\n")
 			gff_out.write("##sequence region {}\n".format(REGION))
 			for line in gff_in:
-				if not line.startswith("#") and line.split("\t")[0] == seq_to_cut and int(float(line.split("\t")[3])) >= int_start and int(float((line.split("\t")[4])) <= int_end:
+				if not line.startswith("#") and line.split("\t")[0] == seq_to_cut and int(float(line.split("\t")[3])) >= int_start and int(float(line.split("\t")[4])) <= int_end:
 					new_start = int(line.split("\t")[3]) - int_start + 1
 					new_end = int(line.split("\t")[4]) - int_start + 1
 					gff_out.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(NEW_SEQ_ID, line.split("\t")[1], line.split("\t")[2], new_start, new_end, line.split("\t")[5], line.split("\t")[6],line.split("\t")[7],line.split("\t")[8]))
@@ -55,7 +55,7 @@ def main(args):
 		GFF_OUT = "{}_cut{}.gff3".format(GFF_IN, REGION)
 		
 	if not NEW_SEQ_ID:
-		NEW_SEQ_ID = "{}".format(REGION)
+		NEW_SEQ_ID = REGION
 		
 		
 	cut_region(GFF_IN, GFF_OUT, REGION, NEW_SEQ_ID)

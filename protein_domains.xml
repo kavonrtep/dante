@@ -1,5 +1,5 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
-<description> Primary tool to find and classify all protein domains in a DNA sequence based on the database of transposable elements protein domains (NO QUALITY FILTER USED) </description>
+<description> Primary tool to find and classify ALL transposable elements protein domains in a DNA sequence (NO QUALITY FILTER USED) </description>
 <command>
 python3 ${__tool_directory__}/protein_domains.py --query ${input} --domain_gff ${DomGff}
  #if $db_type == 'vir':
@@ -40,7 +40,7 @@ This tool uses external aligning programme `LAST`_ and RepeatExplorer database o
 	
 **There are 2 outputs produced by this tool:**
 	
-1. GFF3 file of all proteins domains built from all hits found by LAST. Potential domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID, alignment score and strand orientation. The last "Attributes" column contains several semicolon-separated information related to annotation, repetitive classification, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool
+1. GFF3 file of all proteins domains built from all hits found by LAST. Domains are reported per line as regions (start - end) on the original DNA sequence including the seq ID, alignment score and strand orientation. The last "Attributes" column contains several semicolon-separated information related to annotation, repetitive classification, alignment and its quality. This file can undergo further filtering using *Protein Domain Filter* tool
 
 - Attributes reported always:
 
@@ -79,6 +79,9 @@ This tool uses external aligning programme `LAST`_ and RepeatExplorer database o
 		
 	Relat_Interruptions
 		number of the interruptions (frameshifts + stop codons) in aligned translated query sequence per each starting 100 AA
+		
+	Hit_to_DB_Length
+		proportion of alignment length to the original length of the protein domain from database
 	
 	
 

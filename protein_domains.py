@@ -587,7 +587,6 @@ def main(args):
 				os.makedirs(OUTPUT_DIR)
 		OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR, os.path.basename(OUTPUT_DOMAIN))
 	domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN, THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
-
 	
 	
 	print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t))
