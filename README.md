@@ -335,7 +335,7 @@ e.g. getting quality filtered integrase(INT) domains of all gypsy transposable e
 
 ### Extract Domains Nucleotide Sequences ###
 
-This tool extracts nucleotide sequences of protein domains from reference DNA based on DANTE's output. It can be used e.g. for deriving phylogenetic relations of individual mobile elements within a species. 
+This tool extracts nucleotide sequences of protein domains from reference DNA based on DANTE's output. It can be used e.g. for deriving phylogenetic relations of individual mobile elements classes within a species. 
 
 #### INPUTS ####
 
@@ -352,7 +352,7 @@ This tool extracts nucleotide sequences of protein domains from reference DNA ba
 
 #### USAGE ####	
 		usage: extract_domains_seqs.py [-h] -i INPUT_DNA -d DOMAINS_GFF -cs
-									   CLASSIFICATION [-out OUT_DIR] [-ex EXTENDED]
+			CLASSIFICATION [-out OUT_DIR] [-ex EXTENDED]
 
 		optional arguments:
 		  -h, --help            show this help message and exit
@@ -368,6 +368,8 @@ This tool extracts nucleotide sequences of protein domains from reference DNA ba
 								extend the domains edges if not the whole datatabase
 								sequence was aligned
 
+#### HOW TO RUN EXAMPLE ####
+	./extract_domains_seqs.py --domains_gff PATH_PROTEIN_DOMAINS_GFF --input_dna PATH_TO_INPUT_DNA  --classification PROTEIN_DOMAINS_DB_CLASS_TBL --extended True
 
 ### GALAXY implementation ###
 
@@ -389,23 +391,29 @@ This tool extracts nucleotide sequences of protein domains from reference DNA ba
 
 https://nina_h@bitbucket.org/nina_h/profrep.git
 
-branch "cerit"
+branch "cerit" --> only Pisum Sativum Terno in preparad annotation datasets
+branch "develop"/"master" --> extended internal database of species (not published, or for internal purposes)
 
 #### Configuration #####
 
 Add tools
 
-	<section id="experimental" name="Experimental Tools" >
+	<section name="Assembly annotation" id="annotation">
 		<label id="profrep_prepare" text="ProfRep Data Preparation" />
-		  <tool file="profrep/extract_data_for_profrep.xml" />
-		  <tool file="profrep/db_reducing.xml" />
+			<tool file="profrep/extract_data_for_profrep.xml" />
+			<tool file="profrep/db_reducing.xml" />
 		<label id="profrep_main" text="Profrep" />
-		  <tool file="profrep/profrep.xml" />
+			<tool file="profrep/profrep.xml" />
 		<label id="profrep_supplementary" text="Profrep Supplementary" />
-		  <tool file="profrep/profrep_refine.xml" />
-		  <tool file="profrep/profrep_masking.xml" />
-		  <tool file="profrep/gff_select_region.xml" />
-	</section>
+			<tool file="profrep/profrep_refine.xml" />
+			<tool file="profrep/profrep_masking.xml" />
+			<tool file="profrep/gff_select_region.xml" />
+		<label id="domains" text="DANTE" />
+			<tool file="profrep/protein_domains.xml" />
+			<tool file="profrep/domains_filtering.xml" />
+			<tool file="profrep/extract_domains_seqs.xml" />
+  </section>
+
 	
 to 
 
@@ -417,11 +425,23 @@ Place PROFREP_DB files to
 
 	$__tool_data_path__/profrep
 
+*REMARK* PROFREP_DB files contain prepared annotation data for species in the roll-up menu:
+	
+	* sequences.fasta - including BLAST database files which was created by:
+		 makeblastdb -in >sequences.fasta -dbtype nucl
+	* hitosort.cls file
+	* classification table table
 
 Place DANTE_DB files to
 
 	$__tool_data_path__/protein_domains
-
+	
+*REMARK* DANTE_DB files contain protein domains database files:
+	* protein domains database including LASTAL database files which was created by:
+		lastdb -p -cR01 >database_name< >database_name<
+		(lastal database files are actually enough, original datatabse table does not have to be present)
+	* classification table
+	
 ------------------------------------------------------------------------	
 	
 Create

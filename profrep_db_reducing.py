@@ -110,7 +110,6 @@ def get_read_sequences(READS_ALL, reads_dict, reads_files_list):
 					with open(reads_dict[read][1], "a") as reads_file:
 						reads_file.write(line)
 						reads_file.write(reads_all.readline())
-	print(reads_files_list)
 		
 
 def process_reads_groups(reads_seqs_cl_reduced, reads_repre_dict):
@@ -177,11 +176,9 @@ def main(args):
 	
 	if not os.path.isabs(CLS_REDUCED):
 		CLS_REDUCED = os.path.join(os.getcwd(), CLS_REDUCED)
-		print(CLS_REDUCED)
 		
 	if not os.path.isabs(READS_ALL_REDUCED):
 		READS_ALL_REDUCED = os.path.join(os.getcwd(), READS_ALL_REDUCED)
-		print(READS_ALL_REDUCED)
 	
 	reads_repre_dict = representative_reads(READS_ALL, CLS_FILE, CL_SIZE_TH, CLS_REDUCED, IDENTITY_TH)
 	reduce_reads(READS_ALL, READS_ALL_REDUCED, reads_repre_dict)
