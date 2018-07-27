@@ -4,11 +4,9 @@
 ## 1. PROFREP ##
 *- **PROF**iles of **REP**eats -* 
 
-
 The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation in DNA sequences (typically assemblies but not necessarily). Moreover, it provides repetitive profiles of the sequence, pointing out quantitative representation of individual repeats along the sequence as well as the overall repetitiveness.
 
-### Dependencies ###
-
+### DEPENDENCIES ###
 
 * python 3.4 or higher with packages:
 	* numpy
@@ -27,20 +25,45 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 	* domains_filtering.py
 	
 
+#### INPUTS ####
+
+* **DNA sequence(s) to annotate** [multiFASTA]
+
+* **Species specific dataset** available from RepeatExplorer archive consisting of:
+
+	* NGS reads sequences [multiFASTA]
+		* In RE archive: *seqclust -> sequences -> sequences.fasta*
+	* CLS file of clusters and belonging reads [multiFASTA] 
+		* in RE archive: *seqclust -> clustering -> hitsort.cls*
+	* Classification table [TSV, CSV] 
+		* in RE archive: *PROFREP_CLASSIFICATION_TEMPLATE.csv* (automatic classification)
+
+
+#### OUTPUTS ####
+	
+* **HTML summary report,JBrowse Data Directory** showing basic information and repetitive profile graphs as well as protein domains (optional) for individual sequences (up to 50). This output also serves as an data directory for [JBrowse](https://jbrowse.org/) genome browser. You can create a standalone JBrowse instance for further detailed visualization of the output tracks using Galaxy-integrated tool. This output can also be downloaded as an archive containing all relevant data for visualization via locally installed JBrowse server (see more about visualization in OUTPUT VISUALIZATION below)
+* **Ns GFF** - reports unspecified (N) bases regions in the sequence
+* **Repeats GFF** - reports repetitive regions of a certain length (defaultly **80**) and above hits/copy numbers threshold (defaultly **3**)
+* **Domains GFF** - reports protein domains, classification of domain, chain orientation and alignment sequences
+* Log file
+
+
 ### Running ProfRep ###
 
-	usage: profrep.py [-h] -q QUERY [-d DATABASE] [-a ANNOTATION_TBL] [-c CLS]
-					  [-tbl DATASETS_TBL] [-id DB_ID] [-i IDENTICAL]
-					  [-l ALIGN_LENGTH] [-m MAX_ALIGNMENTS] [-e E_VALUE]
-					  [-df DUST_FILTER] [-ws WORD_SIZE] [-t TASK] [-n NEW_DB]
-					  [-w WINDOW] [-o OVERLAP] [-pd PROTEIN_DOMAINS]
-					  [-pdb PROTEIN_DATABASE] [-cs CLASSIFICATION] [-wd WIN_DOM]
-					  [-od OVERLAP_DOM] [-thsc THRESHOLD_SCORE] [-lg LOG_FILE]
-					  [-ouf OUTPUT_GFF] [-oug DOMAIN_GFF] [-oun N_GFF]
-					  [-hf HTML_FILE] [-hp HTML_PATH] [-cn COPY_NUMBERS]
-					  [-gs GENOME_SIZE] [-thr THRESHOLD_REPEAT]
-					  [-ths THRESHOLD_SEGMENT] [-td TOOL_DIR] [-jb JBROWSE_BIN]
-
+	usage: profrep.py [-h] -q QUERY -rdb READS -a ANN_TBL -c CLS [-id DB_ID]
+                  [-bs BIT_SCORE] [-m MAX_ALIGNMENTS] [-e E_VALUE]
+                  [-df DUST_FILTER] [-ws WORD_SIZE] [-t TASK] [-n NEW_DB]
+                  [-w WINDOW] [-o OVERLAP] [-pd PROTEIN_DOMAINS]
+                  [-pdb PROTEIN_DATABASE] [-cs CLASSIFICATION] [-wd WIN_DOM]
+                  [-od OVERLAP_DOM] [-thsc THRESHOLD_SCORE]
+                  [-thl {float range 0.0..1.0}] [-thi {float range 0.0..1.0}]
+                  [-ths {float range 0.0..1.0}] [-ir INTERRUPTIONS]
+                  [-mlen MAX_LEN_PROPORTION] [-lg LOG_FILE] [-ouf OUTPUT_GFF]
+                  [-oug DOMAIN_GFF] [-oun N_GFF] [-hf HTML_FILE]
+                  [-hp HTML_PATH] [-cn COPY_NUMBERS] [-gs GENOME_SIZE]
+                  [-thr THRESHOLD_REPEAT] [-thsg THRESHOLD_SEGMENT]
+                  [-jb JBROWSE_BIN]
+                  
 
 	optional arguments:
 	  -h, --help            show this help message and exit
@@ -49,34 +72,27 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 	  -q QUERY, --query QUERY
 							input DNA sequence in (multi)fasta format (default:
 							None)
-	  -d DATABASE, --database DATABASE
+	  -rdb READS, --reads READS
 							blast database of all sequencing reads (default: None)
-	  -a ANNOTATION_TBL, --annotation_tbl ANNOTATION_TBL
+	  -a ANN_TBL, --ann_tbl ANN_TBL
 							clusters annotation table, tab-separated number of
 							cluster and its classification (default: None)
 	  -c CLS, --cls CLS     cls file containing reads assigned to clusters
 							(hitsort.cls) (default: None)
 
 	alternative required arguments - prepared datasets:
-	  -tbl DATASETS_TBL, --datasets_tbl DATASETS_TBL
-							table with prepared annotation datasets (default:
-							None)
 	  -id DB_ID, --db_id DB_ID
 							annotation dataset ID (first column of datasets table)
 							(default: None)
 
 	optional arguments - BLAST Search:
-	  -i IDENTICAL, --identical IDENTICAL
-							blast filtering option: percentage indentity threshold
-							between query and mapped read from db (default: 95)
-	  -l ALIGN_LENGTH, --align_length ALIGN_LENGTH
-							blast filtering option: minimal alignment length
-							threshold in bp (default: 40)
+	  -bs BIT_SCORE, --bit_score BIT_SCORE
+							bitscore threshold (default: 50)
 	  -m MAX_ALIGNMENTS, --max_alignments MAX_ALIGNMENTS
 							blast filtering option: maximal number of alignments
 							in the output (default: 10000000)
 	  -e E_VALUE, --e_value E_VALUE
-							blast setting option: e-value (default: 1e-15)
+							blast setting option: e-value (default: 0.1)
 	  -df DUST_FILTER, --dust_filter DUST_FILTER
 							dust filters low-complexity regions during BLAST
 							search (default: '20 64 1')
@@ -85,7 +101,9 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 							(default: 11)
 	  -t TASK, --task TASK  type of blast to be triggered (default: blastn)
 	  -n NEW_DB, --new_db NEW_DB
-							create a new blast database (default: False)
+							create a new blast database, USE THIS OPTION IF YOU
+							RUN PROFREP WITH NEW DATABASE FOR THE FIRST TIME
+							(default: True)
 
 	optional arguments - Parallel Processing:
 	  -w WINDOW, --window WINDOW
@@ -97,7 +115,7 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 
 	optional arguments - Protein Domains:
 	  -pd PROTEIN_DOMAINS, --protein_domains PROTEIN_DOMAINS
-							use module for protein domains (default: True)
+							use module for protein domains (default: False)
 	  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
 							protein domains database (default: None)
 	  -cs CLASSIFICATION, --classification CLASSIFICATION
@@ -112,6 +130,21 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 							protein domains module: percentage of the best score
 							within the cluster to significant domains (default:
 							80)
+	  -thl {float range 0.0..1.0}, --th_length {float range 0.0..1.0}
+							proportion of alignment length threshold (default:
+							0.8)
+	  -thi {float range 0.0..1.0}, --th_identity {float range 0.0..1.0}
+							proportion of alignment identity threshold (default:
+							0.35)
+	  -ths {float range 0.0..1.0}, --th_similarity {float range 0.0..1.0}
+							threshold for alignment proportional similarity
+							(default: 0.45)
+	  -ir INTERRUPTIONS, --interruptions INTERRUPTIONS
+							interruptions (frameshifts + stop codons) tolerance
+							threshold per 100 AA (default: 3)
+	  -mlen MAX_LEN_PROPORTION, --max_len_proportion MAX_LEN_PROPORTION
+							maximal proportion of alignment length to the original
+							length of protein domain from database (default: 1.2)
 
 	optional arguments - Output Paths:
 	  -lg LOG_FILE, --log_file LOG_FILE
@@ -128,7 +161,7 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 	  -hf HTML_FILE, --html_file HTML_FILE
 							path to output html file (default: output.html)
 	  -hp HTML_PATH, --html_path HTML_PATH
-							path to html extra files (default: output_dir)
+							path to html extra files (default: profrep_output_dir)
 
 	optional arguments - Copy Numbers/Hits :
 	  -cn COPY_NUMBERS, --copy_numbers COPY_NUMBERS
@@ -138,16 +171,24 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 							numbers and you use custom data (default: None)
 	  -thr THRESHOLD_REPEAT, --threshold_repeat THRESHOLD_REPEAT
 							threshold for hits/copy numbers per position to be
-							considered repetitive (default: 5)
-	  -ths THRESHOLD_SEGMENT, --threshold_segment THRESHOLD_SEGMENT
+							considered repetitive (default: 3)
+	  -thsg THRESHOLD_SEGMENT, --threshold_segment THRESHOLD_SEGMENT
 							threshold for the length of repetitive segment to be
 							reported (default: 80)
 
 	optional arguments - Enviroment Variables:
-	  -td TOOL_DIR, --tool_dir TOOL_DIR
-							Galaxy tool data directory in galaxy (default: None)
 	  -jb JBROWSE_BIN, --jbrowse_bin JBROWSE_BIN
 							path to JBrowse bin directory (default: None)
+
+							
+#### HOW TO RUN EXAMPLE ####
+
+		./protein.py --query PATH_TO_DNA_SEQ --reads PATH_TO_READS --ann_tbl PATH_TO_CLUSTERS_CLASSIFICATION  --cls PATH_TO_hitsort.cls 
+		
+	 When running for the first time with a new reads database use:
+		
+		--new_db True
+
 							
 ### ProfRep Data Preparation ###
 
@@ -228,7 +269,7 @@ This tool provides **preliminary** output of all domains types which are not fil
 								overlap of sequences in two consecutive windows
 								(default: 10000)
 
-	required named arguments:
+		required named arguments:
 		  -q QUERY, --query QUERY
 								input DNA sequence to search for protein domains in a
 								fasta format. Multifasta format allowed. (default:
@@ -392,6 +433,7 @@ This tool extracts nucleotide sequences of protein domains from reference DNA ba
 https://nina_h@bitbucket.org/nina_h/profrep.git
 
 branch "cerit" --> only Pisum Sativum Terno in preparad annotation datasets
+
 branch "develop"/"master" --> extended internal database of species (not published, or for internal purposes)
 
 #### Configuration #####
