@@ -1,0 +1,14 @@
+version=744
+alphabet=ACDEFGHIKLMNPQRSTVWY
+numofsequences=11192
+numofletters=2008412
+letterfreqs=127093 41789 106968 103740 95555 105584 57161 133341 130595 209321 39059 96699 83089 74753 117438 145269 112621 131049 29776 67512
+maxunsortedinterval=0
+keeplowercase=0
+tantansetting=1
+masklowercase=1
+numofindexes=1
+totallength=2020629
+specialcharacters=20946
+prefixlength=4
+subsetseed=A C D E F G H I K L M N P Q R S T V W Y

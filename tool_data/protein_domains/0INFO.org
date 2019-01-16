@@ -1,0 +1,50 @@
+* Metazoa v 3.1 provided by Nina (copied from tool_data/protein_domains on galaxy)
+renamed - added v3.1 info
+
+#+BEGIN_EXAMPLE
+  total used in directory 14M available 17427278848
+C -rw-r--r-- 1 petr 249K čen  7  2018 Metazoa_v3.1_class
+C -rw-r--r-- 1 petr 2,4M čen  7  2018 Metazoa_v3.1_pdb
+C -rw-r--r-- 1 petr 658K čen  7  2018 Metazoa_v3.1_pdb.bck
+C -rw-r--r-- 1 petr 403K čen  7  2018 Metazoa_v3.1_pdb.des
+  -rw-rw-r-- 1 petr    0 led 15 17:22 0INFO.org
+C -rw-r--r-- 1 petr  422 čen  7  2018 Metazoa_v3.1_pdb.prj
+C -rw-r--r-- 1 petr  44K čen  7  2018 Metazoa_v3.1_pdb.sds
+C -rw-r--r-- 1 petr  44K čen  7  2018 Metazoa_v3.1_pdb.ssp
+C -rw-r--r-- 1 petr 7,7M čen  7  2018 Metazoa_v3.1_pdb.suf
+C -rw-r--r-- 1 petr 2,0M čen  7  2018 Metazoa_v3.1_pdb.tis
+#+END_EXAMPLE
+
+
+* Metazoa 3.0 correspond to version privided by thihana - TODO
+[[/mnt/raid/users/petr/workspace/repex_tarean/databases/from_tihana/]]
+
+#+BEGIN_SRC sh
+cd /mnt/raid/users/petr/workspace/profrep/tool_data/protein_domains/
+cp /mnt/raid/users/petr/workspace/repex_tarean/databases/from_tihana/classification_with_Maverick_and_Helitron_20180327 \
+ Metazoa_v3.0_class
+cp /mnt/raid/users/petr/workspace/repex_tarean/databases/from_tihana/protein_database_with_Maverick_and_helitron_20180327 \
+ Metazoa_v3.0_pdb
+lastdb -p  Metazoa_v3.0_pdb Metazoa_v3.0_pdb
+#+END_SRC
+
+#+RESULTS:
+
+
+* v3.0 Viridiplantae
+copied from [[/mnt/raid/454_data/databases/protein_domains/Viridiplantae_v3.0/]]
+
+#+BEGIN_SRC sh
+cp /mnt/raid/454_data/databases/protein_domains/Viridiplantae_v3.0/Viridiplantae_v3.0_ALL_protein-domains.fasta \
+  /mnt/raid/users/petr/workspace/profrep/tool_data/protein_domains/Viridiplantae_v3.0_pdb
+
+cp /mnt/raid/454_data/databases/protein_domains/Viridiplantae_v3.0/Viridiplantae_v3.0_ALL_classification \
+  /mnt/raid/users/petr/workspace/profrep/tool_data/protein_domains/Viridiplantae_v3.0_class
+cd /mnt/raid/users/petr/workspace/profrep/tool_data/protein_domains/
+lastdb -p  Viridiplantae_v3.0_pdb Viridiplantae_v3.0_pdb
+#+END_SRC
+
+#+RESULTS:
+
+* Viridiae copied from Nina
+copied from tool_data/protein_domains on galaxy
