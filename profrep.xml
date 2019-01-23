@@ -21,13 +21,8 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
 
  #if $dm.domains_switch:
 	--domain_gff ${DomGff}
-	#if $dm.db_type == 'vir':
-		--protein_database ${__tool_data_path__ }/protein_domains/Viridiplantae_pdb
-		--classification ${__tool_data_path__ }/protein_domains/Viridiplantae_class
-	#elif $dm.db_type == 'met'
-		--protein_database ${__tool_data_path__ }/protein_domains/Metazoa_pdb
-		--classification ${__tool_data_path__ }/protein_domains/Metazoa_class
-	#end if
+	--protein_database ${__tool_data_path__ }/protein_domains/${dm.db_type}_pdb
+	--classification ${__tool_data_path__ }/protein_domains/${dm.db_type}_class
  #end if
 
  #if $advanced_options.opts:  
@@ -89,13 +84,15 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
   </when>
  </conditional>
  <conditional name="dm" >
- <param name="domains_switch" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Report protein domains"/>
-  <when value="True">
-	<param name="db_type" type="select" label="Select protein domains database" help="">
-     <option value="vir">Viridiplantae</option>
-     <option value="met">Metazoans</option>
-	</param>
-  </when>
+   <param name="domains_switch" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="True" label="Report protein domains"/>
+   <when value="True">
+     <param name="db_type" type="select" label="Select taxon and protein domain database version (REXdb)" help="">
+       <options from_file="rexdb_versions.txt">
+         <column name="name" index="0"/>
+         <column name="value" index="1"/>
+       </options>
+     </param>
+   </when>
  </conditional>
  <conditional name="advanced_options" >
   <param name="opts" type="boolean" display="checkbox" truevalue="True" falsevalue="False" checked="False" label="Advanced searching options"/>
