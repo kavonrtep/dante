@@ -1,4 +1,0 @@
-#ID	Name	READS	CLS	ANNOTATION	Coverage Reference	Ref_link
-PST	Pisum sativum Terno - REDUCED (Macas et al. 2015)	PST_reads_all_reduced	PST_hitsort_reduced.cls	PST_annotation	0.1038	Macas J., Novak P., Pellicer J., Cizkova J., Koblizkova A., Neumann P., Fukova I., Dolezel J., Kelly L., Leitch I. (2015) - In Depth Characterization of Repetitive DNA in 23 Plant Genomes Reveals Sources of Genome Size Variation in the Legume Tribe Fabeae PLoS ONE 10 (11): e0143424.	http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0143424	 
-
-

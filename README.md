@@ -24,7 +24,15 @@ The ProfRep main tool engages outputs of RepeatExplorer for repeats annotation i
 	* protein_domains.py
 	* domains_filtering.py
 	
+* Profrep databases
 
+There are precompiled profrep annotation dataset for limited number of species. List of species can be find in file [prepared_datasets.txt](tool_data/prepared_datasets). Databases include large files and must be downloaded from our website:
+
+    cd tool_data
+    wget http://repeatexplorer.org/repeatexplorer/wp-content/uploads/profrep.tar.gz
+    tar xzvf profrep.tar.gz
+        
+    
 #### INPUTS ####
 
 * **DNA sequence(s) to annotate** [multiFASTA]
