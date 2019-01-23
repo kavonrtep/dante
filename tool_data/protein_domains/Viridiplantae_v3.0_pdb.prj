@@ -1,0 +1,14 @@
+version=963
+alphabet=ACDEFGHIKLMNPQRSTVWY
+numofsequences=80446
+numofletters=12893639
+letterfreqs=824592 239121 720982 743531 672119 721119 386527 739935 887019 1262549 305779 506792 542316 523359 739564 866248 665456 841540 235802 469289
+maxunsortedinterval=0
+keeplowercase=1
+masklowercase=0
+numofindexes=1
+integersize=32
+totallength=12999180
+specialcharacters=105541
+prefixlength=4
+subsetseed=A C D E F G H I K L M N P Q R S T V W Y

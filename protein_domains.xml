@@ -1,21 +1,24 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
+  <stdio>
+    <regex match="Traceback" source="stderr" level="fail" description="Unknown error" />
+    <regex match="error" source="stderr" level="fail" description="Unknown error" />
+  </stdio>
 <description> Primary tool to find and classify ALL transposable elements protein domains in a DNA sequence (NO QUALITY FILTER USED) </description>
 <command>
 python3 ${__tool_directory__}/protein_domains.py --query ${input} --domain_gff ${DomGff}
- #if $db_type == 'vir':
-	--protein_database ${__tool_data_path__ }/protein_domains/Viridiplantae_pdb
-	--classification ${__tool_data_path__ }/protein_domains/Viridiplantae_class
- #elif $db_type == 'met'
-	--protein_database ${__tool_data_path__ }/protein_domains/Metazoa_pdb
-	--classification ${__tool_data_path__ }/protein_domains/Metazoa_class
- #end if
+	--protein_database ${__tool_data_path__ }/protein_domains/${db_type}_pdb
+	--classification ${__tool_data_path__ }/protein_domains/${db_type}_class
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
- <param name="db_type" type="select" label="Select protein domains database" help="">
-    <option value="vir">Viridiplantae</option>
-    <option value="met">Metazoans</option>
+
+ <param name="db_type" type="select" label="Select taxon and protein domain database version (REXdb)" help="">
+   <options from_file="rexdb_versions.txt">
+     <column name="name" index="0"/>
+     <column name="value" index="1"/>
+   </options>
  </param>
+
 </inputs>
 
 <outputs>

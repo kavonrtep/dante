@@ -1,0 +1,6 @@
+#name	value is base name for file with classification and pdb
+Viridiplantae_version_3.0	Viridiplantae_v3.0
+Viridiplantae_version_2.2	Viridiplantae_v2.2
+Metazoa_version_3.1	Metazoa_v3.1
+Metazoa_version_3.0	Metazoa_v3.0
+
