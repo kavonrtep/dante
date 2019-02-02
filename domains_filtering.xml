@@ -1,5 +1,5 @@
-
 <tool id="domains_filter" name="Protein Domains Filter" version="1.0.0">
+<requirements><requirement type="package" version="1.0.0">domains_filter</requirement></requirements>
   <stdio>
     <regex match="Traceback" source="stderr" level="fail" description="Unknown error" />
     <regex match="error" source="stderr" level="fail" description="Unknown error" />

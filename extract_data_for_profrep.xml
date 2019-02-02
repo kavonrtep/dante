@@ -1,4 +1,5 @@
 <tool id="extract_data" name="Extract Data For ProfRep" version="1.0.0">
+<requirements><requirement type="package" version="1.0.0">profrep</requirement></requirements>
 <description> Extract data for ProfRep from RepaetExplorer </description>
 <command>
 python3 ${__tool_directory__}/extract_data_for_profrep.py --re_archive ${re_archive} --output_cls ${output_cls} --output_reads_all ${output_reads_all} --output_annotation ${output_annotation}

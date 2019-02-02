@@ -1,4 +1,5 @@
 <tool id="profrep_refine" name="ProfRep Refiner" version="1.0.0">
+<requirements><requirement type="package" version="1.0.0">profrep</requirement></requirements>
 <description> Tool to polish the raw ProfRep output in order to evaluate overlapping regions of different classifications and to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
 <command>
 python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} --out_refined ${out_refined} --gap_threshold ${gap_th} --include_dom ${include_domains.domains}

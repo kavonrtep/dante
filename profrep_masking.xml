@@ -1,7 +1,7 @@
 <tool id="profrep_mask" name="ProfRep Masker" version="1.0.0">
 <description> Tool to mask repetitive regions of original DNA seq based on the repeat regions reported by ProfRep </description>
 <requirements>
-    <requirement type="package" version="1.0.0" >profrep</requirement>
+    <requirement type="package" version="1.0.0">profrep</requirement>
 </requirements>
 <command>
 python3 ${__tool_directory__}/profrep_masking.py --query ${input} --repeat_gff ${rp_gff} --mode ${mode} --output_masked ${out_masked}

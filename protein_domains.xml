@@ -1,4 +1,5 @@
 <tool id="domains_finder" name="Protein Domains Finder" version="1.0.0">
+<requirements><requirement type="package" version="1.0.0">domains_finder</requirement></requirements>
   <stdio>
     <regex match="Traceback" source="stderr" level="fail" description="Unknown error" />
     <regex match="error" source="stderr" level="fail" description="Unknown error" />

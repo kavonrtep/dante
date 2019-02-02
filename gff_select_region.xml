@@ -1,5 +1,5 @@
-
 <tool id="gff_select" name="GFF Region Selector" version="1.0.0">
+<requirements><requirement type="package" version="1.0.0">profrep</requirement></requirements>
 <description> Tool to select a specific sequence region from a GFF file </description>
 <command>
 python3 ${__tool_directory__}/gff_selection.py  --gff_input ${gff_input} --region ${region} --gff_output ${gff_output} --new_seq_id '${new_seq_id}' 

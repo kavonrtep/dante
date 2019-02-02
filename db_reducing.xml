@@ -1,7 +1,8 @@
 <tool id="db_reducing" name="ProfRep Reducing" version="1.0.0">
 <description> Tool to reduce database of reads sequences based on their similarities to speed up ProfRep </description>
 <requirements>
-    <requirement type="package" version="4.6.4" >cd-hit</requirement>
+    <requirement type="package" version="1.0.0">profrep</requirement>
+    <requirement type="package" version="4.6.4">cd-hit</requirement>
 </requirements>
 <command>
 python3 ${__tool_directory__}/profrep_db_reducing.py --reads_all ${reads_all} --cls ${cls} --cluster_size ${cluster_size} --identity_th ${identity_th} --reads_reduced ${reads_reduced} --cls_reduced ${cls_reduced}
