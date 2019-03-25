@@ -1,62 +1,61 @@
 <tool id="domains_extract" name="Extract Domains Nucleotide Sequences" version="1.0.0">
-<description> Tool to extract nucleotide sequences of protein domains found by DANTE </description>
-<requirements>
+  <description> Tool to extract nucleotide sequences of protein domains found by DANTE </description>
+  <requirements>
     <requirement type="package" version="1.0.0" >profrep</requirement>
-</requirements>
-<command>
-TEMP_DIR_LINEAGES=\$(mktemp -d) &amp;&amp;
-python3 ${__tool_directory__}/extract_domains_seqs.py --domains_gff ${domains_gff} --input_dna ${input_dna} --out_dir \$TEMP_DIR_LINEAGES
+  </requirements>
+  <command>
+    TEMP_DIR_LINEAGES=\$(mktemp -d) &amp;&amp;
+    python3 ${__tool_directory__}/extract_domains_seqs.py --domains_gff ${domains_gff} --input_dna ${input_dna} --out_dir \$TEMP_DIR_LINEAGES
 
- #if $extend_edges:
-	--extended True
- #else:
-	--extended False
- #end if
- #if $db_type == 'vir':
-	--classification ${__tool_data_path__ }/protein_domains/Viridiplantae_class
- #elif $db_type == 'met'
-	--classification ${__tool_data_path__ }/protein_domains/Metazoa_class
- #end if 
- &amp;&amp;
+    #if $extend_edges:
+	  --extended True
+    #else:
+	  --extended False
+    #end if
+	  --classification ${__tool_data_path__ }/protein_domains/${db_type}_class
+    &amp;&amp;
 
-cat \$TEMP_DIR_LINEAGES/domains_counts.txt \$TEMP_DIR_LINEAGES/*fasta > $out_fasta &amp;&amp;
-rm -rf \$TEMP_DIR_LINEAGES
-</command>
-<inputs>
-	<param format="fasta" type="data" name="input_dna" label="Input DNA" help="Choose input DNA sequence(s) to extract the domains from" />
-	<param format="gff" type="data" name="domains_gff" label="Protein domains GFF" help="Choose filtered protein domains GFF3 (DANTE's output)" />
-	<param name="db_type" type="select" label="Select protein domains database" help="">
-		<option value="vir">Viridiplantae</option>
-		<option value="met">Metazoans</option>
-	</param>
-	<param name="extend_edges" type="boolean" truevalue="True" falsevalue="False" checked="True" label="Extend sequence edges" help="Extend extracted sequence edges to the full length of database domains sequences"/>
-</inputs>
-<outputs>
- <data format="fasta" name="out_fasta" label="Concatenated fasta domains NT sequences from ${input_dna.hid}" /> 
-</outputs>
+    cat \$TEMP_DIR_LINEAGES/domains_counts.txt \$TEMP_DIR_LINEAGES/*fasta > $out_fasta &amp;&amp;
+    rm -rf \$TEMP_DIR_LINEAGES
+  </command>
+  <inputs>
+	  <param format="fasta" type="data" name="input_dna" label="Input DNA" help="Choose input DNA sequence(s) to extract the domains from" />
+	  <param format="gff" type="data" name="domains_gff" label="Protein domains GFF" help="Choose filtered protein domains GFF3 (DANTE's output)" />
+	  <param name="db_type" type="select" label="Select taxon and protein domain database version (REXdb)" help="">
+      <options from_file="rexdb_versions.txt">
+        <column name="name" index="0"/>
+        <column name="value" index="1"/>
+      </options>
+    </param>
 
-<help>
+	  <param name="extend_edges" type="boolean" truevalue="True" falsevalue="False" checked="True" label="Extend sequence edges" help="Extend extracted sequence edges to the full length of database domains sequences"/>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_fasta" label="Concatenated fasta domains NT sequences from ${input_dna.hid}" /> 
+  </outputs>
 
-**WHAT IT DOES**
+  <help>
 
-This tool extracts nucleotide sequences of protein domains from reference DNA based on DANTE's output. It can be used e.g. for deriving phylogenetic relations of individual mobile elements within a species. This can be done separately for individual protein domains types.
-In this case, prior running this tool use DANTE on input DNA:
+    **WHAT IT DOES**
 
-1. Protein Domains Finder
-2. Protein Domains Filter (quality filter + type of domain, e.g. RT)
-	
-INPUTS:
-	* original DNA sequence in multifasta format to extract the domains from 
-	* DANTE's output GFF3 file (preferably filtered for quality and specific domain type)
+    This tool extracts nucleotide sequences of protein domains from reference DNA based on DANTE's output. It can be used e.g. for deriving phylogenetic relations of individual mobile elements within a species. This can be done separately for individual protein domains types.
+    In this case, prior running this tool use DANTE on input DNA:
 
-OUTPUT:
+    1. Protein Domains Finder
+    2. Protein Domains Filter (quality filter + type of domain, e.g. RT)
+	  
+    INPUTS:
+	  * original DNA sequence in multifasta format to extract the domains from 
+	  * DANTE's output GFF3 file (preferably filtered for quality and specific domain type)
+
+    OUTPUT:
     * concatenated fasta file of nucleotide sequences for individual transposons lineages
     
-By default sequences will be EXTENDED if the alignment reported by LASTAL does not cover the whole protein sequence from the database. 
-As the result, the corresponding nucleotide region of the WHOLE aligned database domain will be reported. For every record in the GFF3 file the sequence is reported for the BEST HIT within the domain region under following conditions:
+    By default sequences will be EXTENDED if the alignment reported by LASTAL does not cover the whole protein sequence from the database. 
+    As the result, the corresponding nucleotide region of the WHOLE aligned database domain will be reported. For every record in the GFF3 file the sequence is reported for the BEST HIT within the domain region under following conditions:
 
-	* The domain cannot be ambiguous, i.e. the FINAL CLASSIFICATION of the domains region corresponds to the last classification level
-	* The extracted sequences are not reported in the case they contain any Ns within the extracted region
+	  * The domain cannot be ambiguous, i.e. the FINAL CLASSIFICATION of the domains region corresponds to the last classification level
+	  * The extracted sequences are not reported in the case they contain any Ns within the extracted region
 
-</help>
+  </help>
 </tool>
