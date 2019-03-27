@@ -37,7 +37,7 @@ N_GFF = "N_regions.gff"
 REPEATS_GFF = "output_repeats.gff"
 HTML = "output.html"
 LOG_FILE = "log.txt"
-PROFREP_DATA = "profrep_data"
+PROFREP_DATA = "tool_data/profrep"
 PROFREP_TBL = "prepared_datasets.txt"
 PROFREP_OUTPUT_DIR = "profrep_output_dir"
 ## JBrowse and Tracks Conf

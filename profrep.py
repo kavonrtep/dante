@@ -592,13 +592,14 @@ def main(args):
 	JBROWSE_BIN = args.jbrowse_bin
 	DUST_FILTER = args.dust_filter
 	LOG_FILE = args.log_file
+	JBROWSE_BIN = os.environ['JBROWSE_SOURCE_DIR']+"/bin"
 	
 	
-	if not JBROWSE_BIN: 
-		try:
-			JBROWSE_BIN = os.environ['JBROWSE_BIN']
-		except KeyError:
-			raise ValueError('There was no path to JBrowse bin found - set the enviroment variable JBROWSE_BIN or pass the argument explicitly')
+	#if not JBROWSE_BIN: 
+	#	try:
+	#		JBROWSE_BIN = os.environ['JBROWSE_BIN']
+	#	except KeyError:
+	#		raise ValueError('There was no path to JBrowse bin found - set the enviroment variable JBROWSE_BIN or pass the argument explicitly')
 	
 	
 	if CN and not DB_ID and not GS:
