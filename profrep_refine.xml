@@ -1,51 +1,52 @@
+
 <tool id="profrep_refine" name="ProfRep Refiner" version="1.0.0">
-<requirements><requirement type="package" version="1.0.0">profrep</requirement></requirements>
-<description> Tool to polish the raw ProfRep output in order to evaluate overlapping regions of different classifications and to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
-<command>
-python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} --out_refined ${out_refined} --gap_threshold ${gap_th} --include_dom ${include_domains.domains}
- #if $include_domains.domains:
-    --domains_gff ${include_domains.dom_gff} 
+  <requirements><requirement type="package" version="1.0.0">profrep</requirement></requirements>
+  <description> Tool to polish the raw ProfRep output in order to evaluate overlapping regions of different classifications and to interconnect fragmented parts of individual repeats, optionally supported by domains information </description>
+  <command>
+    python3 ${__tool_directory__}/profrep_refining.py --repeats_gff ${repeats_gff} --out_refined ${out_refined} --gap_threshold ${gap_th} --include_dom ${include_domains.domains}
+    #if $include_domains.domains:
+    --domains_gff ${include_domains.dom_gff}
     --dom_number ${include_domains.dom_num}
-    #if $include_domains.db_type == 'vir':
-		--class_tbl ${__tool_data_path__ }/protein_domains/Viridiplantae_class
-	#elif $include_domains.db_type == 'met'
-		--class_tbl ${__tool_data_path__ }/protein_domains/Metazoa_class
-	#end if
- #end if
-</command>
-<inputs>
-	<param format="gff" type="data" name="repeats_gff" label="Repeats GFF" help="Choose repeats GFF3 file from ProfRep output" />
-	<param name="gap_th" type="integer" value="250" label="Gap tolerance" help="Threshold for tolerated gap between two consecutive repeat regions of the same class to be interconnected" />
-	<conditional name="include_domains">
-	 <param name="domains" type="boolean" display="checkbox" truevalue="true" falsevalue="false" checked="true" label="Include protein domains information" help = "This helps to improve the confidence of the regions merging" />
-     <when value="true">
-	   <param format="gff" type="data" name="dom_gff" label="Domains GFF" help="Choose GFF3 file containing protein domains" />
-       <param name="dom_num" type="integer" value="2" min="0" max="10" label="Minimum domains" help="Min number of domains per mobile element to confirm the regions merging" />
-       <param name="db_type" type="select" label="Select protein domains database" help="">
-			<option value="vir">Viridiplantae</option>
-			<option value="met">Metazoans</option>
-		</param>
-     </when>
-	</conditional>
-</inputs>
-<outputs>
- <data format="gff3" name="out_refined" label="Refined GFF3 file from dataset ${repeats_gff.hid}" /> 
-</outputs>
+    --class_tbl  ${__tool_data_path__ }/protein_domains/${include_domains.db_type}_class
+    #end if
+  </command>
+  <inputs>
+    <param format="gff" type="data" name="repeats_gff" label="Repeats GFF" help="Choose repeats GFF3 file from ProfRep output" />
+    <param name="gap_th" type="integer" value="250" label="Gap tolerance" help="Threshold for tolerated gap between two consecutive repeat regions of the same class to be interconnected" />
+    <conditional name="include_domains">
+      <param name="domains" type="boolean" display="checkbox" truevalue="true" falsevalue="false" checked="true" label="Include protein domains information" help = "This helps to improve the confidence of the regions merging" />
+      <when value="true">
+        <param format="gff" type="data" name="dom_gff" label="Domains GFF" help="Choose GFF3 file containing protein domains" />
+        <param name="dom_num" type="integer" value="2" min="0" max="10" label="Minimum domains" help="Min number of domains per mobile element to confirm the regions merging" />
+        <param name="db_type" type="select" label="Select taxon and protein domain database version (REXdb)" help="">
+          <options from_file="rexdb_versions.txt">
+            <column name="name" index="0"/>
+            <column name="value" index="1"/>
+          </options>
+        </param>
 
-<help>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="gff3" name="out_refined" label="Refined GFF3 file from dataset ${repeats_gff.hid}" />
+  </outputs>
 
-**WHAT IT DOES**
+  <help>
 
-REFINING PROCESS of repeats annotation runs in two consecutive steps:
 
-	1. REMOVING LOW CONFIDENCE REPEATS REGIONS
-	
-	Prior the regions interconnecting, it is necessary to filter out some nested regions of different classification, which might be false positive and disrupt the merging process. However, not all of these overlapping regions of different classification are necessarily wrong and they can reveal inserted or chimeric elements. Thats why we only get rid of the regions with significantly lower quality. At first clusters of overlapping repeat regions are created. Within a cluster, regions are gradually checked based on descending PID. All the other regions occuring inside the current one (with some borders tolerance on each side - defaultly 10 bp), are removed in case their PID is more than 5% lower than the current region. Otherwise it will be preserved. Average PID (percentage of identity) is counted as the mean per each position for equally classified hits and then it is averaged over the whole region reported in repeats GFF. 
+    **WHAT IT DOES**
 
-	2. INTERCONNECTING REGIONS
-	
-	These "cleaned" regions are subsequently interconnected in the next step. It searches for consecutive repeats to create segments with the same classification that are not further from each other than a gap threshold (defaultly 250 bp). These segments cannot be corrupted by repeats of different classification. The confidence of merging is by default supported by the protein domains information (optional). In this case, a minimum number of protein domains of equal orientation must be present inside the expanded segment. These domains need to be unambiguously classified until the very last level (checked based on domains classification table) and at the same time the classification must correspond to the repeat classification of the region. Repetitive elements which do not encode protein domains, such as satellites or MITes (i.e. not mobile elements), are not checked for the domains and the regions of same classification are merged only based on the gap criterion.
+    REFINING PROCESS of repeats annotation runs in two consecutive steps:
 
-</help>
+	  1. REMOVING LOW CONFIDENCE REPEATS REGIONS
+	  
+	  Prior the regions interconnecting, it is necessary to filter out some nested regions of different classification, which might be false positive and disrupt the merging process. However, not all of these overlapping regions of different classification are necessarily wrong and they can reveal inserted or chimeric elements. Thats why we only get rid of the regions with significantly lower quality. At first clusters of overlapping repeat regions are created. Within a cluster, regions are gradually checked based on descending PID. All the other regions occuring inside the current one (with some borders tolerance on each side - defaultly 10 bp), are removed in case their PID is more than 5% lower than the current region. Otherwise it will be preserved. Average PID (percentage of identity) is counted as the mean per each position for equally classified hits and then it is averaged over the whole region reported in repeats GFF. 
+
+	  2. INTERCONNECTING REGIONS
+	  
+	  These "cleaned" regions are subsequently interconnected in the next step. It searches for consecutive repeats to create segments with the same classification that are not further from each other than a gap threshold (defaultly 250 bp). These segments cannot be corrupted by repeats of different classification. The confidence of merging is by default supported by the protein domains information (optional). In this case, a minimum number of protein domains of equal orientation must be present inside the expanded segment. These domains need to be unambiguously classified until the very last level (checked based on domains classification table) and at the same time the classification must correspond to the repeat classification of the region. Repetitive elements which do not encode protein domains, such as satellites or MITes (i.e. not mobile elements), are not checked for the domains and the regions of same classification are merged only based on the gap criterion.
+
+  </help>
 </tool>
 
