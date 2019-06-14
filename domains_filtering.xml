@@ -22,11 +22,18 @@ python3 ${__tool_directory__}/domains_filtering.py --dom_gff ${DomGff} --domains
      <column name="value" index="0"/>
 	</options>
    </param>
-   <param name="element_type" type="text" label="Filter a custom classification substring" help="You can type in an arbitrary string to filter a certain repetitive element type of any level. It must be a continuous substring in a proper format of Final_Classification attribute of GFF3 file. Classification levels are separated by | character" >
-	<sanitizer>
-	<valid/>
-	<mapping> <add source="|" target="_pipe_"/> </mapping>
-	</sanitizer>
+   <param name="element_type" type="text" value="Ty1/copia" label="Filter based on classification" help="You can use preset options or enter an  arbitrary string to filter a certain repetitive element type of any level. It must be a continuous substring in a proper format of Final_Classification attribute of GFF3 file. Classification levels are separated by | character. Filtering is case sensitive">
+     <option value="Ty1/copia">Ty1/copia</option>
+     <option value="Ty3/copia">Ty3/gypsy</option>
+     <option value="Class_I|">Class_I|</option>
+     <option value="Class_II|">Class_II|</option>
+	   <sanitizer>
+       <valid initial="string.ascii_letters,string.digits">
+         <add value="_" />
+         <add value="/" />
+         <add value="|" />
+       </valid>
+	   </sanitizer>
    </param>
 </inputs>
 <outputs>

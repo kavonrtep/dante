@@ -6,75 +6,88 @@ from Bio.Seq import MutableSeq
 from Bio.Alphabet import generic_dna
 import sys
 
+
 def main(args):
-	# Command line arguments
-	QUERY = args.query
-	MODE = args.mode
-	REPEAT_GFF = args.repeat_gff
-	MASKED = args.output_masked
-		
-	repeats_all = get_indices(REPEAT_GFF)
+    # Command line arguments
+    QUERY = args.query
+    MODE = args.mode
+    REPEAT_GFF = args.repeat_gff
+    MASKED = args.output_masked
 
-	if MODE == "lowercase":
-		lower_mask(QUERY, repeats_all, MASKED)
-	else:
-		N_mask(QUERY, repeats_all, MASKED)
+    repeats_all = get_indices(REPEAT_GFF)
 
-	
+    if MODE == "lowercase":
+        lower_mask(QUERY, repeats_all, MASKED)
+    else:
+        N_mask(QUERY, repeats_all, MASKED)
+
+
 def get_indices(REPEAT_GFF):
-	'''
+    '''
 	Get indices of repeats from GFF file to mask
 	'''
-	repeats_all = {}
-	with open(REPEAT_GFF, "r") as repeats_gff:
-		for line in repeats_gff:
-			if not line.startswith("#"):
-				seq_id = line.split("\t")[0]
-				start_r = line.split("\t")[3]
-				end_r = line.split("\t")[4]
-				if seq_id in repeats_all.keys():
-					repeats_all[seq_id].append([int(start_r), int(end_r)])
-				else:
-					repeats_all[seq_id] = [[int(start_r), int(end_r)]]
-	return repeats_all
-			
+    repeats_all = {}
+    with open(REPEAT_GFF, "r") as repeats_gff:
+        for line in repeats_gff:
+            if not line.startswith("#"):
+                seq_id = line.split("\t")[0]
+                start_r = line.split("\t")[3]
+                end_r = line.split("\t")[4]
+                if seq_id in repeats_all.keys():
+                    repeats_all[seq_id].append([int(start_r), int(end_r)])
+                else:
+                    repeats_all[seq_id] = [[int(start_r), int(end_r)]]
+    return repeats_all
+
 
 def lower_mask(QUERY, repeats_all, MASKED):
-	allSeqs = list(SeqIO.parse(QUERY,'fasta'))
-	for singleSeq in allSeqs:
-		mutable = MutableSeq(str(singleSeq.seq),  generic_dna)
-		for index in repeats_all[singleSeq.id]:
-			for item in range(index[0] -1 , index[1]):
-				mutable[item] = mutable[item].lower()
-		singleSeq.seq = mutable
-	with open(MASKED, "w") as handle:
-		SeqIO.write(allSeqs, handle, 'fasta')
+    allSeqs = list(SeqIO.parse(QUERY, 'fasta'))
+    for singleSeq in allSeqs:
+        mutable = MutableSeq(str(singleSeq.seq), generic_dna)
+        for index in repeats_all[singleSeq.id]:
+            for item in range(index[0] - 1, index[1]):
+                mutable[item] = mutable[item].lower()
+        singleSeq.seq = mutable
+    with open(MASKED, "w") as handle:
+        SeqIO.write(allSeqs, handle, 'fasta')
 
 
 def N_mask(QUERY, repeats_all, MASKED):
-	allSeqs = list(SeqIO.parse(QUERY, 'fasta'))
-	for singleSeq in allSeqs:
-		mutable = MutableSeq(str(singleSeq.seq),  generic_dna)
-		for index in repeats_all[singleSeq.id]:
-			for item in range(index[0] -1 , index[1]):
-				mutable[item] = "N" 
-		singleSeq.seq = mutable
-	with open(MASKED, "w") as handle:
-		SeqIO.write(allSeqs, handle, 'fasta')
+    allSeqs = list(SeqIO.parse(QUERY, 'fasta'))
+    for singleSeq in allSeqs:
+        mutable = MutableSeq(str(singleSeq.seq), generic_dna)
+        for index in repeats_all[singleSeq.id]:
+            for item in range(index[0] - 1, index[1]):
+                mutable[item] = "N"
+        singleSeq.seq = mutable
+    with open(MASKED, "w") as handle:
+        SeqIO.write(allSeqs, handle, 'fasta')
 
 
 if __name__ == "__main__":
 
     # Command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-q', '--query', type=str, required=True,
-						help='query sequence to be processed')
-    parser.add_argument('-rg', '--repeat_gff', type=str, required=True,
-						help='query sequence to be processed')
-    parser.add_argument('-m', '--mode', default="lowercase", choices=['lowercase', 'N'],
-						help='query sequence to be processed')
-    parser.add_argument('-o', '--output_masked', type=str, default="output_masked",
-						help='query sequence to be processed')
-	
+    parser.add_argument('-q',
+                        '--query',
+                        type=str,
+                        required=True,
+                        help='query sequence to be processed')
+    parser.add_argument('-rg',
+                        '--repeat_gff',
+                        type=str,
+                        required=True,
+                        help='query sequence to be processed')
+    parser.add_argument('-m',
+                        '--mode',
+                        default="lowercase",
+                        choices=['lowercase', 'N'],
+                        help='query sequence to be processed')
+    parser.add_argument('-o',
+                        '--output_masked',
+                        type=str,
+                        default="output_masked",
+                        help='query sequence to be processed')
+
     args = parser.parse_args()
     main(args)
