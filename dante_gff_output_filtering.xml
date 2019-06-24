@@ -6,9 +6,9 @@
     <regex match="Traceback" source="stderr" level="fail" description="Unknown error" />
     <regex match="error" source="stderr" level="fail" description="Unknown error" />
   </stdio>
-<description> Filter Protein Domains Finder output according to a certain domain type and several alignment quality criteria </description>
+<description> Tool for filtering of gff3 output from DANTE. Filtering can be performed based domain type and alignment quality. </description>
 <command>
-python3 ${__tool_directory__}/domains_filtering.py --dom_gff ${DomGff} --domains_prot_seq ${dom_prot_seq} --domains_filtered ${dom_filtered} --selected_dom ${selected_domain} --th_identity ${th_identity} --th_similarity ${th_similarity} --th_length ${th_length} --interruptions ${interruptions} --max_len_proportion ${th_len_ratio} --element_type '${element_type}'
+python3 ${__tool_directory__}/dante_gff_output_filtering.py --dom_gff ${DomGff} --domains_prot_seq ${dom_prot_seq} --domains_filtered ${dom_filtered} --selected_dom ${selected_domain} --th_identity ${th_identity} --th_similarity ${th_similarity} --th_length ${th_length} --interruptions ${interruptions} --max_len_proportion ${th_len_ratio} --element_type '${element_type}'
 		
 </command>
 <inputs>

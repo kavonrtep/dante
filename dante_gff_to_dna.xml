@@ -2,11 +2,11 @@
   <description> Tool to extract nucleotide sequences of protein domains found by DANTE </description>
   <requirements>
     <requirement type="package" version="1.0.0">domains_extract</requirement>
-    <requirement type="package" version="1.0.0" >profrep</requirement>
+    <requirement type="package" version="1.0.0">profrep</requirement>
   </requirements>
   <command>
     TEMP_DIR_LINEAGES=\$(mktemp -d) &amp;&amp;
-    python3 ${__tool_directory__}/extract_domains_seqs.py --domains_gff ${domains_gff} --input_dna ${input_dna} --out_dir \$TEMP_DIR_LINEAGES
+    python3 ${__tool_directory__}/dante_gff_to_dna.py --domains_gff ${domains_gff} --input_dna ${input_dna} --out_dir \$TEMP_DIR_LINEAGES
 
     #if $extend_edges:
 	  --extended True
