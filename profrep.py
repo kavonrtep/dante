@@ -703,10 +703,10 @@ def seq_sizes_file(seq_ids, seq_lengths_all, HTML_DATA):
 
 
 def main(args):
-    ## Command line arguments
+	## Command line arguments
     QUERY = args.query
     BLAST_DB = args.reads
-    CL_ANNOTATION_TBL = args.ann_tbl
+    CL_ANNOTATION_TBL = args.ann_tbl 
     CLS = args.cls
     BITSCORE = args.bit_score
     E_VALUE = args.e_value
@@ -719,7 +719,7 @@ def main(args):
     THRESHOLD = args.threshold_repeat
     THRESHOLD_SEGMENT = args.threshold_segment
     TH_IDENTITY = args.th_identity
-    TH_LENGTH = args.th_length
+    TH_LENGTH = args.th_length 
     TH_INTERRUPT = args.interruptions
     TH_SIMILARITY = args.th_similarity
     TH_LEN_RATIO = args.max_len_proportion
@@ -740,17 +740,15 @@ def main(args):
     JBROWSE_BIN = args.jbrowse_bin
     DUST_FILTER = args.dust_filter
     LOG_FILE = args.log_file
-
-    if not JBROWSE_BIN:
-        try:
-            JBROWSE_BIN = os.environ['JBROWSE_BIN']
-        except KeyError:
-            raise ValueError(
-                'There was no path to JBrowse bin found - set the enviroment variable JBROWSE_BIN or pass the argument explicitly')
-
+    JBROWSE_BIN = os.environ['JBROWSE_SOURCE_DIR']+"/bin"
+	#if not JBROWSE_BIN: 
+	#	try:
+	#		JBROWSE_BIN = os.environ['JBROWSE_BIN']
+	#	except KeyError:
+	#		raise ValueError('There was no path to JBrowse bin found - set the enviroment variable JBROWSE_BIN or pass the argument explicitly')
     if CN and not DB_ID and not GS:
-        raise ValueError(
-            "Genome size missing - if you want to convert hits to copy numbers please enter --genome_size parameter")
+        raise ValueError("Genome size missing - if you want to convert hits to copy numbers please enter --genome_size parameter")
+
 
     ## Check if there are forbidden characters in fasta IDs
     [forbidden_ids, headers] = check_fasta_id(QUERY)
@@ -763,7 +761,7 @@ def main(args):
     if len(headers) > len(set([header.split(" ")[0] for header in headers])):
         raise NameError(
             '''Sequences in multifasta format are not named correctly:
-							seq IDs(before the first space) are the same''')
+				seq IDs(before the first space) are the same''')
 
     ## Create new blast database of reads
     if NEW_DB:

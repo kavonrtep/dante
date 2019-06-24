@@ -4,13 +4,16 @@
   </stdio>
   <description> Tool to identify and visualize general repetive profile of a sequence as well as assign repetitive regions to a class from database of repeats </description>
 <requirements>
-    <requirement type="package" version="1.0.0">profrep</requirement>
+    <requirement type="package">profrep</requirement>
+    <requirement type="package" version="1.11.6">jbrowse</requirement>
 </requirements>
 <command>
+env > /home/petr/tmp/profreptest/env;
+
 #if not $custom_data.options_custom_data:
-	profrep_reads=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $3}' $__tool_data_path__/prepared_datasets.txt) &amp;&amp;
-	profrep_cls=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $4}' $__tool_data_path__/prepared_datasets.txt) &amp;&amp;
-	profrep_annotation=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $5}' $__tool_data_path__/prepared_datasets.txt) &amp;&amp;
+	profrep_reads=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $3}' $__tool_data_path__/profrep/prepared_datasets.txt) &amp;&amp;
+	profrep_cls=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $4}' $__tool_data_path__/profrep/prepared_datasets.txt) &amp;&amp;
+	profrep_annotation=\$(awk -v var="${custom_data.prepared_dataset}" 'BEGIN{FS="\t"}{if ($1 == var) print $5}' $__tool_data_path__/profrep/prepared_datasets.txt) &amp;&amp;
 #end if
 
 python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff} --html_file ${html_file}
@@ -64,7 +67,7 @@ python3 ${__tool_directory__}/profrep.py --query ${input} --output_gff ${ProfGff
   <param name="options_custom_data" type="boolean" truevalue="True" falsevalue="False" checked="False" label="Use custom annotation data" />
   <when value="False">
    <param name="prepared_dataset" type="select" label="Choose existing annotation dataset"  help="You can find list of all available species below in the Database section">
-    <options from_file="prepared_datasets.txt" >
+    <options from_file="profrep/prepared_datasets.txt" >
      <column name="name" index="1"/>
      <column name="value" index="0"/>
     </options>

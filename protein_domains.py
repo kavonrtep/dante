@@ -15,7 +15,7 @@ import warnings
 import shutil
 from collections import defaultdict
 
-np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=sys.maxsize)
 
 
 def alignment_scoring():
