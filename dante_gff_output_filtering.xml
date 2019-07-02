@@ -19,7 +19,7 @@ python3 ${__tool_directory__}/dante_gff_output_filtering.py --dom_gff ${DomGff} 
 	<param name="interruptions" type="integer" value="3" label="Interruptions [frameshifts + stop codons]" help="Tolerance threshold per every starting 100 amino acids of alignment sequence" />
 	<param name="th_len_ratio" type="float" value="1.2" label="Maximal length proportion" help="Maximal proportion of alignment length to the original length of protein domain from database (including indels)" />
 	<param name="selected_domain" type="select" label="Select protein domain type" >
-    <options from_file="select_domain.txt" >
+    <options from_file="select_domain.loc" >
      <column name="name" index="0"/>
      <column name="value" index="0"/>
 	</options>

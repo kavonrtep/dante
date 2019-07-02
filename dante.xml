@@ -11,19 +11,18 @@
 <description> Tool for annotation of transposable elements based on the similarity to conserved protein domains database. </description>
 <command>
 python3 ${__tool_directory__}/dante.py --query ${input} --domain_gff ${DomGff}
-	--protein_database ${__tool_data_path__ }/protein_domains/${db_type}_pdb
-	--classification ${__tool_data_path__ }/protein_domains/${db_type}_class
+	--protein_database ${__tool_directory__ }/tool-data/protein_domains/${db_type}_pdb
+	--classification ${__tool_directory__ }/tool-data/protein_domains/${db_type}_class
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
 
  <param name="db_type" type="select" label="Select taxon and protein domain database version (REXdb)" help="">
-   <options from_file="rexdb_versions.txt">
+   <options from_file="rexdb_versions.loc">
      <column name="name" index="0"/>
      <column name="value" index="1"/>
    </options>
  </param>
-
 </inputs>
 
 <outputs>
