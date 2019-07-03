@@ -1,9 +1,10 @@
 categories: [Annotation]
 description: Domain based Annotation of Transposable Elements
 long_description: Domain based Annotation of Transposable Elements
-name: DANTE
+name: dante
 owner: petr-novak
 exclude:
   - shed.yml
   - __pycache__
-
+  - tool-data/protein_domains
+  - tmp

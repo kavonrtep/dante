@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<tool_dependency>
+  <package name="rexdb" version="1.0">
+    <repository name="package_rexdb_1_0" owner="petr-novak" prior_installation_required="True"/>
+    <readme>
+      prepare rexdb database for dante
+    </readme>
+  </package>
+</tool_dependency>

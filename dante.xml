@@ -1,18 +1,18 @@
 <tool id="dante" name="Domain based ANnotation of Transposable Elements - DANTE" version="1.0.0">
+  <description> Tool for annotation of transposable elements based on the similarity to conserved protein domains database. </description>
   <requirements>
     <requirement type="package">last</requirement>
     <requirement type="package">numpy</requirement>
-    <requirement type="package" version="1.0.0">dante</requirement>
+    <requirement type="package" version="1.0">rexdb</requirement>
   </requirements>
-  <stdio>
-    <regex match="Traceback" source="stderr" level="fail" description="Unknown error" />
-    <regex match="error" source="stderr" level="fail" description="Unknown error" />
-  </stdio>
-<description> Tool for annotation of transposable elements based on the similarity to conserved protein domains database. </description>
+<stdio>
+  <regex match="Traceback" source="stderr" level="fatal" description="Unknown error" />
+  <regex match="error" source="stderr" level="fatal" description="Unknown error" />
+</stdio>
 <command>
 python3 ${__tool_directory__}/dante.py --query ${input} --domain_gff ${DomGff}
-	--protein_database ${__tool_directory__ }/tool-data/protein_domains/${db_type}_pdb
-	--classification ${__tool_directory__ }/tool-data/protein_domains/${db_type}_class
+	--protein_database \${REXDB}/${db_type}_pdb
+	--classification \${REXDB}/${db_type}_class
 </command>
 <inputs>
  <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
@@ -28,8 +28,7 @@ python3 ${__tool_directory__}/dante.py --query ${input} --domain_gff ${DomGff}
 <outputs>
  <data format="gff3" name="DomGff" label="Unfiltered GFF3 file of ALL protein domains from dataset ${input.hid}" />
 </outputs>
-
- <help>
+<help>
 
 THIS IS A PRIMARY OUTPUT THAT SHOULD UNDERGO FURTHER QUALITY FILTERING TO GET RID OFF POTENTIAL FALSE POSITIVE DOMAINS
 
