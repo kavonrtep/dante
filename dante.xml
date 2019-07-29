@@ -4,6 +4,7 @@
     <requirement type="package">last</requirement>
     <requirement type="package">numpy</requirement>
     <requirement type="package" version="1.0">rexdb</requirement>
+    <requirement type="set_environment">REXDB</requirement>
   </requirements>
 <stdio>
   <regex match="Traceback" source="stderr" level="fatal" description="Unknown error" />
@@ -13,9 +14,31 @@
 python3 ${__tool_directory__}/dante.py --query ${input} --domain_gff ${DomGff}
 	--protein_database \${REXDB}/${db_type}_pdb
 	--classification \${REXDB}/${db_type}_class
+  --scoring_matrix ${scoring_matrix}
+  &amp;&amp;
+
+python3 ${__tool_directory__}/dante_gff_output_filtering.py --dom_gff ${DomGff}
+--domains_prot_seq domains_filtered.fasta --domains_filtered domains_filtered.gff
+--output_dir .
+--selected_dom All --th_identity 0.20
+--th_similarity 0.35 --th_length 0.8
+--interruptions 3 --max_len_proportion 1.2
+--element_type ''  &amp;&amp;
+
+python3 ${__tool_directory__}/fasta2database.py domains_filtered.fasta domains_filtered.db
+domains_filtered.class  &amp;&amp;
+
+lastdb -p domains_filtered.db domains_filtered.db  &amp;&amp;
+
+python3 ${__tool_directory__}/dante.py --query ${input} --domain_gff ${DomGff2}
+	--protein_database domains_filtered.db
+	--classification domains_filtered.class
+  --scoring_matrix BL80
+
 </command>
 <inputs>
- <param format="fasta" type="data" name="input" label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
+  <param format="fasta" type="data" name="input"
+  label="Choose your input sequence" help="Input DNA must be in proper fasta format, multi-fasta containing more sequences is allowed" />
 
  <param name="db_type" type="select" label="Select taxon and protein domain database version (REXdb)" help="">
    <options from_file="rexdb_versions.loc">
@@ -23,10 +46,17 @@ python3 ${__tool_directory__}/dante.py --query ${input} --domain_gff ${DomGff}
      <column name="value" index="1"/>
    </options>
  </param>
+
+ <param name="scoring_matrix" type="select" label="Select scoring matrix">
+    <option value="BL80" selected="true" >BLOSUM80</option>
+    <option value="BL62">BLOSUM62</option>
+    <option value="MIQS">MIQS</option>
+</param>
 </inputs>
 
 <outputs>
- <data format="gff3" name="DomGff" label="Unfiltered GFF3 file of ALL protein domains from dataset ${input.hid}" />
+ <data format="gff3" name="DomGff" label="protein domains detected in ${input.hid} (unfiltered)" />
+ <data format="gff3" name="DomGff2" label="protein domains detected in ${input.hid}- 2nd pass (unfiltered)" />
 </outputs>
 <help>
 

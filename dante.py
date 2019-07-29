@@ -451,10 +451,10 @@ def write_info(dom_gff_tmp, version_string):
 
 
 def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
-                  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM):
+                  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM, SCORING_MATRIX):
     ''' Search for protein domains using our protein database and external tool LAST,
 	stdout is parsed in real time and hits for a single sequence undergo further processing
-	- tabular format(TAB) to get info about position, score, orientation 
+	- tabular format(TAB) to get info about position, score, orientation
 	- MAF format to gain alignment and original sequence
 	'''
 
@@ -465,15 +465,28 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                              below_win, lens_above_win, seq_starts, seq_ends)
 
     ## TAB output contains all the alignment scores, positions, strands...
+    lastal_columns = {
+        "BL80" : ("score, name_db, start_db, al_size_db, strand_db,"
+                   " seq_size_db, name_q, start_q, al_size_q, strand_q, seq_size_q,"
+                   " block1, block2, block3, db_seq, q_seq"),
+        "BL62" : ("score, name_db, start_db, al_size_db, strand_db,"
+                   " seq_size_db, name_q, start_q, al_size_q, strand_q,"
+                   " seq_size_q, block1, block2, block3, db_seq, q_seq"),
+        "MIQS" : ("score, name_db, start_db, al_size_db, strand_db,"
+                  " seq_size_db, name_q, start_q, al_size_q, strand_q,"
+                  " seq_size_q, block1, db_seq, q_seq"),
+    }
     tab = subprocess.Popen(
-        "lastal -F15 {} {} -L 10 -m 70 -p BL80 -f TAB".format(LAST_DB,
-                                                              query_temp),
+        "lastal -F15 {} {} -L 10 -m 70 -p {} -e 80 -f TAB".format(LAST_DB,
+                                                                  query_temp,
+                                                                  SCORING_MATRIX),
         stdout=subprocess.PIPE,
         shell=True)
     ## MAF output contains alignment sequences
     maf = subprocess.Popen(
-        "lastal -F15 {} {} -L 10 -m 70 -p BL80 -f MAF".format(LAST_DB,
-                                                              query_temp),
+        "lastal -F15 {} {} -L 10 -m 70 -p {}  -e 80 -f MAF".format(LAST_DB,
+                                                                   query_temp,
+                                                                   SCORING_MATRIX),
         stdout=subprocess.PIPE,
         shell=True)
 
@@ -495,10 +508,10 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                 warnings.simplefilter("ignore")
                 sequence_hits = np.genfromtxt(
                     line_generator(tab_pipe, maf_pipe, start),
-                    names=
-                    "score, name_db, start_db, al_size_db, strand_db, seq_size_db, name_q, start_q, al_size_q, strand_q, seq_size_q, block1, block2, block3, db_seq, q_seq",
-                    usecols=
-                    "score, name_q, start_q, al_size_q, strand_q, seq_size_q, name_db, db_seq, q_seq, seq_size_db, start_db, al_size_db",
+                    names=lastal_columns[SCORING_MATRIX],
+                    usecols=("score, name_q, start_q, al_size_q,"
+                             " strand_q, seq_size_q, name_db, db_seq,"
+                             " q_seq, seq_size_db, start_db, al_size_db"),
                     dtype=None,
                     comments=None)
         except RuntimeError:
@@ -679,6 +692,8 @@ def main(args):
     THRESHOLD_SCORE = args.threshold_score
     WIN_DOM = args.win_dom
     OVERLAP_DOM = args.overlap_dom
+    SCORING_MATRIX = args.scoring_matrix
+    configuration.SC_MATRIX = configuration.SC_MATRIX_SKELETON.format(SCORING_MATRIX)
 
     if OUTPUT_DOMAIN is None:
         OUTPUT_DOMAIN = configuration.DOMAINS_GFF
@@ -702,7 +717,7 @@ def main(args):
         OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR,
                                      os.path.basename(OUTPUT_DOMAIN))
     domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
-                  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM)
+                  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM, SCORING_MATRIX)
 
     print("ELAPSED_TIME_DOMAINS = {} s".format(time.time() - t))
 
@@ -771,6 +786,13 @@ if __name__ == "__main__":
         "--output_dir",
         type=str,
         help="specify if you want to change the output directory")
+    parser.add_argument(
+        "-M",
+        "--scoring_matrix",
+        type=str,
+        default="BL80",
+        choices=['BL80', 'BL62', 'MIQS'],
+        help="specify scoring matrix to use for similarity search (BL80, BL62, MIQS)")
     parser.add_argument(
         "-thsc",
         "--threshold_score",

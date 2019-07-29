@@ -5,7 +5,7 @@ import os
 MAIN_GIT_DIR = os.path.dirname(os.path.realpath(__file__))
 TOOL_DATA = os.path.join(MAIN_GIT_DIR, "tool-data")
 TMP = "tmp"
-SC_MATRIX = os.path.join(TOOL_DATA, "blosum80.txt.sample")
+SC_MATRIX_SKELETON = os.path.join(TOOL_DATA, "{}.txt.sample")
 AMBIGUOUS_TAG = "Ambiguous_domain"
 ## IO
 CLASS_FILE = "ALL.classification-new"

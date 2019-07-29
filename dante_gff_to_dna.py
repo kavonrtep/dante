@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-import configuration
 import time
 import os
+import textwrap
 from collections import defaultdict
 from Bio import SeqIO
-import textwrap
+import configuration
 
 t_nt_seqs_extraction = time.time()
 
