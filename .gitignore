@@ -4,5 +4,4 @@ __pycache__/gff.cpython-34.pyc
 __pycache__/*
 *.pyc
 *.png
-*.fa
 profrep_local.xml

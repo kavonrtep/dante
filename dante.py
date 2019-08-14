@@ -8,6 +8,7 @@ from operator import itemgetter
 from collections import Counter
 from itertools import groupby
 import os
+import re
 import configuration
 from tempfile import NamedTemporaryFile
 import sys
@@ -16,7 +17,6 @@ import shutil
 from collections import defaultdict
 
 np.set_printoptions(threshold=sys.maxsize)
-
 
 def alignment_scoring():
     ''' Create hash table for alignment similarity counting: for every 
@@ -234,9 +234,9 @@ def annotations_dict(annotations):
 def score_table(mins, maxs, data, annotations, scores, CLASSIFICATION):
     ''' Score table is created based on the annotations occurance in the cluster.
 	Matrix axis y corresponds to individual annotations (indexed according to classes_dict),
-	axis x represents positions of analyzed seq in a given cluster.
-	For every hit within cluster, array of scores on the corresponding position 
-	is recorded to the table in case if the score on certain position is so far the highest 
+    axis x represents positions of analyzed seq in a given cluster.
+    For every hit within cluster, array of scores on the corresponding position
+    is recorded to the table in case if the score on certain position is so far the highest
 	for the certain position and certain annotation '''
     classes_dict = annotations_dict(annotations)
     score_matrix = np.zeros((len(classes_dict), maxs - mins + 1), dtype=int)
@@ -300,7 +300,7 @@ def best_score(scores, region):
 def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts,
                 dom_start, dom_end, step, best_idx, annotation_best,
                 db_name_best, db_starts_best, db_ends_best, strand, score,
-                seq_id, db_seq, query_seq, domain_size, positions, gff):
+                seq_id, db_seq, query_seq, domain_size, positions, gff, consensus):
     ''' Record obtained information about domain corresponding to individual cluster to common gff file '''
     best_start = positions[best_idx][0]
     best_end = positions[best_idx][1]
@@ -341,12 +341,12 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts,
                 unique_annotations))
     else:
         gff.write(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}percent];Best_Hit_DB_Pos={}:{}of{};DB_Seq={};Query_Seq={};Identity={};Similarity={};Relat_Length={};Relat_Interruptions={};Hit_to_DB_Length={}\n".format(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\tName={};Final_Classification={};Region_Hits_Classifications={};Best_Hit={}:{}-{}[{}percent];Best_Hit_DB_Pos={}:{}of{};DB_Seq={};Region_Seq={};Query_Seq={};Identity={};Similarity={};Relat_Length={};Relat_Interruptions={};Hit_to_DB_Length={}\n".format(
                 seq_id, SOURCE, configuration.DOMAINS_FEATURE, dom_start,
                 dom_end, best_score, strand, configuration.PHASE, domain_type,
                 ann_substring, unique_annotations, annotation_best, best_start,
                 best_end, length_proportion, db_starts_best, db_ends_best,
-                domain_size_best, db_seq_best, query_seq_best, percent_ident,
+                domain_size_best, db_seq_best, consensus, query_seq_best, percent_ident,
                 align_similarity, relat_align_len, relat_interrupt,
                 db_len_proportion))
 
@@ -557,6 +557,19 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
             db_starts = db_start[np.array(region)]
             db_ends = db_end[np.array(region)]
             scores = score[np.array(region)]
+            regions_above_threshold = [
+                region[i]
+                for i, _ in enumerate(region)
+                if max(scores) / 100 * THRESHOLD_SCORE < scores[i]
+            ]
+            ## sort by score first:
+            consensus = get_full_translation(
+                translation_alignments(
+                    query_seq=sortby(query_seq[regions_above_threshold], score[regions_above_threshold], True),
+                    start_hit=sortby(start_hit[regions_above_threshold], score[regions_above_threshold], True),
+                    end_hit=sortby(end_hit[regions_above_threshold], score[regions_above_threshold], True))
+                )
+
             annotations = domain_annotation(db_names, CLASSIFICATION)
             [score_matrix, classes_dict] = score_table(
                 mins[count_region], maxs[count_region], data[count_region],
@@ -573,10 +586,11 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
             if count_region == len(indices_plus):
                 strand_gff = "-"
             create_gff3(domain_type, ann_substring, unique_annotations,
-                        ann_pos_counts, mins[count_region], maxs[count_region],
+                        ann_pos_counts, min(start_hit[regions_above_threshold])-1,
+                        max(end_hit[regions_above_threshold]),
                         step, best_idx, annotation_best, db_name_best,
                         db_starts_best, db_ends_best, strand_gff, score,
-                        seq_id, db_seq, query_seq, domain_size, positions, gff)
+                        seq_id, db_seq, query_seq, domain_size, positions, gff, consensus)
             count_region += 1
         seq_ids.append(seq_id)
     os.unlink(query_temp)
@@ -589,6 +603,104 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
     else:
         shutil.copy2(dom_tmp.name, OUTPUT_DOMAIN)
     os.unlink(dom_tmp.name)
+
+def  sortby(a, by, reverse=False):
+    ''' sort according values in the by list '''
+    a_sorted = [i[0] for i in
+                sorted(
+                    zip(a, by),
+                    key=lambda i: i[1],
+                    reverse=reverse
+                )]
+    return a_sorted
+
+
+def a2nnn(s):
+    s1 = "".join([c if c in ['/', '\\'] else c + c + c
+                  for c in s.replace("-", "")])
+    # collapse frameshifts (/)
+    s2 = re.sub("[a-zA-Z*]{2}//[a-zA-Z*]{2}", "//", s1)
+    s3 = re.sub("[a-zA-Z*]/[a-zA-Z*]", "/", s2)
+    return (s3)
+
+
+
+def rle(s):
+    '''run length encoding but max is set to 3 (codon)'''
+    prev = ""
+    count = 1
+    char = []
+    length = []
+    L = 0
+    for n in s:
+        if n == prev and count < (3 - L):
+            count += 1
+        else:
+            char.append(prev)
+            length.append(count)
+            L = 1 if prev == "/" else 0
+            prev = n
+            count = 1
+    char.append(prev)
+    length.append(count)
+    sequence = char[1:]
+    return sequence, length[1:]
+
+def get_full_translation(translations):
+    '''get one full length translation  from multiple partial
+    aligned translation '''
+    # find minimal set of alignements
+    minimal_set = []
+    not_filled_prev = len(translations[0])
+    for s in translations:
+        minimal_set.append(s)
+        # check defined position - is there only '-' character?
+        not_filled = sum([set(i) == {"-"} for i in  zip(*minimal_set)])
+        if not_filled == 0:
+            break
+        if not_filled == not_filled_prev:
+            # last added sequence did not improve coverage - remove it.
+            minimal_set.pop()
+        not_filled_prev = not_filled
+    # merge translations
+    final_translation = minimal_set[0]
+    # record positions of joins to correct frameshifts reportings
+    position_of_joins = set()
+    position_of_joins_rle = set()
+    if len(minimal_set) > 1:  # translation must be merged
+        for s in minimal_set[1:]:
+            s1 = re.search(r"-\w", final_translation)
+            s2 = re.search(r"\w-", final_translation)
+            if s1:
+                position_of_joins.add(s1.start())
+            if s2:
+                position_of_joins.add((s2.end() - 1))
+            final_translation = "".join(
+                [b if a == "-" else a for a, b in zip(final_translation, s)])
+    translation_rle = rle(final_translation)
+    cumsumed_positions = np.cumsum(translation_rle[1])
+    for p in position_of_joins:
+        position_of_joins_rle.add(sum(cumsumed_positions <= p))
+    # insert /\ when necessary
+    for p in position_of_joins_rle:
+        if translation_rle[0][p] not in ['/',"//","\\", "\\\\"]:
+            if translation_rle[1][p] == 2:
+                translation_rle[0][p] = translation_rle[0][p] + "/"
+            if translation_rle[1][p] == 1:
+                translation_rle[0][p] = "\\"
+    consensus = "".join(translation_rle[0])
+    return consensus
+
+
+# helper function for debugging
+def translation_alignments(query_seq, start_hit, end_hit):
+    pstart = min(start_hit)
+    pend = max(end_hit)
+    nnn = list()
+    for s, start, end in zip(query_seq, start_hit, end_hit):
+        nnn.append("-" * (start - pstart) + a2nnn(s) + "-" * (pend - end))
+    return (nnn)
+
 
 
 def adjust_gff(OUTPUT_DOMAIN, gff, WIN_DOM, OVERLAP_DOM, step):
