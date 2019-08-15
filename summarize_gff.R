@@ -24,7 +24,7 @@ readGFF3fromDante = function(filepath){
   if (any(short)){
     gffattr_list[short] = lapply(gffattr_list[short],function(x) c(x, rep(NA, 13 - length(x))))
   }
-  gffattr = as.data.frame(do.call(rbind, gffattr_list))
+  gffattr = as.data.frame(do.call(rbind, gffattr_list), stringsAsFactors = FALSE)
 
   ## get attributes names
   attrnames =  strsplit(dfraw[1,9],split=c("=|;"))[[1]][c(TRUE,FALSE)]
