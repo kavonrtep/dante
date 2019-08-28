@@ -585,9 +585,14 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
             db_ends_best = db_ends[best_idx_reg]
             if count_region == len(indices_plus):
                 strand_gff = "-"
+            if strand_gff == "+":
+                feature_start = min(start_hit[regions_above_threshold])-1
+                feature_end = max(end_hit[regions_above_threshold])
+            else:
+                feature_end = seq_len[region][0] - min(start_hit[regions_above_threshold]) - 1
+                feature_start = seq_len[region][0] - max(end_hit[regions_above_threshold]) + 1
             create_gff3(domain_type, ann_substring, unique_annotations,
-                        ann_pos_counts, min(start_hit[regions_above_threshold])-1,
-                        max(end_hit[regions_above_threshold]),
+                        ann_pos_counts, feature_start,feature_end,
                         step, best_idx, annotation_best, db_name_best,
                         db_starts_best, db_ends_best, strand_gff, score,
                         seq_id, db_seq, query_seq, domain_size, positions, gff, consensus)
