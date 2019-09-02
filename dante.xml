@@ -25,8 +25,15 @@
 	  --protein_database \${REXDB}/${db_type}_pdb
 	  --classification \${REXDB}/${db_type}_class
     --scoring_matrix ${scoring_matrix}
-    &amp;&amp;
 
+
+    #if str($input_type.input_type_selector) == "aln"
+     &amp;&amp;
+     python3 ${__tool_directory__}/coverage2gff.py -p sequences.profile -g ${DomGff}
+    #end if
+
+    #if str($iterative) == "Yes"
+    &amp;&amp;
     python3 ${__tool_directory__}/dante_gff_output_filtering.py --dom_gff ${DomGff}
     --domains_prot_seq domains_filtered.fasta --domains_filtered domains_filtered.gff
     --output_dir .
@@ -36,10 +43,7 @@
     --element_type ''
     &amp;&amp;
 
-    #if str($input_type.input_type_selector) == "aln"
-      python3 ${__tool_directory__}/coverage2gff.py -p sequences.profile -g ${DomGff}
-      &amp;&amp;
-    #end if
+
 
     python3 ${__tool_directory__}/fasta2database.py domains_filtered.fasta domains_filtered.db
     domains_filtered.class
@@ -58,7 +62,7 @@
      &amp;&amp;
      python3 ${__tool_directory__}/coverage2gff.py -p sequences.profile -g ${DomGff2}
     #end if
-
+    #end if
 
   </command>
   <inputs>
@@ -87,11 +91,19 @@
       <option value="BL62">BLOSUM62</option>
       <option value="MIQS">MIQS</option>
     </param>
+
+    <param name="iterative" type="select" label="Run iterative search" truevalue="true" valsevalue="false"
+           help="Second iteration run search against database of proteins extracted from query. Second iteration can yield some extra hits in some cases.">
+      <option value="No" selected="true">No</option>
+      <option value="Yes">Yes</option>
+    </param>
   </inputs>
 
   <outputs>
-    <data format="gff3" name="DomGff"  label="DANTE on ${on_string}: 1st pass" />
-    <data format="gff3" name="DomGff2" label="DANTE on ${on_string}: 2nd pass" />
+    <data format="gff3" name="DomGff"  label="DANTE on ${on_string}" />
+    <data format="gff3" name="DomGff2" label="DANTE on ${on_string}: 2nd pass">
+      <filter>iterative == "Yes" </filter>
+    </data>
   </outputs>
   <help>
 
