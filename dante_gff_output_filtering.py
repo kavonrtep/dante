@@ -82,6 +82,22 @@ def get_file_start(gff_file):
     return count_comment, lines
 
 
+def parse_gff_line(line):
+    '''Return dictionary with gff fields  and  atributers
+    Note - type of fields is strings
+    '''
+    # order of first 9 column is fixed
+    gff_line = dict(
+        zip(
+            ['seqid', 'source', 'type', 'start', 'end',
+             'score', 'strand', 'phase', 'attributes'],
+            line.split("\t")
+        )
+    )
+    # split attributes and replace:
+    gff_line['attributes'] = dict([i.split("=") for i in gff_line['attributes'].split(";")])
+    return gff_line
+
 def filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY,
                     TH_LENGTH, TH_INTERRUPT, TH_LEN_RATIO, SELECTED_DOM,
                     ELEMENT):
@@ -90,7 +106,7 @@ def filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY,
     filt_dom_tmp = NamedTemporaryFile(delete=False)
     with open(DOM_GFF, "r") as gff_all, open(filt_dom_tmp.name,
                                              "w") as gff_filtered:
-        for comment_idx in range(count_comment):
+        for _ in range(count_comment):
             next(gff_all)
         dom_dict = defaultdict(lambda: defaultdict(int))
         orig_class_dict = defaultdict(int)
@@ -109,20 +125,22 @@ def filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY,
             orig_class_dict[classification] += 1
             ## ambiguous domains filtered out automatically
             if classification != configuration.AMBIGUOUS_TAG:
-                al_identity = float(attributes.split(";")[-5].split("=")[1])
-                al_similarity = float(attributes.split(";")[-4].split("=")[1])
-                al_length = float(attributes.split(";")[-3].split("=")[1])
-                relat_interrupt = float(attributes.split(";")[-2].split("=")[
-                    1])
-                db_len_proportion = float(attributes.split(";")[-1].split("=")[
-                    1])
-                dom_type = attributes.split(";")[0].split("=")[1]
-                seq_id = line.split("\t")[0]
-                xminimal = int(line.split("\t")[3])
-                xmaximal = int(line.split("\t")[4])
-                if al_identity >= TH_IDENTITY and al_similarity >= TH_SIMILARITY and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and db_len_proportion <= TH_LEN_RATIO and (
-                        dom_type == SELECTED_DOM or
-                        SELECTED_DOM == "All") and (ELEMENT in classification):
+                gff_line = parse_gff_line(line)
+                al_identity = float(gff_line['attributes']['Identity'])
+                al_similarity = float(gff_line['attributes']['Similarity'])
+                al_length = float(gff_line['attributes']['Relat_Length'])
+                relat_interrupt = float(gff_line['attributes']['Relat_Interruptions'])
+                db_len_proportion = float(gff_line['attributes']['Hit_to_DB_Length'])
+                dom_type = gff_line['attributes']['Final_Classification']
+                seq_id = gff_line['seqid']
+                xminimal = int(gff_line['start'])
+                xmaximal = int(gff_line['end'])
+                c1 = al_identity >= TH_IDENTITY
+                c2 = al_similarity >= TH_SIMILARITY
+                if (c1 and c2 and al_length >= TH_LENGTH and relat_interrupt <= TH_INTERRUPT and
+                        db_len_proportion <= TH_LEN_RATIO and
+                        (dom_type == SELECTED_DOM or SELECTED_DOM == "All") and
+                        (ELEMENT in classification)):
                     gff_filtered.writelines(line)
                     filt_class_dict[classification] += 1
                     dom_dict[seq_id][dom_type] += 1

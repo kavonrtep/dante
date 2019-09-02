@@ -36,6 +36,11 @@
     --element_type ''
     &amp;&amp;
 
+    #if str($input_type.input_type_selector) == "aln"
+      python3 ${__tool_directory__}/coverage2gff.py -p sequences.profile -g ${DomGff}
+      &amp;&amp;
+    #end if
+
     python3 ${__tool_directory__}/fasta2database.py domains_filtered.fasta domains_filtered.db
     domains_filtered.class
     &amp;&amp;
@@ -48,6 +53,11 @@
 	  --classification domains_filtered.class
     --scoring_matrix BL80
 
+
+    #if str($input_type.input_type_selector) == "aln"
+     &amp;&amp;
+     python3 ${__tool_directory__}/coverage2gff.py -p sequences.profile -g ${DomGff2}
+    #end if
 
 
   </command>

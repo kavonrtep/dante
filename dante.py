@@ -586,7 +586,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
             if count_region == len(indices_plus):
                 strand_gff = "-"
             if strand_gff == "+":
-                feature_start = min(start_hit[regions_above_threshold])-1
+                feature_start = min(start_hit[regions_above_threshold])+1
                 feature_end = max(end_hit[regions_above_threshold])
             else:
                 feature_end = seq_len[region][0] - min(start_hit[regions_above_threshold]) - 1
