@@ -64,7 +64,7 @@
   <inputs>
 
     <conditional name="input_type">
-      <param name="input_type_selector" type="select" label="Choose the source BIOM format">
+      <param name="input_type_selector" type="select" label="Choose the type of sequence data">
         <option value="fasta" selected="true">Fasta</option>
         <option value="aln">Aln file</option>
       </param>
