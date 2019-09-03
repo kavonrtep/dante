@@ -105,7 +105,22 @@
       <filter>iterative == "Yes" </filter>
     </data>
   </outputs>
+  <tests>
+    <test>
+      <param name="input_type" value="fasta"/>
+      <param name="input_sequences" value="GEPY_test_long_1.fa"/>
+      <param name="db_type" value="Viridiplantae_v3.0"/>
+      <param name="scoring_matrix" value="BL80"/>
+      <param name="iterative" value="No"/>
+      <output name="DomGff" value="GEPY_test_long_1_output_unfiltered.gff3"/>
+    </test>
+
+
+  </tests>
+
+
   <help>
+
 
     THIS IS A PRIMARY OUTPUT THAT SHOULD UNDERGO FURTHER QUALITY FILTERING TO GET RID OFF POTENTIAL FALSE POSITIVE DOMAINS
 
