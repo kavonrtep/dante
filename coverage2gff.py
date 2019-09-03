@@ -36,7 +36,6 @@ def read_coverage(profile):
         d = {}
         for name, prof in zip(p, p):
             d[name[1:].strip()] = [int(i) for i in prof.split()]
-    print(d, file=sys.stderr)
     return d
 
 
