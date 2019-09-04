@@ -41,7 +41,7 @@ def parse_args():
 
 
 def get_header(f):
-    aln_header = ".    :    .    :    .    :    .    :    .    :    .    :"
+    aln_header = "    .    :    .    :    .    :    .    :    .    :    .    :"
     contig_lead = "******************"
     aln_start = -1
     while True:
@@ -63,7 +63,7 @@ def segment_start(f):
     pos = f.tell()
     line = f.readline()
     # detect next contig or end of file
-    if "********" in line or line == "":
+    if "********" in line or line == "" or "Number of segment pairs = " in line:
         segment = False
     else:
         segment = True
