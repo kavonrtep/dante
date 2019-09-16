@@ -120,18 +120,17 @@ def filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY,
         domains_all = []
         start = True
         for line in gff_all:
-            attributes = line.rstrip().split("\t")[-1]
-            classification = attributes.split(";")[1].split("=")[1]
+            gff_line = parse_gff_line(line)
+            classification = gff_line['attributes']['Final_Classification']
             orig_class_dict[classification] += 1
             ## ambiguous domains filtered out automatically
             if classification != configuration.AMBIGUOUS_TAG:
-                gff_line = parse_gff_line(line)
                 al_identity = float(gff_line['attributes']['Identity'])
                 al_similarity = float(gff_line['attributes']['Similarity'])
                 al_length = float(gff_line['attributes']['Relat_Length'])
                 relat_interrupt = float(gff_line['attributes']['Relat_Interruptions'])
                 db_len_proportion = float(gff_line['attributes']['Hit_to_DB_Length'])
-                dom_type = gff_line['attributes']['Final_Classification']
+                dom_type = gff_line['attributes']['Name']
                 seq_id = gff_line['seqid']
                 xminimal = int(gff_line['start'])
                 xmaximal = int(gff_line['end'])

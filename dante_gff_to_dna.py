@@ -7,7 +7,7 @@ import textwrap
 from collections import defaultdict
 from Bio import SeqIO
 import configuration
-
+from dante_gff_output_filtering import parse_gff_line
 t_nt_seqs_extraction = time.time()
 
 
@@ -34,7 +34,8 @@ def extract_nt_seqs(DNA_SEQ, DOM_GFF, OUT_DIR, CLASS_TBL, EXTENDED):
     ''' Extract nucleotide sequences of protein domains found by DANTE from input DNA seq.
 		Sequences are saved in fasta files separately for each transposon lineage.
 		Sequences extraction is based on position of Best_Hit alignment reported by LASTAL.
-		The positions can be extended (optional) based on what part of database domain was aligned (Best_Hit_DB_Pos attribute).
+		The positions can be extended (optional) based on what part of database domain was aligned
+        (Best_Hit_DB_Pos attribute).
 		The strand orientation needs to be considered in extending and extracting the sequence itself
 	'''
     [count_comment, first_line] = check_file_start(DOM_GFF)
@@ -49,20 +50,24 @@ def extract_nt_seqs(DNA_SEQ, DOM_GFF, OUT_DIR, CLASS_TBL, EXTENDED):
         allSeqs = SeqIO.to_dict(SeqIO.parse(DNA_SEQ, 'fasta'))
         seq_nt = allSeqs[seq_id_stored]
         for line in domains:
-            seq_id = line.split("\t")[0]
-            dom_type = line.split("\t")[8].split(";")[0].split("=")[1]
-            elem_type = line.split("\t")[8].split(";")[1].split("=")[1]
-            strand = line.split("\t")[6]
-            align_nt_start = int(line.split("\t")[8].split(";")[3].split(":")[
+            gff_line = parse_gff_line(line)
+            elem_type = gff_line['attributes']['Final_Classification']
+            if elem_type == configuration.AMBIGUOUS_TAG:
+                continue  # skip ambiguous classification
+            seq_id = gff_line['seqid']
+            dom_type = gff_line['attributes']['Name']
+            strand = gff_line['strand']
+            align_nt_start = int(gff_line['attributes']['Best_Hit'].split(":")[
                 -1].split("-")[0])
-            align_nt_end = int(line.split("\t")[8].split(";")[3].split(":")[
+            align_nt_end = int(gff_line['attributes']['Best_Hit'].split(":")[
                 -1].split("-")[1].split("[")[0])
             if seq_id != seq_id_stored:
                 seq_id_stored = seq_id
                 seq_nt = allSeqs[seq_id_stored]
             if EXTENDED:
                 ## which part of database sequence was aligned
-                db_part = line.split("\t")[8].split(";")[4].split("=")[1]
+                db_part = gff_line['attributes']['Best_Hit_DB_Pos']
+                ## db_part = line.split("\t")[8].split(";")[4].split("=")[1]
                 ## datatabse seq length
                 dom_len = int(db_part.split("of")[1])
                 ## start of alignment on database seq
