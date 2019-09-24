@@ -22,7 +22,7 @@
 	  <param format="fasta" type="data" name="input_dna" label="Input DNA" help="Choose input DNA sequence(s) to extract the domains from" />
 	  <param format="gff" type="data" name="domains_gff" label="Protein domains GFF" help="Choose filtered protein domains GFF3 (DANTE's output)" />
 	  <param name="db_type" type="select" label="Select taxon and protein domain database version (REXdb)" help="">
-      <options from_file="rexdb_versions.txt">
+      <options from_file="rexdb_versions.loc">
         <column name="name" index="0"/>
         <column name="value" index="1"/>
       </options>

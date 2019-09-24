@@ -414,34 +414,35 @@ def line_generator(tab_pipe, maf_pipe, start):
 
 def get_version(path, LAST_DB):
     '''Return version is run from git repository '''
-    try:
-        branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD",
-                                         shell=True,
-                                         cwd=path).decode('ascii').strip()
-        shorthash = subprocess.check_output("git log --pretty=format:'%h' -n 1  ",
-                                            shell=True,
-                                            cwd=path).decode('ascii').strip()
-        revcount = len(subprocess.check_output("git log --oneline",
-                                               shell=True,
-                                               cwd=path).decode('ascii').split())
-        version_string = (
-            "##-----------------------------------------------\n"
-            "##PIPELINE VERSION         : "
-            "{branch}-rv-{revcount}({shorthash})\n"
-            "##PROTEIN DATABASE VERSION : {PD}\n"
-            "##-----------------------------------------------\n").format(
-                branch=branch,
-                shorthash=shorthash,
-                revcount=revcount,
-                PD=os.path.basename(LAST_DB))
-    except:
-        version_string = (
-            "##-----------------------------------------------\n"
-            "##PROTEIN DATABASE VERSION : {PD}\n"
-            "##-----------------------------------------------\n").format(
-                PD=os.path.basename(LAST_DB)
-            )
-
+    version_string = (
+        "##-----------------------------------------------\n"
+        "##PROTEIN DATABASE VERSION : {PD}\n"
+        "##-----------------------------------------------\n").format(
+            PD=os.path.basename(LAST_DB)
+        )
+    if os.path.exists(".git"):
+        try:
+            branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD",
+                                             shell=True,
+                                             cwd=path).decode('ascii').strip()
+            shorthash = subprocess.check_output("git log --pretty=format:'%h' -n 1  ",
+                                                shell=True,
+                                                cwd=path).decode('ascii').strip()
+            revcount = len(subprocess.check_output("git log --oneline",
+                                                   shell=True,
+                                                   cwd=path).decode('ascii').split())
+            version_string = (
+                "##-----------------------------------------------\n"
+                "##PIPELINE VERSION         : "
+                "{branch}-rv-{revcount}({shorthash})\n"
+                "##PROTEIN DATABASE VERSION : {PD}\n"
+                "##-----------------------------------------------\n").format(
+                    branch=branch,
+                    shorthash=shorthash,
+                    revcount=revcount,
+                    PD=os.path.basename(LAST_DB))
+        except:
+            pass
     return version_string
 
 
