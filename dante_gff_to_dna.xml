@@ -17,7 +17,7 @@
 	  --classification \${REXDB}/${db_type}_class
     &amp;&amp;
 
-    cat \$TEMP_DIR_LINEAGES/domains_counts.txt \$TEMP_DIR_LINEAGES/*fasta > $out_fasta &amp;&amp;
+    cat \$TEMP_DIR_LINEAGES/*fasta > $out_fasta &amp;&amp;
     rm -rf \$TEMP_DIR_LINEAGES
   </command>
   <inputs>
