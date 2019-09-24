@@ -2,6 +2,7 @@
   <description> Tool to extract nucleotide sequences of protein domains found by DANTE </description>
   <requirements>
     <requirement type="package">biopython</requirement>
+    <requirement type="set_environment">REXDB</requirement>
   </requirements>
   <command>
     TEMP_DIR_LINEAGES=\$(mktemp -d) &amp;&amp;
@@ -12,7 +13,7 @@
     #else:
 	  --extended False
     #end if
-	  --classification ${__tool_data_path__ }/protein_domains/${db_type}_class
+	  --classification \${REXDB}/${db_type}_class
     &amp;&amp;
 
     cat \$TEMP_DIR_LINEAGES/domains_counts.txt \$TEMP_DIR_LINEAGES/*fasta > $out_fasta &amp;&amp;
