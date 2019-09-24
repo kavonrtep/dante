@@ -2,6 +2,7 @@
   <description> Tool to extract nucleotide sequences of protein domains found by DANTE </description>
   <requirements>
     <requirement type="package">biopython</requirement>
+    <requirement type="package" version="1.0">rexdb</requirement>
     <requirement type="set_environment">REXDB</requirement>
   </requirements>
   <command>
