@@ -1,4 +1,4 @@
-<tool id="domains_filter" name="Protein Domains Filter" version="1.0.0">
+<tool id="domains_filter" name="Protein Domains Filter" version="1.0.1">
   <description> Tool for filtering of gff3 output from DANTE. Filtering can be performed based domain type and alignment quality. </description>
   <stdio>
     <regex match="Traceback" source="stderr" level="fatal" description="Unknown error" />

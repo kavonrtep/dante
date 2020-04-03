@@ -1,4 +1,4 @@
-<tool id="dante" name="Domain based ANnotation of Transposable Elements - DANTE" version="1.0.0">
+<tool id="dante" name="Domain based ANnotation of Transposable Elements - DANTE" version="1.1.0">
   <description> Tool for annotation of transposable elements based on the similarity to conserved protein domains database. </description>
   <requirements>
     <requirement type="package">last</requirement>
@@ -26,6 +26,14 @@
 	  --classification \${REXDB}/${db_type}_class
     --scoring_matrix ${scoring_matrix}
 
+    &amp;&amp;
+    python3 ${__tool_directory__}/dante_gff_output_filtering.py --dom_gff ${DomGff}
+    --domains_prot_seq ${Domains_filtered} --domains_filtered ${DomGff_filtered}
+    --output_dir .
+    --selected_dom All --th_identity 0.35
+    --th_similarity 0.45 --th_length 0.8
+    --interruptions 3 --max_len_proportion 1.2
+    --element_type ''
 
     #if str($input_type.input_type_selector) == "aln"
      &amp;&amp;
@@ -100,7 +108,9 @@
   </inputs>
 
   <outputs>
-    <data format="gff3" name="DomGff"  label="DANTE on ${on_string}" />
+    <data format="gff3" name="DomGff"  label="DANTE on ${on_string}, full output" />
+    <data format="gff3" name="DomGff_filtered"  label="DANTE on ${on_string}, filtered output" />
+    <data format="fasta" name="Domains_filtered"  label="DANTE on ${on_string}, protein domains, filtered output" />
     <data format="gff3" name="DomGff2" label="DANTE on ${on_string}: 2nd pass">
       <filter>iterative == "Yes" </filter>
     </data>
@@ -122,7 +132,7 @@
   <help>
 
 
-    THIS IS A PRIMARY OUTPUT THAT SHOULD UNDERGO FURTHER QUALITY FILTERING TO GET RID OFF POTENTIAL FALSE POSITIVE DOMAINS
+    
 
     **WHAT IT DOES**
 

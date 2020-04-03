@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import sys
 import time
 import configuration
 import os
@@ -39,13 +39,23 @@ def check_file_start(gff_file):
 
 
 def write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict,
-               dom_dict, version_lines):
+               dom_dict, version_lines, TH_IDENTITY, TH_SIMILARITY,
+               TH_LENGTH, TH_INTERRUPT, TH_LEN_RATIO, SELECTED_DOM):
     '''
 	Write domains statistics in beginning of filtered GFF
 	'''
     with open(FILT_DOM_GFF, "w") as filt_gff:
         for line in version_lines:
             filt_gff.write(line)
+        filt_gff.write(("##Filtering thresholdss: min identity: {}, min similarity: {},"
+                        " min relative alingment length: {}, max interuptions(stop or "
+                        "frameshift): {}, max relative alignment length: {}, selected"
+                        " domains: {} \n").format(TH_IDENTITY,
+                                                  TH_SIMILARITY,
+                                                  TH_LENGTH,
+                                                  TH_INTERRUPT,
+                                                  TH_LEN_RATIO,
+                                                  SELECTED_DOM))
         filt_gff.write("##CLASSIFICATION\tORIGINAL_COUNTS\tFILTERED_COUNTS\n")
         if not orig_class_dict:
             filt_gff.write("##NO DOMAINS CLASSIFICATIONS\n")
@@ -159,7 +169,8 @@ def filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY,
                     domains.append(dom_type)
     path = os.path.dirname(os.path.realpath(__file__))
     write_info(filt_dom_tmp, FILT_DOM_GFF, orig_class_dict, filt_class_dict,
-               dom_dict, version_lines)
+               dom_dict, version_lines, TH_IDENTITY, TH_SIMILARITY,
+               TH_LENGTH, TH_INTERRUPT, TH_LEN_RATIO, SELECTED_DOM)
     os.unlink(filt_dom_tmp.name)
     xminimals_all.append(xminimals)
     xmaximals_all.append(xmaximals)
