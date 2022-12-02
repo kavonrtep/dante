@@ -1,0 +1,100 @@
+#!/usr/bin/env python
+"""
+This is wrapper for dante.py script
+it will find the path to database files
+"""
+import argparse
+import os
+
+import dante
+
+
+class CustomFormatter(
+    argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
+    ):
+    """This is custom formatter for argparse"""
+    pass
+
+
+parser = argparse.ArgumentParser(
+    description='''Script performs similarity search on given DNA sequence(s) in (
+    multi)fasta against our protein domains database of all Transposable element for 
+    certain group of organisms (Viridiplantae or Metazoans). Domains are subsequently 
+    annotated and classified - in case certain domain has multiple annotations 
+    assigned, classifition is derived from the common classification level of all of 
+    them. Domains search is accomplished engaging LASTAL alignment tool.
+
+DEPENDENCIES:
+    - python 3.4 or higher with packages:
+        -numpy
+    - lastal 744 or higher [http://last.cbrc.jp/]
+    - configuration.py module
+
+EXAMPLE OF USAGE:
+
+    ./protein_domains_pd.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs 
+    PATH_TO_CLASSIFICATION_FILE
+
+When running for the first time with a new database use -nld option allowing lastal to 
+create indexed database files:
+
+    -nld True
+
+    ''', epilog="""""", formatter_class=CustomFormatter
+    )
+
+requiredNamed = parser.add_argument_group('required named arguments')
+requiredNamed.add_argument(
+    "-q", "--query", type=str, required=True,
+    help='input DNA sequence to search for protein domains in a fasta format. '
+         'Multifasta format allowed.'
+    )
+parser.add_argument('-D', '--database', type=str, required=False,
+                    default='Viridiplantae_v3.0',
+                    choices=['Viridiplantae_v3.0',
+                             'Metazoa_v3.1',
+                             'Viridiplantae_v2.2',
+                             'Metazoa_v3.1']
+                    )
+
+
+parser.add_argument(
+    "-oug", "--domain_gff", type=str, help="output domains gff format"
+    )
+parser.add_argument(
+    "-nld", "--new_ldb", type=str, default=False,
+    help="create indexed database files for lastal in case of working with new protein db"
+    )
+parser.add_argument(
+    "-dir", "--output_dir", type=str,
+    help="specify if you want to change the output directory"
+    )
+parser.add_argument(
+    "-M", "--scoring_matrix", type=str, default="BL80", choices=['BL80', 'BL62', 'MIQS'],
+    help="specify scoring matrix to use for similarity search (BL80, BL62, MIQS)"
+    )
+parser.add_argument(
+    "-thsc", "--threshold_score", type=int, default=80,
+    help="percentage of the best score in the cluster to be tolerated when assigning "
+         "annotations per base"
+    )
+parser.add_argument(
+    "-wd", "--win_dom", type=int, default=10000000,
+    help="window to process large input sequences sequentially"
+    )
+parser.add_argument(
+    "-od", "--overlap_dom", type=int, default=10000,
+    help="overlap of sequences in two consecutive windows"
+    )
+
+args = parser.parse_args()
+
+script_path = os.path.dirname(os.path.realpath(__file__))
+# add path to database files
+pdb = F'{script_path}/tool-data/protein_domains/{args.database}_pdb'
+cls = F'{script_path}/tool-data/protein_domains/{args.database}_class'
+args.protein_database = pdb
+args.classification = cls
+
+# run dante
+dante.main(args)
