@@ -25,6 +25,7 @@
 	* configuration.py 
 
 ### Installation using conda ####
+[![Anaconda-Server Badge](https://anaconda.org/petrnovak/dante/badges/version.svg)](https://anaconda.org/petrnovak/dante)
 
      conda install -c conda-forge -c bioconda -c petrnovak dante
 
