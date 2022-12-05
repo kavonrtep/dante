@@ -24,6 +24,10 @@
 * ProfRep/DANTE modules:
 	* configuration.py 
 
+### Installation using conda ####
+
+     conda install -c conda-forge -c bioconda -c petrnovak dante
+
 
 ### Protein Domains Finder ###
 

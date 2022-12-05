@@ -322,7 +322,7 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts,
         dom_end = dom_end + (part - 1) * step
         best_start = best_start + (part - 1) * step
         best_end = best_end + (part - 1) * step
-    if ann_substring is '':
+    if ann_substring == '':
         ann_substring = "NONE(Annotations from different classes)"
     if len(unique_annotations) > 1:
         unique_annotations = ",".join(["{}[{}bp]".format(
@@ -424,7 +424,9 @@ def get_version(path, LAST_DB):
         try:
             branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD",
                                              shell=True,
-                                             cwd=path).decode('ascii').strip()
+                                             cwd=path,
+                                             stderr=subprocess.DEVNULL).decode(
+                'ascii').strip()
             shorthash = subprocess.check_output("git log --pretty=format:'%h' -n 1  ",
                                                 shell=True,
                                                 cwd=path).decode('ascii').strip()
@@ -518,7 +520,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
         except RuntimeError:
             break
         ## if there are no domains found
-        if sequence_hits.size is 0:
+        if sequence_hits.size == 0:
             gff.write("##NO DOMAINS")
             return [], [], [], []
 

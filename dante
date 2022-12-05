@@ -21,24 +21,10 @@ parser = argparse.ArgumentParser(
     multi)fasta against our protein domains database of all Transposable element for 
     certain group of organisms (Viridiplantae or Metazoans). Domains are subsequently 
     annotated and classified - in case certain domain has multiple annotations 
-    assigned, classifition is derived from the common classification level of all of 
+    assigned, classification is derived from the common classification level of all of 
     them. Domains search is accomplished engaging LASTAL alignment tool.
 
-DEPENDENCIES:
-    - python 3.4 or higher with packages:
-        -numpy
-    - lastal 744 or higher [http://last.cbrc.jp/]
-    - configuration.py module
 
-EXAMPLE OF USAGE:
-
-    ./protein_domains_pd.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs 
-    PATH_TO_CLASSIFICATION_FILE
-
-When running for the first time with a new database use -nld option allowing lastal to 
-create indexed database files:
-
-    -nld True
 
     ''', epilog="""""", formatter_class=CustomFormatter
     )
@@ -59,15 +45,12 @@ parser.add_argument('-D', '--database', type=str, required=False,
 
 
 parser.add_argument(
-    "-oug", "--domain_gff", type=str, help="output domains gff format"
-    )
-parser.add_argument(
-    "-nld", "--new_ldb", type=str, default=False,
-    help="create indexed database files for lastal in case of working with new protein db"
+    "-o", "--domain_gff", type=str, help="output domains gff format",required=True
     )
 parser.add_argument(
     "-dir", "--output_dir", type=str,
-    help="specify if you want to change the output directory"
+    help="specify if you want to change the output directory",
+    default='.'
     )
 parser.add_argument(
     "-M", "--scoring_matrix", type=str, default="BL80", choices=['BL80', 'BL62', 'MIQS'],
@@ -95,6 +78,6 @@ pdb = F'{script_path}/tool-data/protein_domains/{args.database}_pdb'
 cls = F'{script_path}/tool-data/protein_domains/{args.database}_class'
 args.protein_database = pdb
 args.classification = cls
-
+args.new_ldb = False
 # run dante
 dante.main(args)
