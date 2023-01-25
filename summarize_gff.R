@@ -1,3 +1,4 @@
+#!/usr/bin/env Rscript
 ## summarize hits
 output = commandArgs(T)[2] ## output table
 filepath = commandArgs(T)[1]  ## input dante gff3
