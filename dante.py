@@ -834,8 +834,7 @@ def main(args):
             OUTPUT_DIR = configuration.TMP
             if not os.path.exists(OUTPUT_DIR):
                 os.makedirs(OUTPUT_DIR)
-        OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR,
-                                     os.path.basename(OUTPUT_DOMAIN))
+        OUTPUT_DOMAIN = os.path.join(OUTPUT_DIR,OUTPUT_DOMAIN)
     domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                   THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM, SCORING_MATRIX)
 

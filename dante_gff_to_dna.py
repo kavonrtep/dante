@@ -170,11 +170,18 @@ if __name__ == "__main__":
                         type=str,
                         required=True,
                         help='GFF file of protein domains')
-    parser.add_argument('-cs',
-                        '--classification',
-                        type=str,
-                        required=True,
-                        help='protein domains classification file')
+#    parser.add_argument('-cs',
+#                        '--classification',
+#                        type=str,
+#                        required=True,
+#                        help='protein domains classification file')
+    parser.add_argument('-D', '--database', type=str, required=False,
+                        default='Viridiplantae_v3.0',
+                        choices=['Viridiplantae_v3.0',
+                                 'Metazoa_v3.1',
+                                 'Viridiplantae_v2.2',
+                                 'Metazoa_v3.0'],
+                        )
     parser.add_argument('-out',
                         '--out_dir',
                         type=str,
@@ -187,5 +194,8 @@ if __name__ == "__main__":
         default=True,
         help=
         'extend the domains edges if not the whole datatabase sequence was aligned')
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    # add path to database fi0les
     args = parser.parse_args()
+    args.classification = F'{script_path}/tool-data/protein_domains/{args.database}_class'
     main(args)
