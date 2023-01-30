@@ -389,12 +389,24 @@ def line_generator(tab_pipe, maf_pipe, start):
     for line_tab in tab_pipe:
         line_tab = line_tab.decode("utf-8")
         if not line_tab.startswith('#'):
+            # is some versions of lastal, the record is split into multiple lines
+            # first line contain only two columns, second line contain the rest
+            # of the record. It must be merged into one line
+            if len(line_tab.split("\t")) == 2:
+                broken_line = True
+                line_tab += tab_pipe.readline().decode("utf-8")
+            else:
+                broken_line = False
             if start:
                 if not ('seq_id' in locals() and
                         seq_id != line_tab.split("\t")[6]):
                     seq_id = line_tab.split("\t")[6]
                     start = False
-            line_maf = [maf_pipe.readline() for line_count in range(4)]
+            Nlines = 5 if broken_line else 4
+            line_maf = [maf_pipe.readline() for line_count in range(Nlines)]
+            # if the record is broken, concatenate second and third line
+            if broken_line:
+                line_maf = [line_maf[0], line_maf[1] + line_maf[2], line_maf[3], line_maf[4]]
             db_seq = line_maf[1].decode("utf-8").rstrip().split(" ")[-1]
             alignment_seq = line_maf[2].decode("utf-8").rstrip().split(" ")[-1]
             line = "{}\t{}\t{}".format(line_tab, db_seq, alignment_seq)
