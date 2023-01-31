@@ -329,10 +329,7 @@ def create_gff3(domain_type, ann_substring, unique_annotations, ann_pos_counts,
             ann, pos) for ann, pos in zip(unique_annotations, ann_pos_counts)])
     else:
         unique_annotations = unique_annotations[0]
-    if __name__ == '__main__':
-        SOURCE = configuration.SOURCE_DANTE
-    else:
-        SOURCE = configuration.SOURCE_PROFREP
+    SOURCE = configuration.SOURCE_DANTE
     if "/" in domain_type:
         gff.write(
             "{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\tName={};Final_Classification=Ambiguous_domain;Region_Hits_Classifications_={}\n".format(
@@ -508,7 +505,6 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
     tab_pipe = tab.stdout
     maf_pipe = maf.stdout
     maf_pipe.readline()
-
     seq_ids = []
     dom_tmp = NamedTemporaryFile(delete=False)
     with open(dom_tmp.name, "w") as dom_gff_tmp:
@@ -533,7 +529,10 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
             break
         ## if there are no domains found
         if sequence_hits.size == 0:
-            gff.write("##NO DOMAINS")
+            gff.write("##No domains found\n")
+            gff.close()
+            shutil.copy2(dom_tmp.name, OUTPUT_DOMAIN)
+            os.unlink(dom_tmp.name)
             return [], [], [], []
 
         ############# PARSING LASTAL OUTPUT ############################
