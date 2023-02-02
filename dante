@@ -230,11 +230,12 @@ def get_original_header_and_coordinates(new_header, new_start, new_end, matching
     original_end
     """
     matching_table_part = [x for x in matching_table if x[4] == new_header]
+    real_chunk_size = matching_table_part[0][3] - matching_table_part[0][2]
     ori_header = matching_table_part[0][0]
     start = matching_table_part[0][2]
     ori_start = new_start + start
     ori_end = new_end + start
-    return ori_header, ori_start, ori_end
+    return ori_header, ori_start, ori_end, real_chunk_size
 
 
 # recalculate gff3 coordinates, use gff3_feature class
@@ -268,7 +269,8 @@ def recalculate_gff3_coordinates(gff3_file, matching_table):
 
 
 # recalculate gff3 back to original coordinates, use gff3_feature class
-def recalculate_gff3_back_to_original_coordinates(gff3_file, matching_table):
+def recalculate_gff3_back_to_original_coordinates(gff3_file, matching_table,
+                                                  chunk_size, overlap):
     """
     Recalculate gff3 back to original coordinates, use gff3_feature class
     :param gff3_file:
@@ -284,9 +286,14 @@ def recalculate_gff3_back_to_original_coordinates(gff3_file, matching_table):
                     fh_out.write(line)
                 else:
                     feature = Gff3Feature(line)
-                    ori_header, ori_start, ori_end = get_original_header_and_coordinates(
+                    ori_header, ori_start, ori_end, \
+                        real_chunk_size = get_original_header_and_coordinates(
                         feature.header, feature.start, feature.end, matching_table
                         )
+                    # if feature is too close (less than 100 nt) to the end ends of
+                    # chunk,skip it
+                    if feature.start < 100 or feature.end > real_chunk_size - 100:
+                        continue
                     feature.header = ori_header
                     feature.start = ori_start
                     feature.end = ori_end
@@ -427,7 +434,9 @@ if total_size > chunk_size and number_of_sequences > 1 and args.cpu > 1:
     with open(tmp_gff_unfiltered, 'w') as f:
         for args_part in args_list:
             tmp_gff=recalculate_gff3_back_to_original_coordinates(args_part.domain_gff,
-                                                                 matching_table)
+                                                                 matching_table,
+                                                                 chunk_size,
+                                                                 overlap)
             with open(tmp_gff, 'r') as f_tmp:
                 for line in f_tmp:
                     f.write(line)
