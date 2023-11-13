@@ -190,6 +190,8 @@ This tool extracts nucleotide sequences of protein domains from reference DNA ba
 
 * fasta files of domains nucleotide sequences for individual transposons lineages
 * txt file of domains counts extracted for individual lineages
+* GFF3 file of domains nucleotide sequences for individual transposons lineages
+
 
 **- For GALAXY usage all concatenated in a single fasta file**
 

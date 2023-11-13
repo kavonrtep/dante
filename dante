@@ -6,6 +6,7 @@ it will find the path to database files
 import argparse
 import copy
 import os
+import shutil
 import subprocess
 import tempfile
 from itertools import cycle
@@ -150,10 +151,14 @@ def split_fasta_to_chunks(fasta_file, chunk_size=100000000, overlap=100000):
     matching_table
     """
     min_chunk_size = chunk_size * 2
+    print("analyzing fasta file")
     fasta_dict = read_fasta_sequence_size(fasta_file)
+    print("fasta file loaded")
+    print("number of sequences: ", len(fasta_dict))
     # calculates ranges for splitting of fasta files and store them in list
     matching_table = []
     fasta_file_split = tempfile.NamedTemporaryFile(delete=False).name
+    print("calculating ranges for splitting of fasta files")
     for header, size in fasta_dict.items():
         if size > min_chunk_size:
             number_of_chunks = int(size / chunk_size)
@@ -168,11 +173,14 @@ def split_fasta_to_chunks(fasta_file, chunk_size=100000000, overlap=100000):
         else:
             new_header = header + '_0'
             matching_table.append([header, 0, 0, size, new_header])
+    print("splitting fasta file")
     # read sequences from fasta files and split them to chunks according to matching table
     # open output and input files, use with statement to close files
+    # TODO - avoid using dictionary - could be problem for large files!!
     fasta_dict = read_single_fasta_to_dictionary(open(fasta_file, 'r'))
     with open(fasta_file_split, 'w') as fh_out:
         for header in fasta_dict:
+            print(header)
             matching_table_part = [x for x in matching_table if x[0] == header]
             for header2, i, start, end, new_header in matching_table_part:
                 fh_out.write('>' + new_header + '\n')
@@ -319,7 +327,27 @@ parser = argparse.ArgumentParser(
 
 
 
-    ''', epilog="""""", formatter_class=CustomFormatter
+    ''', epilog="""
+    Extra database format:
+    Extra database is FASTA file with protein domains sequences. This file is appended 
+    to selected REXdb database. Header of sequences must contain information about 
+    classification compatible with REXdb classification system and also protein domain 
+    type. Example of FASTA header:
+    
+       >MNCI01000001.1:152848-153282 RH Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Tat
+       CQEALDNIMRELAQVSTVYSSQNDKSFYIYLTISDisissllcQKLDDGVELsvyylsha
+       litYET*YIEVEKFFLALVVSFKK*rnylfrshINVICKDKVLRDITTNIYKNSRIA**K
+       DILDEFGfhyisqa*TKGQVIATQLT
+    
+    where:
+    
+    MNCI01000001.1:152848-153282 is unique identifier of sequence in database.
+    
+    RH is type of protein domain.
+    
+    Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Tat is classification of protein domain.
+    
+    """, formatter_class=CustomFormatter
     )
 
 requiredNamed = parser.add_argument_group('required named arguments')
@@ -367,24 +395,78 @@ parser.add_argument(
     help="number of threads to use"
     )
 
-args = parser.parse_args()
+parser.add_argument(
+        '-e', '--extra_database', type=str, required=False,
+        default=None,help='extra database to use for similarity search')
 
+args = parser.parse_args()
+print(args)
 script_path = os.path.dirname(os.path.realpath(__file__))
-# add path to database fi0les
+# add path to database files
+
 pdb = F'{script_path}/tool-data/protein_domains/{args.database}_pdb'
 cls = F'{script_path}/tool-data/protein_domains/{args.database}_class'
+
+
+if args.extra_database is not None:
+    # add extra database to default database
+    db_tmp_dir = tempfile.TemporaryDirectory().name
+    # TODO - unlink directory at the end
+    os.makedirs(db_tmp_dir)
+    classification_table = set()
+    extra_classification_file = os.path.join(db_tmp_dir, 'extra.class')
+    extra_fasta_file = os.path.join(db_tmp_dir, 'extra.fasta')
+    with open(args.extra_database, 'r') as f, open(extra_fasta_file, 'w') as out:
+        for line in f:
+            if line[0] == ">":
+                ## modify header
+                name, domain, classification = line.split(" ")
+                name_clean=name[1:].replace("-","_")
+                new_header = ">NA-{}__{}\n".format(domain, name_clean)
+                classification_string = "\t".join(classification.split("|"))
+                classification_table.add("{}\t{}".format(name_clean, classification_string))
+                out.write(new_header)
+            else:
+                out.write(line)
+    with open(extra_classification_file, 'w') as f:
+        f.writelines(classification_table)
+    # concatenate extra database with pdb and cls to temporary files
+    pdb_tmp = os.path.join(db_tmp_dir, 'pdb.fasta')
+    cls_tmp = os.path.join(db_tmp_dir, 'cls.class')
+    # concatenate files
+    with open(pdb_tmp, 'w') as f:
+        for file in [pdb, extra_fasta_file]:
+            with open(file, 'r') as f_tmp:
+                for line in f_tmp:
+                    f.write(line)
+    with open(cls_tmp, 'w') as f:
+        for file in [cls, extra_classification_file]:
+            with open(file, 'r') as f_tmp:
+                for line in f_tmp:
+                    f.write(line)
+    # format lastdb
+    cmd = ['lastdb', '-p', pdb_tmp,  pdb_tmp]
+    subprocess.run(cmd)
+    pdb = pdb_tmp
+    cls = cls_tmp
+
+
 args.protein_database = pdb
 args.classification = cls
 args.new_ldb = False
 # run dante
 chunk_size = 500000
 overlap = 2000
-
+print('splitting fasta file to chunks')
 
 fasta_file_split, matching_table = split_fasta_to_chunks(args.query, chunk_size, overlap)
+print('getting fasta sequence size')
 fasta_seq_size = read_fasta_sequence_size(fasta_file_split)
 total_size = sum(fasta_seq_size.values())
 number_of_sequences = len(fasta_seq_size)
+print('total size: ', total_size)
+print('number of sequences: ', number_of_sequences)
+
 
 
 if total_size > chunk_size and number_of_sequences > 1 and args.cpu > 1:
@@ -465,3 +547,8 @@ if total_size > chunk_size and number_of_sequences > 1 and args.cpu > 1:
 else:
     print("running DANTE on whole file")
     dante.main(args)
+
+# remove temporary files, recursive remove directory
+if args.extra_database is not None:
+    shutil.rmtree(db_tmp_dir)
+

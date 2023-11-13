@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-Helper script to create DANTE databese which can be used in second iteration
+Helper script to create DANTE database which can be used in second iteration
 '''
 import sys
 
