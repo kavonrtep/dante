@@ -1,4 +1,4 @@
-﻿# Domain based annotation of transposable elements  - DANTE #
+﻿# Domain based annotation of transposable elements - DANTE #
 
 ### Authors 
  Nina Hostakova, Petr Novak, Pavel Neumann, Jiri Macas
@@ -7,100 +7,126 @@
  
 ### Introduction
 
-* Protein Domains Finder [dante.py]
+* Protein Domains Finder (`dante`)
 	* Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database.
 	* Domains searching is accomplished engaging LASTAL alignment tool.
-	* Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classifation is derived from the common classification level of all of them. 	
+	* Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classification is derived from the common classification level of all of them. 	
 			
-* Proteins Domains Filter [dante_gff_output_filtering.py]
+* Proteins Domains Filter (`dante_gff_output_filtering.py`)
 	* filters GFF3 output from previous step to obtain certain kind of domain and/or allows to adjust quality filtering  
         
-### DEPENDENCIES ###
-
-* python3.4 or higher with packages:	
-	* numpy
-	* biopython
-* [lastal](http://last.cbrc.jp/doc/last.html) 744 or higher
-* ProfRep/DANTE modules:
-	* configuration.py 
+### DEPENDENCIES
+See `requirements.txt`
 
 ### Installation using conda ####
 [![Anaconda-Server Badge](https://anaconda.org/petrnovak/dante/badges/version.svg)](https://anaconda.org/petrnovak/dante)
-
-     conda install -c conda-forge -c bioconda -c petrnovak dante
-
-
-### Protein Domains Finder ###
-
-This tool provides **preliminary** output of all domains types which are not filtered for quality.
-
-#### INPUTS ####
-
-* DNA sequence [multiFasta]
-		
-#### OUTPUTS ####
-		
-* **All protein domains GFF3** - individual domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using Protein Domain Filter tool.		
-
-#### USAGE ####
-
-		usage: dante.py [-h] -q QUERY -pdb PROTEIN_DATABASE -cs
-								  CLASSIFICATION [-oug DOMAIN_GFF] [-nld NEW_LDB]
-								  [-dir OUTPUT_DIR] [-thsc THRESHOLD_SCORE]
-								  [-wd WIN_DOM] [-od OVERLAP_DOM]
-								  
-		optional arguments:
-		  -h, --help            show this help message and exit
-		  -oug DOMAIN_GFF, --domain_gff DOMAIN_GFF
-								output domains gff format (default: None)
-		  -nld NEW_LDB, --new_ldb NEW_LDB
-								create indexed database files for lastal in case of
-								working with new protein db (default: False)
-		  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
-								specify if you want to change the output directory
-								(default: None)
-		  -thsc THRESHOLD_SCORE, --threshold_score THRESHOLD_SCORE
-								percentage of the best score in the cluster to be
-								tolerated when assigning annotations per base
-								(default: 80)
-		  -wd WIN_DOM, --win_dom WIN_DOM
-								window to process large input sequences sequentially
-								(default: 10000000)
-		  -od OVERLAP_DOM, --overlap_dom OVERLAP_DOM
-								overlap of sequences in two consecutive windows
-								(default: 10000)
-
-		required named arguments:
-		  -q QUERY, --query QUERY
-								input DNA sequence to search for protein domains in a
-								fasta format. Multifasta format allowed. (default:
-								None)
-		  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
-								protein domains database file (default: None)
-		  -cs CLASSIFICATION, --classification CLASSIFICATION
-								protein domains classification file (default: None)
+```bash
+conda install -c conda-forge -c bioconda -c petrnovak dante
+```
 
 
-		
-#### HOW TO RUN EXAMPLE ####
-		./protein_domains.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
-		
-	 When running for the first time with a new database use -nld option allowing lastal to create indexed database files:
+### Usage ###
 
-         -nld True
+#### Annotation of protein domains using `dante` 
 
-	use other arguments if you wish to rename your outputs or they will be created automatically with standard names 
+Script `dante` is used to annotate protein domains in DNA sequences. It requires a DNA sequence in (multi)fasta format. The script uses LASTAL to align the DNA sequence to the protein domains database. The script outputs a GFF3 file with the annotated protein domains. Note that there is also script `dante.py` which is kept for compatibility reasons - see details below.
+
+To annotate protein domains in a DNA sequence, run the following command:
+
+```bash
+# download example data:
+wget https://raw.githubusercontent.com/kavonrtep/dante_ltr/main/test_data/sample_genome.fasta
+dante -q sample_genome.fasta -o DANTE_output.gff3 -c 10 run dante
+```
+Output from `dante` is GFF3 file with annotated protein domains. Individual domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This ouput can be used as input for =dante_ltr= (https://github.com/kavonrtep/dante_ltr) to annotate LTR retrotransposons in the genome. If you want to use protein domains for subsequent analysis, it is recommended that you perform filtering of the domains using `dante_gff_output_filtering.py` script. This script allows you to filter the domains based on their quality and/or extract specific types of protein domains or mobile elements of origin. See **Protein Domains Filter** section for more details.
+
+##### Atributes in GFF3 file #####
+- **Name**: The attibute correspond to name of protein 
+  domain (RT. RH, PROT, ...)
+- **Best_Hit**: Information about the best match of the protein domain to a known database entry.
+- **Best_Hit_DB_Pos**: Position of the best hit within the database sequence.
+- **DB_Seq**: The database sequence that corresponds to the best hit.
+- **Region_Seq**: The sequence of the region where the query sequence was aligned to the database sequence.
+- **Query_Seq**: The sequence of the query used to find the best hit.
+- **Identity**: The percentage identity of the best hit match.
+- **Similarity**: The similarity score of the best hit match.
+- **Relat_Length**: The relative length of the match compared to the database sequence.
+- **Relat_Interruptions**: Indicates the relative number of interruptions in the 
+  domain sequence.Interuption could be either stop codon or frameshift.
+- **Hit_to_DB_Length**: The length of the hit compared to the database sequence length.
+
+##### Detailed description of `dante` options
+
+```text
+
+usage: dante [-h] -q QUERY [-D {Viridiplantae_v4.0,Viridiplantae_v3.0,Metazoa_v3.1,Viridiplantae_v2.2,Metazoa_v3.0}] -o DOMAIN_GFF [-dir OUTPUT_DIR] [-M {BL80,BL62,MIQS}] [-thsc THRESHOLD_SCORE] [-wd WIN_DOM] [-od OVERLAP_DOM]
+             [-c CPU] [-e EXTRA_DATABASE]
+
+Script performs similarity search on given DNA sequence(s) in (
+multi)fasta against our protein domains database of all Transposable element for 
+certain group of organisms (Viridiplantae or Metazoans). Domains are subsequently 
+annotated and classified - in case certain domain has multiple annotations 
+assigned, classification is derived from the common classification level of all of 
+them. Domains search is accomplished engaging LASTAL alignment tool.
+    
+
+options:
+  -h, --help            show this help message and exit
+  -D {Viridiplantae_v4.0,Viridiplantae_v3.0,Metazoa_v3.1,Viridiplantae_v2.2,Metazoa_v3.0}, --database {Viridiplantae_v4.0,Viridiplantae_v3.0,Metazoa_v3.1,Viridiplantae_v2.2,Metazoa_v3.0}
+                        Select version of RExDB database to use for similarity search (default: Viridiplantae_v4.0)
+  -o DOMAIN_GFF, --domain_gff DOMAIN_GFF
+                        output domains gff format (default: None)
+  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        specify if you want to change the output directory (default: .)
+  -M {BL80,BL62,MIQS}, --scoring_matrix {BL80,BL62,MIQS}
+                        specify scoring matrix to use for similarity search (BL80, BL62, MIQS) (default: BL80)
+  -thsc THRESHOLD_SCORE, --threshold_score THRESHOLD_SCORE
+                        percentage of the best score in the cluster to be tolerated when assigning annotations per base (default: 80)
+  -wd WIN_DOM, --win_dom WIN_DOM
+                        window to process large input sequences sequentially (default: 10000000)
+  -od OVERLAP_DOM, --overlap_dom OVERLAP_DOM
+                        overlap of sequences in two consecutive windows (default: 10000)
+  -c CPU, --cpu CPU     number of threads to use (default: 1)
+  -e EXTRA_DATABASE, --extra_database EXTRA_DATABASE
+                        extra database to use for similarity search (default: None)
+
+required named arguments:
+  -q QUERY, --query QUERY
+                        input DNA sequence to search for protein domains in a fasta format. Multifasta format allowed. (default: None)
+
+    Extra database format:
+    Extra database is FASTA file with protein domains sequences. This file is appended 
+    to selected REXdb database. Header of sequences must contain information about 
+    classification compatible with REXdb classification system and also protein domain 
+    type. Example of FASTA header:
+    
+       >MNCI01000001.1:152848-153282 RH Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Tat
+       CQEALDNIMRELAQVSTVYSSQNDKSFYIYLTISDisissllcQKLDDGVELsvyylsha
+       litYET*YIEVEKFFLALVVSFKK*rnylfrshINVICKDKVLRDITTNIYKNSRIA**K
+       DILDEFGfhyisqa*TKGQVIATQLT
+    
+    where:
+    
+    MNCI01000001.1:152848-153282 is unique identifier of sequence in database.
+    
+    RH is type of protein domain.
+    
+    Class_I|LTR|Ty3/gypsy|non-chromovirus|OTA|Tat is classification of protein domain.
+
+```
+
+
 	
-### Protein Domains Filter ###
+#### Protein Domains Filter
 		
 The script performs Protein Domains Finder output filtering for quality and/or extracting specific type of protein domain or mobile elements of origin. For the filtered domains it reports their translated protein sequence of original DNA.
 
-WHEN NO PARAMETERS GIVEN, IT PERFORMS QUALITY FILTERING USING THE DEFAULT PARAMETRES (optimized for Viridiplantae species)
+When no parameters are given, the script performs quality filtering using the default parameters optimized for Viridiplantae species.
 
-#### INPUTS ####
-* GFF3 file produced by protein_domains.py OR already filtered GFF3
+##### INPUTS 
+* GFF3 file produced by `dante`.
 	
-#### Filtering options ####
+##### Filtering options 
 * QUALITY: 
 	- Min relative length of alignemnt to the protein domain from DB (without gaps)
 	- Identity 
@@ -113,12 +139,12 @@ Records for ambiguous domain type (e.g. INT/RH) are filtered out automatically
 * MOBILE ELEMENT TYPE:
 arbitrary substring of the element classification ('Final_Classification' attribute in GFF)
 		
-#### OUTPUTS ####
+##### OUTPUTS 
 * filtered GFF3 file
 * fasta file of translated protein sequences for the aligned domains that match the filtering criteria 
 	! as it is taken from the best hit alignment reported by LAST, it does not neccessary cover the whole region reported as domain in GFF
 	
-#### USAGE ####		
+##### USAGE 		
 
 		usage: dante_gff_output_filtering.py [-h] -dg DOM_GFF [-ouf DOMAINS_FILTERED]
                             [-dps DOMAINS_PROT_SEQ]
@@ -170,32 +196,30 @@ arbitrary substring of the element classification ('Final_Classification' attrib
 
 
 
-#### HOW TO RUN EXAMPLE ####
+##### HOW TO RUN EXAMPLE ####
 e.g. getting quality filtered integrase(INT) domains of all gypsy transposable elements:
 	
 	./domains_filtering.py -dom_gff PATH_TO_INPUT_GFF -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE --selected_dom INT --element_type Ty3/gypsy 
 
 
-### Extract Domains Nucleotide Sequences ###
+#### Extract Domains Nucleotide Sequences 
 
 This tool extracts nucleotide sequences of protein domains from reference DNA based on DANTE's output. It can be used e.g. for deriving phylogenetic relations of individual mobile elements classes within a species. 
 
-#### INPUTS ####
+##### INPUTS ####
 
 * original DNA sequence in multifasta format to extract the domains from 
 * GFF3 file of protein domains (**DANTE's output** - preferably filtered for quality and specific domain type)
 * Domains database classification table (to check the classification level)
 
-#### OUTPUTS ####
+##### OUTPUTS ####
 
 * fasta files of domains nucleotide sequences for individual transposons lineages
 * txt file of domains counts extracted for individual lineages
 * GFF3 file of domains nucleotide sequences for individual transposons lineages
 
 
-**- For GALAXY usage all concatenated in a single fasta file**
-
-#### USAGE ####	
+##### USAGE ####	
 		usage: dante_gff_to_dna.py [-h] -i INPUT_DNA -d DOMAINS_GFF -cs
 			CLASSIFICATION [-out OUT_DIR] [-ex EXTENDED]
 
@@ -213,11 +237,71 @@ This tool extracts nucleotide sequences of protein domains from reference DNA ba
 								extend the domains edges if not the whole datatabase
 								sequence was aligned
 
-#### HOW TO RUN EXAMPLE ####
+##### HOW TO RUN EXAMPLE ####
 	./extract_domains_seqs.py --domains_gff PATH_PROTEIN_DOMAINS_GFF --input_dna PATH_TO_INPUT_DNA  --classification PROTEIN_DOMAINS_DB_CLASS_TBL --extended True
 
 	
 
+#### Identification of protein domains with `dante.py` ###
+
+This tool is kept for compatibility reasons. It performs same function as `dante` but with different interface.
+
+##### INPUTS ####
+
+* DNA sequence [multiFasta]
+		
+##### OUTPUTS ####
+		
+* **All protein domains GFF3** - individual domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This file can undergo further filtering using Protein Domain Filter tool.		
+
+##### USAGE ####
+
+		usage: dante.py [-h] -q QUERY -pdb PROTEIN_DATABASE -cs
+								  CLASSIFICATION [-oug DOMAIN_GFF] [-nld NEW_LDB]
+								  [-dir OUTPUT_DIR] [-thsc THRESHOLD_SCORE]
+								  [-wd WIN_DOM] [-od OVERLAP_DOM]
+								  
+		optional arguments:
+		  -h, --help            show this help message and exit
+		  -oug DOMAIN_GFF, --domain_gff DOMAIN_GFF
+								output domains gff format (default: None)
+		  -nld NEW_LDB, --new_ldb NEW_LDB
+								create indexed database files for lastal in case of
+								working with new protein db (default: False)
+		  -dir OUTPUT_DIR, --output_dir OUTPUT_DIR
+								specify if you want to change the output directory
+								(default: None)
+		  -thsc THRESHOLD_SCORE, --threshold_score THRESHOLD_SCORE
+								percentage of the best score in the cluster to be
+								tolerated when assigning annotations per base
+								(default: 80)
+		  -wd WIN_DOM, --win_dom WIN_DOM
+								window to process large input sequences sequentially
+								(default: 10000000)
+		  -od OVERLAP_DOM, --overlap_dom OVERLAP_DOM
+								overlap of sequences in two consecutive windows
+								(default: 10000)
+
+		required named arguments:
+		  -q QUERY, --query QUERY
+								input DNA sequence to search for protein domains in a
+								fasta format. Multifasta format allowed. (default:
+								None)
+		  -pdb PROTEIN_DATABASE, --protein_database PROTEIN_DATABASE
+								protein domains database file (default: None)
+		  -cs CLASSIFICATION, --classification CLASSIFICATION
+								protein domains classification file (default: None)
+
+
+		
+##### HOW TO RUN EXAMPLE ####
+		./protein_domains.py -q PATH_TO_INPUT_SEQ -pdb PATH_TO_PROTEIN_DB -cs PATH_TO_CLASSIFICATION_FILE
+		
+	 When running for the first time with a new database use -nld option allowing lastal to create indexed database files:
+
+         -nld True
+
+	use other arguments if you wish to rename your outputs or they will be created automatically with standard names 
 
 
 
