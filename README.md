@@ -24,7 +24,13 @@ Main programs in DANTE package are:
 	* filters GFF3 output from previous step to obtain certain kind of domain and/or allows to adjust quality filtering  
 
 ### Citation
+- DANTE package is described in the following publication:
+
 Novak, P., Hostakova, N., Neumann, P., Macas, J. (2024) – DANTE and DANTE_LTR: lineage-centric annotation pipelines for long terminal repeat retrotransposons in plant genomes. NAR Genomics and Bioinformatics 6:113. [https://doi.org/10.1093/nargab/lqae113]        
+- REXdb database is described in the following publication:
+
+
+Neumann, P., Novak, P., Hostakova, N., Macas, J. (2019) – Systematic survey of plant LTR-retrotransposons elucidates phylogenetic relationships of their polyprotein domains and provides a reference for element classification. Mobile DNA 10:1. [https://doi.org/10.1186/s13100-018-0144-1]
 
 ### DEPENDENCIES
 See `requirements.txt`
