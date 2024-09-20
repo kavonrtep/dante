@@ -1,20 +1,31 @@
 ﻿# Domain based annotation of transposable elements - DANTE #
+Package for domain based annotation of transposable elements in DNA sequences.
+## Table of contents
+* [Introduction](#introduction)
+* [Citation](#citation)
+* [DEPENDENCIES](#dependencies)
+* [Installation using conda](#installation-using-conda)
+* [Usage](#usage)
+  * [Annotation of protein domains using `dante`](#annotation-of-protein-domains-using-dante)
+  * [Protein Domains Filter](#protein-domains-filter)
+  * [Extract Domains Nucleotide Sequences](#extract-domains-nucleotide-sequences)
+  * [Identification of protein domains with `dante.py`](#identification-of-protein-domains-with-dantepy)
 
-### Authors 
- Nina Hostakova, Petr Novak, Pavel Neumann, Jiri Macas
- Biology Centre CAS, Czech Republic
- 
- 
+
 ### Introduction
 
-* Protein Domains Finder (`dante`)
+Main programs in DANTE package are:
+* `dante` is a tool for domain based annotation of transposable elements in DNA sequences.
 	* Script performs scanning of given DNA sequence(s) in (multi)fasta format in order to discover protein domains using our protein domains database.
 	* Domains searching is accomplished engaging LASTAL alignment tool.
 	* Domains are subsequently annotated and classified - in case certain domain has multiple annotations assigned, classification is derived from the common classification level of all of them. 	
 			
-* Proteins Domains Filter (`dante_gff_output_filtering.py`)
+* `dante_gff_output_filtering.py` is a tool for filtering of the domains output from previous step.
 	* filters GFF3 output from previous step to obtain certain kind of domain and/or allows to adjust quality filtering  
-        
+
+### Citation
+Novak, P., Hostakova, N., Neumann, P., Macas, J. (2024) – DANTE and DANTE_LTR: lineage-centric annotation pipelines for long terminal repeat retrotransposons in plant genomes. NAR Genomics and Bioinformatics 6:113. [https://doi.org/10.1093/nargab/lqae113]        
+
 ### DEPENDENCIES
 See `requirements.txt`
 
@@ -23,7 +34,6 @@ See `requirements.txt`
 ```bash
 conda install -c conda-forge -c bioconda -c petrnovak dante
 ```
-
 
 ### Usage ###
 
