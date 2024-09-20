@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 from itertools import cycle
 from multiprocessing import Pool
+from version import __version__
 
 import dante
 class Gff3Feature:
@@ -316,6 +317,24 @@ class CustomFormatter(
     """This is custom formatter for argparse"""
     pass
 
+def add_version_to_gff3(gff3_file, version_info, REXdb_version):
+    """
+    Add version to gff3 file
+    :param gff3_file:
+    :param version_info:
+    :return:
+    """
+    tmp_filename = os.path.join(gff3_file + '.tmp')
+    with open(gff3_file, 'r') as src_file, open(tmp_filename, 'w') as tmp_file:
+        line = src_file.readline()
+        tmp_file.write(line)
+        tmp_file.write("##DANTE version " + version_info + '\n')
+        tmp_file.write("##REXdb version " + REXdb_version + '\n')
+        shutil.copyfileobj(src_file, tmp_file)
+        # Replace the original file with the new file
+    os.replace(tmp_file.name, gff3_file)
+
+
 
 parser = argparse.ArgumentParser(
     description='''Script performs similarity search on given DNA sequence(s) in (
@@ -401,6 +420,9 @@ parser.add_argument(
 parser.add_argument(
         '-e', '--extra_database', type=str, required=False,
         default=None,help='extra database to use for similarity search')
+
+parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__)
+
 
 args = parser.parse_args()
 print(args)
@@ -551,6 +573,8 @@ else:
     print("running DANTE on whole file")
     dante.main(args)
 
+# Add version to gff3 file
+add_version_to_gff3(args.domain_gff, __version__, args.database)
 # remove temporary files, recursive remove directory
 if args.extra_database is not None:
     shutil.rmtree(db_tmp_dir)
