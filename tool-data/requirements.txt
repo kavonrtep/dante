@@ -1,0 +1,5 @@
+last=1453
+biopython=1.81
+numpy=1.24.2
+python=3.11.0
+r-base=4.2.3

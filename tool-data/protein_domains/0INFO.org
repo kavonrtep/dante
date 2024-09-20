@@ -48,3 +48,16 @@ lastdb -p  Viridiplantae_v3.0_pdb Viridiplantae_v3.0_pdb
 
 * Viridiae copied from Nina
 copied from tool_data/protein_domains on galaxy
+
+
+
+* Viridiplantae v4.0
+#+BEGIN_SRC sh
+cp /mnt/raid/454_data/databases/protein_domains/Viridiplantae_v4.0/Viridiplantae_v4.0_ALL_protein-domains.fasta \
+  /mnt/ceph/users/petr/workspace/dante/tool-data/protein_domains/Viridiplantae_v4.0_pdb
+
+cp /mnt/raid/454_data/databases/protein_domains/Viridiplantae_v4.0/Viridiplantae_v4.0_ALL_classification \
+    /mnt/ceph/users/petr/workspace/dante/tool-data/protein_domains/Viridiplantae_v4.0_class
+lastdb -p  Viridiplantae_v4.0_pdb Viridiplantae_v4.0_pdb
+
+#+END_SRC

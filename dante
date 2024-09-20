@@ -357,11 +357,14 @@ requiredNamed.add_argument(
          'Multifasta format allowed.'
     )
 parser.add_argument('-D', '--database', type=str, required=False,
-                    default='Viridiplantae_v3.0',
-                    choices=['Viridiplantae_v3.0',
-                             'Metazoa_v3.1',
-                             'Viridiplantae_v2.2',
-                             'Metazoa_v3.0']
+                    default='Viridiplantae_v4.0',
+                    choices=[
+                        'Viridiplantae_v4.0',
+                        'Viridiplantae_v3.0',
+                        'Metazoa_v3.1',
+                        'Viridiplantae_v2.2',
+                        'Metazoa_v3.0'],
+                    help='Select version of RExDB database to use for similarity search'
                     )
 
 
