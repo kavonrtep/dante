@@ -114,7 +114,8 @@ def read_fasta_sequence_size(fasta_file):
     with open(fasta_file, 'r') as f:
         for line in f:
             if line[0] == '>':
-                header = line.strip().split(' ')[0][1:]  # remove part of name after space
+                # remove part of name after space or tab
+                header = line.strip().split()[0][1:]
                 fasta_dict[header] = 0
             else:
                 fasta_dict[header] += len(line.strip())
@@ -130,7 +131,7 @@ def read_single_fasta_to_dictionary(fh):
     fasta_dict = {}
     for line in fh:
         if line[0] == '>':
-            header = line.strip().split(' ')[0][1:]  # remove part of name after space
+            header = line.strip().split()[0][1:]  # remove part of name after space
             fasta_dict[header] = []
         else:
             fasta_dict[header] += [line.strip()]

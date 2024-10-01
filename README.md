@@ -40,6 +40,11 @@ See `requirements.txt`
 ```bash
 conda install -c conda-forge -c bioconda -c petrnovak dante
 ```
+**Important version information** - DANTE versions up to 0.1.9 are shipped with REXdb database Viridiplantae 3.0. Versions 0.2.0 and higher contain also REXdb Viridiplante database version 4.0. REXdb Viridiplantae v 4.0 include additional LTR-RT lineages characterized non-angiosperm species. Updated REXdb and used classification system can be found https://github.com/repeatexplorer/rexdb. 
+
+ 
+```bash
+
 
 ### Usage ###
 
