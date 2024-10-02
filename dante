@@ -139,7 +139,7 @@ def read_single_fasta_to_dictionary(fh):
     return fasta_dict
 
 def split_fasta_to_parts(fasta_file, number_of_parts):
-    fasta_file_dir = tempfile.TemporaryDirectory(delete=False).name
+    fasta_file_dir = tempfile.mkdtemp()
     # split fasta file to parts and save them to temporary directory
     # first count number of sequences
     with open(fasta_file, 'r') as f:
