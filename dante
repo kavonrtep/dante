@@ -138,6 +138,36 @@ def read_single_fasta_to_dictionary(fh):
     fasta_dict = {k: ''.join(v) for k, v in fasta_dict.items()}
     return fasta_dict
 
+def split_fasta_to_parts(fasta_file, number_of_parts):
+    fasta_file_dir = tempfile.TemporaryDirectory(delete=False).name
+    # split fasta file to parts and save them to temporary directory
+    # first count number of sequences
+    with open(fasta_file, 'r') as f:
+        number_of_sequences = 0
+        for line in f:
+            if line[0] == '>':
+                number_of_sequences += 1
+    part_size = int(number_of_sequences / number_of_parts) + 1
+    # adjust last part size to
+    last_part_size = number_of_sequences - (number_of_parts - 1) * part_size
+    part_sizes = [part_size] * (number_of_parts - 1) + [last_part_size]
+    part_files = [os.path.join(fasta_file_dir, F'part_{i}.fasta') for i in range(number_of_parts)]
+    for i, size in enumerate(part_sizes):
+        fn = part_files[i]
+        with open(fasta_file, 'r') as f, open(fn, 'w') as f_out:
+            n = 0
+            while n < size:
+                line = f.readline()
+                if line[0] == '>':
+                    n += 1
+                if n <= size:
+                    f_out.write(line)
+            # set file pointer one line back
+            f.seek(f.tell() - len(line))
+    return part_files
+
+
+
 
 def split_fasta_to_chunks(fasta_file, chunk_size=100000000, overlap=100000):
     """
@@ -417,6 +447,11 @@ parser.add_argument(
     "-c", "--cpu", type=int, default=1,
     help="number of threads to use"
     )
+parser.add_argument('-S', '--short_reads', action='store_true',
+                    help='use this option if your input sequences are short reads',
+                    default=False
+                    )
+
 
 parser.add_argument(
         '-e', '--extra_database', type=str, required=False,
@@ -483,96 +518,125 @@ args.new_ldb = False
 # run dante
 chunk_size = 500000
 overlap = 2000
-print('splitting fasta file to chunks')
-
-fasta_file_split, matching_table = split_fasta_to_chunks(args.query, chunk_size, overlap)
-print('getting fasta sequence size')
-fasta_seq_size = read_fasta_sequence_size(fasta_file_split)
-total_size = sum(fasta_seq_size.values())
-number_of_sequences = len(fasta_seq_size)
-print('total size: ', total_size)
-print('number of sequences: ', number_of_sequences)
 
 
+if not args.short_reads:
+    # split fasta file to chunks
+    fasta_file_split, matching_table = split_fasta_to_chunks(args.query, chunk_size, overlap)
+    print('getting fasta sequence size')
+    fasta_seq_size = read_fasta_sequence_size(fasta_file_split)
+    total_size = sum(fasta_seq_size.values())
+    number_of_sequences = len(fasta_seq_size)
+    print('total size: ', total_size)
+    print('number of sequences: ', number_of_sequences)
+    print('splitting fasta file to chunks')
 
-if total_size > chunk_size and number_of_sequences > 1 and args.cpu > 1:
-    print("running DANTE on chunks")
-    seq_id_size_sorted = [i[0] for i in sorted(
-        fasta_seq_size.items(), key=lambda x: int(x[1]), reverse=True
-        )]
-    number_of_temp_files = int(total_size / chunk_size) + 1
-    if number_of_temp_files > number_of_sequences:
-        number_of_temp_files = number_of_sequences
+    if total_size > chunk_size and number_of_sequences > 1 and args.cpu > 1:
+        print("running DANTE on chunks")
+        seq_id_size_sorted = [i[0] for i in sorted(
+            fasta_seq_size.items(), key=lambda x: int(x[1]), reverse=True
+            )]
+        number_of_temp_files = int(total_size / chunk_size) + 1
+        if number_of_temp_files > number_of_sequences:
+            number_of_temp_files = number_of_sequences
 
-    temp_files_fasta = make_temp_files(number_of_temp_files)
-    # do not used file handles as it can cause oproblem with maximum number of open files
-    seq_id_file_path_dict = dict(zip(seq_id_size_sorted, cycle(temp_files_fasta)))
-    # write sequences to temporary files
-    with open(fasta_file_split, 'r') as f:
-        for line in f:
-            if line[0] == '>':
-                header = line.strip().split(' ')[0][1:]
-                # append to file
-                with open(seq_id_file_path_dict[header], 'a') as fout:
-                    fout.write(line)
-            else:
-                with open(seq_id_file_path_dict[header], 'a') as fout:
-                    fout.write(line)
-    os.remove(fasta_file_split)
-    args_list = []
-    output_files = make_temp_files(number_of_temp_files)
-    for i, temp_file_out in enumerate(temp_files_fasta):
-        args_part = copy.deepcopy(args)
-        args_list.append(args_part)
-        args_part.query = temp_files_fasta[i]
-        args_part.domain_gff = output_files[i]
-        # dante.main(args_part)
+        temp_files_fasta = make_temp_files(number_of_temp_files)
+        # do not used file handles as it can cause oproblem with maximum number of open files
+        seq_id_file_path_dict = dict(zip(seq_id_size_sorted, cycle(temp_files_fasta)))
+        # write sequences to temporary files
+        with open(fasta_file_split, 'r') as f:
+            for line in f:
+                if line[0] == '>':
+                    header = line.strip().split(' ')[0][1:]
+                    # append to file
+                    with open(seq_id_file_path_dict[header], 'a') as fout:
+                        fout.write(line)
+                else:
+                    with open(seq_id_file_path_dict[header], 'a') as fout:
+                        fout.write(line)
+        os.remove(fasta_file_split)
+        args_list = []
+        output_files = make_temp_files(number_of_temp_files)
+        for i, temp_file_out in enumerate(temp_files_fasta):
+            args_part = copy.deepcopy(args)
+            args_list.append(args_part)
+            args_part.query = temp_files_fasta[i]
+            args_part.domain_gff = output_files[i]
+            # dante.main(args_part)
 
-    # run dante in parallel, use Pool after all runs finishes concatenate results,
-    # use n_cpu and number of processes
-    n_cpu = round(args.cpu/2 - 1)
-    print("Number of chunks: ", number_of_temp_files)
-    with Pool(args.cpu) as p:
-        p.map(dante.main, args_list)
+        # run dante in parallel, use Pool after all runs finishes concatenate results,
+        # use n_cpu and number of processes
 
-    os.remove(temp_files_fasta[i])
+        print("Number of chunks: ", number_of_temp_files)
+        with Pool(args.cpu) as p:
+            p.map(dante.main, args_list)
 
-    # recalculate coordinates
-    tmp_gff_unfiltered = tempfile.NamedTemporaryFile(delete=False).name
-    with open(tmp_gff_unfiltered, 'w') as f:
-        for args_part in args_list:
-            tmp_gff=recalculate_gff3_back_to_original_coordinates(args_part.domain_gff,
-                                                                 matching_table,
-                                                                 chunk_size,
-                                                                 overlap)
-            with open(tmp_gff, 'r') as f_tmp:
-                for line in f_tmp:
-                    f.write(line)
-            os.remove(tmp_gff)
-    # filter gff to remove duplicates (these are generated when overlapping chunks are
-    # processed)
-    gff3_header = "##gff-version 3\n"
+        os.remove(temp_files_fasta[i])
 
-    with open(args.domain_gff, 'w') as f, open(tmp_gff_unfiltered, 'r') as f_tmp:
-        # sort gff, use sort command and read output from stdout
-        p = subprocess.Popen(['sort', '-k1,1', '-k4,4n'],stdin=f_tmp,
-                             stdout=subprocess.PIPE)
-        last_line_coord = ""
-        f.write(gff3_header)
-        for line in p.stdout:
-            if line.decode('utf-8').startswith('#'):
-                continue
-            items=line.decode('utf-8').split('\t')
-            coord = F'{items[0]}_{items[3]}_{items[4]}'
-            if coord != last_line_coord:
-                f.write(line.decode('utf-8'))
-                last_line_coord = coord
-        for line in f_tmp:
-            f.write(line)
+        # recalculate coordinates
+        tmp_gff_unfiltered = tempfile.NamedTemporaryFile(delete=False).name
+        with open(tmp_gff_unfiltered, 'w') as f:
+            for args_part in args_list:
+                tmp_gff=recalculate_gff3_back_to_original_coordinates(args_part.domain_gff,
+                                                                     matching_table,
+                                                                     chunk_size,
+                                                                     overlap)
+                with open(tmp_gff, 'r') as f_tmp:
+                    for line in f_tmp:
+                        f.write(line)
+                os.remove(tmp_gff)
+        # filter gff to remove duplicates (these are generated when overlapping chunks are
+        # processed)
+        gff3_header = "##gff-version 3\n"
 
+        with open(args.domain_gff, 'w') as f, open(tmp_gff_unfiltered, 'r') as f_tmp:
+            # sort gff, use sort command and read output from stdout
+            p = subprocess.Popen(['sort', '-k1,1', '-k4,4n'],stdin=f_tmp,
+                                 stdout=subprocess.PIPE)
+            last_line_coord = ""
+            f.write(gff3_header)
+            for line in p.stdout:
+                if line.decode('utf-8').startswith('#'):
+                    continue
+                items=line.decode('utf-8').split('\t')
+                coord = F'{items[0]}_{items[3]}_{items[4]}'
+                if coord != last_line_coord:
+                    f.write(line.decode('utf-8'))
+                    last_line_coord = coord
+            for line in f_tmp:
+                f.write(line)
+
+    else:
+        print("running DANTE on whole file")
+        dante.main(args)
 else:
-    print("running DANTE on whole file")
-    dante.main(args)
+    if args.cpu==1:
+        print("running DANTE on short reads with 1 cpu")
+        dante.main(args)
+    else:
+        # simply split input file to args.cpu pieces and run in parallel
+        print("Spliting input file to parts")
+        parts = split_fasta_to_parts(args.query, number_of_parts=args.cpu)
+        print(parts)
+        args_list = []
+        output_files = make_temp_files(args.cpu)
+        for i, part in enumerate(parts):
+            args_part = copy.deepcopy(args)
+            args_list.append(args_part)
+            args_part.query = part
+            args_part.domain_gff = output_files[i]
+        with Pool(args.cpu) as p:
+            p.map(dante.main, args_list)
+        # concatenate results
+        with open(args.domain_gff, 'w') as f:
+            for output_file in output_files:
+                with open(output_file, 'r') as f_tmp:
+                    for line in f_tmp:
+                        f.write(line)
+                os.remove(output_file)
+
+
+
 
 # Add version to gff3 file
 add_version_to_gff3(args.domain_gff, __version__, args.database)
