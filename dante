@@ -617,7 +617,6 @@ else:
         # simply split input file to args.cpu pieces and run in parallel
         print("Spliting input file to parts")
         parts = split_fasta_to_parts(args.query, number_of_parts=args.cpu)
-        print(parts)
         args_list = []
         output_files = make_temp_files(args.cpu)
         for i, part in enumerate(parts):
@@ -634,6 +633,10 @@ else:
                     for line in f_tmp:
                         f.write(line)
                 os.remove(output_file)
+        # clean up - delete whole directory and its content
+        shutil.rmtree(os.path.dirname(parts[0]))
+
+
 
 
 
