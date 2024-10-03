@@ -130,6 +130,9 @@ def filter_qual_dom(DOM_GFF, FILT_DOM_GFF, TH_IDENTITY, TH_SIMILARITY,
         domains_all = []
         start = True
         for line in gff_all:
+            # skip comments
+            if line.startswith("#"):
+                continue
             gff_line = parse_gff_line(line)
             classification = gff_line['attributes']['Final_Classification']
             orig_class_dict[classification] += 1
