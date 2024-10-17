@@ -523,8 +523,13 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                     usecols=("score, name_q, start_q, al_size_q,"
                              " strand_q, seq_size_q, name_db, db_seq,"
                              " q_seq, seq_size_db, start_db, al_size_db"),
-                    dtype=None,
+                    dtype=[('score', '<i8'), ('name_q', object), ('start_q', '<i8'),
+                    ('al_size_q', '<i8'), ('strand_q', 'S1'), ('seq_size_q', '<i8'),
+                    ('name_db', object), ('db_seq', object), ('q_seq', object),
+                    ('seq_size_db', '<i8'), ('start_db', '<i8'), ('al_size_db', '<i8')],
                     comments=None)
+                print(sequence_hits.dtype)
+
         except RuntimeError:
             break
         ## if there are no domains found
@@ -538,7 +543,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
         ############# PARSING LASTAL OUTPUT ############################
         sequence_hits = np.atleast_1d(sequence_hits)
         score = sequence_hits['score'].astype("int")
-        seq_id = sequence_hits['name_q'][0].astype("str")
+        seq_id = sequence_hits['name_q'].astype("str")[0]
         start_hit = sequence_hits['start_q'].astype("int")
         end_hit = start_hit + sequence_hits['al_size_q'].astype("int")
         strand = sequence_hits['strand_q'].astype("str")
