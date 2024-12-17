@@ -528,7 +528,7 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                     ('name_db', object), ('db_seq', object), ('q_seq', object),
                     ('seq_size_db', '<i8'), ('start_db', '<i8'), ('al_size_db', '<i8')],
                     comments=None)
-                print(sequence_hits.dtype)
+
 
         except RuntimeError:
             break

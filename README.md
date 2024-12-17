@@ -43,7 +43,7 @@ conda install -c conda-forge -c bioconda -c petrnovak dante
 **Important version information** - DANTE versions up to 0.1.9 are shipped with REXdb database Viridiplantae 3.0. Versions 0.2.0 and higher contain also REXdb Viridiplante database version 4.0. REXdb Viridiplantae v 4.0 include additional LTR-RT lineages characterized non-angiosperm species. Updated REXdb and used classification system can be found https://github.com/repeatexplorer/rexdb. 
 
  
-```bash
+
 
 
 ### Usage ###
@@ -57,7 +57,7 @@ To annotate protein domains in a DNA sequence, run the following command:
 ```bash
 # download example data:
 wget https://raw.githubusercontent.com/kavonrtep/dante_ltr/main/test_data/sample_genome.fasta
-dante -q sample_genome.fasta -o DANTE_output.gff3 -c 10 run dante
+dante -q sample_genome.fasta -o DANTE_output.gff3 -c 10
 ```
 Output from `dante` is GFF3 file with annotated protein domains. Individual domains are reported per line as regions (start-end) on the original DNA sequence including the seq ID and strand orientation. The last "Attributes" column contains several comma-separated information related to the domain annotation, alignment and its quality. This ouput can be used as input for =dante_ltr= (https://github.com/kavonrtep/dante_ltr) to annotate LTR retrotransposons in the genome. If you want to use protein domains for subsequent analysis, it is recommended that you perform filtering of the domains using `dante_gff_output_filtering.py` script. This script allows you to filter the domains based on their quality and/or extract specific types of protein domains or mobile elements of origin. See **Protein Domains Filter** section for more details.
 
