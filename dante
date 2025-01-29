@@ -569,7 +569,7 @@ if not args.short_reads:
 
         print("Number of chunks: ", number_of_temp_files)
         with Pool(args.cpu) as p:
-            p.map(dante.main, args_list)
+            p.map(dante.main, args_list, chunksize=1)
 
         os.remove(temp_files_fasta[i])
 
