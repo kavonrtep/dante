@@ -461,7 +461,6 @@ def write_info(dom_gff_tmp, version_string):
     dom_gff_tmp.write("{}\n".format(configuration.HEADER_GFF))
     dom_gff_tmp.write(version_string)
 
-
 def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                   THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM, SCORING_MATRIX):
     ''' Search for protein domains using our protein database and external tool LAST,
@@ -628,6 +627,193 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
         shutil.copy2(dom_tmp.name, OUTPUT_DOMAIN)
     os.unlink(dom_tmp.name)
 
+def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
+                  THRESHOLD_SCORE, WIN_DOM, OVERLAP_DOM, SCORING_MATRIX):
+    ''' Search for protein domains using our protein database and external tool LAST,
+	stdout is parsed from temporary files instead of real-time streams
+    '''
+
+    step = WIN_DOM - OVERLAP_DOM
+    [headers, above_win, below_win, lens_above_win, seq_starts, seq_ends
+     ] = characterize_fasta(QUERY, WIN_DOM)
+    query_temp = split_fasta(QUERY, WIN_DOM, step, headers, above_win,
+                             below_win, lens_above_win, seq_starts, seq_ends)
+
+    lastal_columns = {
+        "BL80" : ("score, name_db, start_db, al_size_db, strand_db,"
+                  " seq_size_db, name_q, start_q, al_size_q, strand_q, seq_size_q,"
+                  " block1, block2, block3, db_seq, q_seq"),
+        "BL62" : ("score, name_db, start_db, al_size_db, strand_db,"
+                  " seq_size_db, name_q, start_q, al_size_q, strand_q,"
+                  " seq_size_q, block1, block2, block3, db_seq, q_seq"),
+        "MIQS" : ("score, name_db, start_db, al_size_db, strand_db,"
+                  " seq_size_db, name_q, start_q, al_size_q, strand_q,"
+                  " seq_size_q, block1, db_seq, q_seq"),
+    }
+
+    # Create temporary files for TAB and MAF outputs
+    tab_tmp = NamedTemporaryFile(delete=False)
+    tab_tmp_name = tab_tmp.name
+    tab_tmp.close()
+
+    maf_tmp = NamedTemporaryFile(delete=False)
+    maf_tmp_name = maf_tmp.name
+    maf_tmp.close()
+
+    # Run LAST for TAB output, redirecting its stdout to the temp file
+    subprocess.run(
+        "lastal -F15 {} {} -L 10 -m 70 -p {} -e 80 -f TAB > {}".format(
+            LAST_DB, query_temp, SCORING_MATRIX, tab_tmp_name
+        ),
+        shell=True,
+        check=True
+    )
+
+    # Run LAST for MAF output, redirecting its stdout to the temp file
+    subprocess.run(
+        "lastal -F15 {} {} -L 10 -m 70 -p {} -e 80 -f MAF > {}".format(
+            LAST_DB, query_temp, SCORING_MATRIX, maf_tmp_name
+        ),
+        shell=True,
+        check=True
+    )
+
+    # Now open the resulting TAB and MAF files for parsing
+    with open(tab_tmp_name, "rb") as tab_pipe, open(maf_tmp_name, "rb") as maf_pipe:
+
+        # The original code had maf_pipe.readline() to skip the first line
+        maf_pipe.readline()
+
+        seq_ids = []
+        dom_tmp = NamedTemporaryFile(delete=False)
+        with open(dom_tmp.name, "w") as dom_gff_tmp:
+            path = os.path.dirname(os.path.realpath(__file__))
+            version_string = get_version(path, LAST_DB)
+            write_info(dom_gff_tmp, version_string)
+        gff = open(dom_tmp.name, "a")
+        start = True
+        while True:
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    sequence_hits = np.genfromtxt(
+                        line_generator(tab_pipe, maf_pipe, start),
+                        names=lastal_columns[SCORING_MATRIX],
+                        usecols=("score, name_q, start_q, al_size_q,"
+                                 " strand_q, seq_size_q, name_db, db_seq,"
+                                 " q_seq, seq_size_db, start_db, al_size_db"),
+                        dtype=[('score', '<i8'), ('name_q', object), ('start_q', '<i8'),
+                               ('al_size_q', '<i8'), ('strand_q', 'S1'), ('seq_size_q', '<i8'),
+                               ('name_db', object), ('db_seq', object), ('q_seq', object),
+                               ('seq_size_db', '<i8'), ('start_db', '<i8'), ('al_size_db', '<i8')],
+                        comments=None
+                    )
+            except RuntimeError:
+                break
+            if sequence_hits.size == 0:
+                gff.write("##No domains found\n")
+                gff.close()
+                shutil.copy2(dom_tmp.name, OUTPUT_DOMAIN)
+                os.unlink(dom_tmp.name)
+                return [], [], [], []
+
+
+            sequence_hits = np.atleast_1d(sequence_hits)
+            score = sequence_hits['score'].astype("int")
+            seq_id = sequence_hits['name_q'].astype("str")[0]
+            start_hit = sequence_hits['start_q'].astype("int")
+            end_hit = start_hit + sequence_hits['al_size_q'].astype("int")
+            strand = sequence_hits['strand_q'].astype("str")
+            seq_len = sequence_hits['seq_size_q'].astype("int")
+            domain_db = sequence_hits['name_db'].astype("str")
+            db_seq = sequence_hits['db_seq'].astype("str")
+            query_seq = sequence_hits['q_seq'].astype("str")
+            domain_size = sequence_hits['seq_size_db'].astype("int")
+            db_start = sequence_hits['start_db'].astype("int") + 1
+            db_end = sequence_hits['start_db'].astype("int") + sequence_hits[
+                'al_size_db'].astype("int")
+
+            [reverse_strand_idx, positions_plus, positions_minus
+             ] = hits_processing(seq_len, start_hit, end_hit, strand)
+            strand_gff = "+"
+            [mins_plus, maxs_plus, data_plus, indices_plus
+             ] = overlapping_regions(positions_plus)
+            [mins_minus, maxs_minus, data_minus, indices_minus
+             ] = overlapping_regions(positions_minus)
+            positions = positions_plus + positions_minus
+            indices_overal = indices_plus + [x + reverse_strand_idx
+                                             for x in indices_minus]
+            mins = mins_plus + mins_minus
+            maxs = maxs_plus + maxs_minus
+            data = data_plus + data_minus
+
+            count_region = 0
+            for region in indices_overal:
+                db_names = domain_db[np.array(region)]
+                db_starts = db_start[np.array(region)]
+                db_ends = db_end[np.array(region)]
+                scores = score[np.array(region)]
+                regions_above_threshold = [
+                    region[i]
+                    for i, _ in enumerate(region)
+                    if max(scores) / 100 * THRESHOLD_SCORE < scores[i]
+                ]
+                consensus = get_full_translation(
+                    translation_alignments(
+                        query_seq=sortby(query_seq[regions_above_threshold],
+                                         score[regions_above_threshold], True),
+                        start_hit=sortby(start_hit[regions_above_threshold],
+                                         score[regions_above_threshold], True),
+                        end_hit=sortby(end_hit[regions_above_threshold],
+                                       score[regions_above_threshold], True))
+                )
+
+                annotations = domain_annotation(db_names, CLASSIFICATION)
+                [score_matrix, classes_dict] = score_table(
+                    mins[count_region], maxs[count_region], data[count_region],
+                    annotations, scores, CLASSIFICATION)
+                ann_per_reg = score_matrix_evaluation(score_matrix, classes_dict,
+                                                      THRESHOLD_SCORE)
+                [domain_type, ann_substring, unique_annotations, ann_pos_counts
+                 ] = group_annot_regs(ann_per_reg)
+                [best_idx, best_idx_reg] = best_score(scores, region)
+                annotation_best = annotations[best_idx_reg]
+                db_name_best = db_names[best_idx_reg]
+                db_starts_best = db_starts[best_idx_reg]
+                db_ends_best = db_ends[best_idx_reg]
+                if count_region == len(indices_plus):
+                    strand_gff = "-"
+                if strand_gff == "+":
+                    feature_start = min(start_hit[regions_above_threshold]) + 1
+                    feature_end = max(end_hit[regions_above_threshold])
+                else:
+                    feature_end = seq_len[region][0] - min(start_hit[regions_above_threshold])
+                    feature_start = (seq_len[region][0]
+                                     - max(end_hit[regions_above_threshold]) + 1)
+                create_gff3(domain_type, ann_substring, unique_annotations,
+                            ann_pos_counts, feature_start,feature_end,
+                            step, best_idx, annotation_best, db_name_best,
+                            db_starts_best, db_ends_best, strand_gff, score,
+                            seq_id, db_seq, query_seq, domain_size, positions, gff, consensus)
+                count_region += 1
+            seq_ids.append(seq_id)
+
+        gff.close()
+        dom_tmp.close()
+
+    # Cleanup the temp TAB/MAF files
+    # os.unlink(tab_tmp_name)
+    # os.unlink(maf_tmp_name)
+    # os.unlink(query_temp)
+
+    # If any sequence from input data was split into windows, merge and adjust
+    if any("DANTE_PART" in x for x in seq_ids):
+        adjust_gff(OUTPUT_DOMAIN, dom_tmp.name, WIN_DOM, OVERLAP_DOM, step)
+    else:
+        shutil.copy2(dom_tmp.name, OUTPUT_DOMAIN)
+    # os.unlink(dom_tmp.name)
+
+
 def  sortby(a, by, reverse=False):
     ''' sort according values in the by list '''
     a_sorted = [i[0] for i in
@@ -670,10 +856,10 @@ def rle(s):
     sequence = char[1:]
     return sequence, length[1:]
 
-def get_full_translation(translations):
+def get_full_translation_old(translations):
     '''get one full length translation  from multiple partial
     aligned translation '''
-    # find minimal set of alignements
+    # find minimal set of alignments
     minimal_set = []
     not_filled_prev = len(translations[0])
     for s in translations:
@@ -714,6 +900,75 @@ def get_full_translation(translations):
                 translation_rle[0][p] = "\\"
     consensus = "".join(translation_rle[0])
     return consensus
+
+
+def get_full_translation(translations):
+    """
+    Create one full-length translation from multiple partial alignments.
+    More efficient approach:
+      1) pick only those partial sequences that add coverage,
+      2) merge them in a single pass,
+      3) do a single RLE pass to insert frameshift markers.
+    """
+
+    # 1) Track coverage to pick a minimal set of sequences
+    M = len(translations[0])  # assume all have same length
+    coverage = [False] * M
+    chosen = []
+
+    for s in translations:
+        old_uncovered = coverage.count(False)
+        # Update coverage
+        for i, ch in enumerate(s):
+            if ch != "-":
+                coverage[i] = True
+        new_uncovered = coverage.count(False)
+        # Keep if coverage improved
+        if new_uncovered < old_uncovered:
+            chosen.append(s)
+        # If fully covered, we can stop early
+        if new_uncovered == 0:
+            break
+
+    # 2) Merge all chosen sequences in one pass
+    # If none chosen, fallback to returning the first or empty
+    if not chosen:
+        return translations[0] if translations else ""
+
+    merged = list(chosen[0])  # make it a list for mutability
+    join_positions = set()
+
+    for s in chosen[1:]:
+        for i, (mch, sch) in enumerate(zip(merged, s)):
+            # if we have a dash in merged and a real char in s => merge
+            if mch == "-" and sch != "-":
+                merged[i] = sch
+                join_positions.add(i)
+
+    final_str = "".join(merged)
+
+    # 3) Run-length encode once
+    val_list, run_list = rle(final_str)
+    cumsum_positions = np.cumsum(run_list)
+
+    # Convert join_positions into "RLE indices"
+    join_rle_positions = set()
+    for pos in join_positions:
+        # find which RLE chunk pos belongs to
+        chunk_index = np.searchsorted(cumsum_positions, pos, side='right')
+        join_rle_positions.add(chunk_index)
+
+    # 4) Insert slashes/backslashes
+    for idx in join_rle_positions:
+        if val_list[idx] not in ["/","//","\\","\\\\"]:
+            if run_list[idx] == 2:
+                val_list[idx] += "/"
+            elif run_list[idx] == 1:
+                val_list[idx] = "\\"
+
+    # 5) Build final consensus
+    return "".join(val_list)
+
 
 
 # helper function for debugging
