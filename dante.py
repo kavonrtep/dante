@@ -802,9 +802,9 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
         dom_tmp.close()
 
     # Cleanup the temp TAB/MAF files
-    # os.unlink(tab_tmp_name)
-    # os.unlink(maf_tmp_name)
-    # os.unlink(query_temp)
+    os.unlink(tab_tmp_name)
+    os.unlink(maf_tmp_name)
+    os.unlink(query_temp)
 
     # If any sequence from input data was split into windows, merge and adjust
     if any("DANTE_PART" in x for x in seq_ids):

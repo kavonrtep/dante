@@ -177,10 +177,12 @@ if __name__ == "__main__":
 #                        help='protein domains classification file')
     parser.add_argument('-D', '--database', type=str, required=False,
                         default='Viridiplantae_v3.0',
-                        choices=['Viridiplantae_v3.0',
-                                 'Metazoa_v3.1',
-                                 'Viridiplantae_v2.2',
-                                 'Metazoa_v3.0'],
+                        choices=[
+                            'Viridiplantae_v4.0',
+                            'Viridiplantae_v3.0',
+                            'Metazoa_v3.1',
+                            'Viridiplantae_v2.2',
+                            'Metazoa_v3.0'],
                         )
     parser.add_argument('-out',
                         '--out_dir',
