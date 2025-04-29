@@ -13,6 +13,10 @@ from itertools import cycle
 from multiprocessing import Pool
 from version import __version__
 
+master_tmp = tempfile.mkdtemp()
+tempfile.tempdir = master_tmp
+print("Temporary directory: ", master_tmp)
+
 import dante
 class Gff3Feature:
     """
@@ -471,9 +475,10 @@ cls = F'{script_path}/tool-data/protein_domains/{args.database}_class'
 
 if args.extra_database is not None:
     # add extra database to default database
-    db_tmp_dir = tempfile.TemporaryDirectory().name
+    tmpdir_obj = tempfile.TemporaryDirectory()
+    db_tmp_dir = tmpdir_obj.name
+    os.makedirs(db_tmp_dir, exist_ok=True)
     # TODO - unlink directory at the end
-    os.makedirs(db_tmp_dir)
     classification_table = set()
     extra_classification_file = os.path.join(db_tmp_dir, 'extra.class')
     extra_fasta_file = os.path.join(db_tmp_dir, 'extra.fasta')
@@ -571,7 +576,9 @@ if not args.short_reads:
         with Pool(args.cpu) as p:
             p.map(dante.main, args_list, chunksize=1)
 
-        os.remove(temp_files_fasta[i])
+        for fn in temp_files_fasta:
+            os.remove(fn)
+
 
         # recalculate coordinates
         tmp_gff_unfiltered = tempfile.NamedTemporaryFile(delete=False).name
@@ -605,7 +612,11 @@ if not args.short_reads:
                     last_line_coord = coord
             for line in f_tmp:
                 f.write(line)
-
+        # clean up
+        os.remove(tmp_gff_unfiltered)
+        # remove temporary files
+        for args_part in args_list:
+            os.remove(args_part.domain_gff)
     else:
         print("running DANTE on whole file")
         dante.main(args)
@@ -647,3 +658,4 @@ add_version_to_gff3(args.domain_gff, __version__, args.database)
 if args.extra_database is not None:
     shutil.rmtree(db_tmp_dir)
 
+shutil.rmtree(master_tmp)
