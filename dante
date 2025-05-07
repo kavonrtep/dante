@@ -6,6 +6,7 @@ it will find the path to database files
 import argparse
 import copy
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -18,6 +19,32 @@ tempfile.tempdir = master_tmp
 print("Temporary directory: ", master_tmp)
 
 import dante
+
+def extract_best_hit_components(s: str):
+    """
+    Given a string like
+      Helitron-HEL2__REXdb_ID17615|Class_II|Subclass_2|Helitron:4632-4733[59percent]
+    returns a tuple:
+      (prefix, start_int, end_int, bracketed_str)
+
+    where `prefix` is everything up to the last colon,
+    `start_int` and `end_int` are the two numbers,
+    and `bracketed_str` is the '[…]' part.
+    """
+    # split on the last ':' so we don’t get tripped up by colons earlier in the prefix
+    try:
+        prefix, tail = s.rsplit(':', 1)
+    except ValueError:
+        raise ValueError("String must contain at least one ':' before the coordinates.")
+
+    # tail should look like "4632-4733[59percent]"
+    m = re.fullmatch(r'(\d+)-(\d+)\[(.+)\]', tail)
+    if not m:
+        raise ValueError(f"Unexpected format for coordinates/bracket: {tail!r}")
+
+    start, end, inner = m.groups()
+    return prefix, int(start), int(end), f'[{inner}]'
+
 class Gff3Feature:
     """
     Class for gff3 feature
@@ -109,6 +136,95 @@ class Gff3Feature:
             return True
         else:
             return False
+class Gff3Feature:
+    """
+    Class for GFF3 feature
+    """
+
+    def __init__(self, line):
+        self.line = line
+        self.items = line.strip().split('\t')
+        self.header = self.items[0]
+        self.source = self.items[1]
+        self.type = self.items[2]
+        self.start = int(self.items[3])
+        self.end = int(self.items[4])
+        self.score = self.items[5]
+        self.strand = self.items[6]
+        self.frame = self.items[7]
+        self.attributes = self.items[8]
+
+        # parse attributes into dict, recording original order
+        self.attributes_dict = {}
+        self.attribute_order = []
+        for item in self.attributes.split(';'):
+            if not item:
+                continue
+            key, value = item.split('=', 1)
+            self.attributes_dict[key] = value
+            self.attribute_order.append(key)
+
+    def _format_attributes(self):
+        """
+        Return a semicolon-joined string of attributes in the original order,
+        pulling current values from attributes_dict.
+        """
+        return ';'.join(f"{key}={self.attributes_dict.get(key,'')}"
+                        for key in self.attribute_order)
+
+    def __str__(self):
+        attrs = self._format_attributes()
+        return '\t'.join([
+            self.header,
+            self.source,
+            self.type,
+            str(self.start),
+            str(self.end),
+            self.score,
+            self.strand,
+            self.frame,
+            attrs
+        ]) + '\n'
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __eq__(self, other):
+        return self.line_recalculated() == other.line_recalculated()
+
+    def __hash__(self):
+        return hash(self.line_recalculated())
+
+    def get_line(self):
+        """Returns the original line (unmodified)."""
+        return self.line
+
+    def overlap(self, other):
+        """
+        Check if two features overlap.
+        """
+        return not (self.end < other.start or self.start > other.end)
+
+    def line_recalculated(self):
+        """
+        Return a GFF-formatted line built from the current attributes_dict
+        (so reflects any updates), preserving original attribute order.
+        """
+        return self.__str__()
+
+    def __lt__(self, other):
+        return (self.end - self.start) < (other.end - other.start)
+
+    def __gt__(self, other):
+        return (self.end - self.start) > (other.end - other.start)
+
+    def identical_region(self, other):
+        """
+        Check if two features share the same seqid and coordinates.
+        """
+        return (self.start == other.start and
+                self.end == other.end and
+                self.header == other.header)
 
 
 
@@ -330,10 +446,23 @@ def recalculate_gff3_back_to_original_coordinates(gff3_file, matching_table,
                     fh_out.write(line)
                 else:
                     feature = Gff3Feature(line)
+
                     ori_header, ori_start, ori_end, \
                         real_chunk_size = get_original_header_and_coordinates(
                         feature.header, feature.start, feature.end, matching_table
                         )
+                    # recalculate coordinates on Best_Hit coordinates
+                    # Best_Hit coordinates can be missing!
+                    if "Best_Hit" in feature.attributes_dict:
+                        best_hit = feature.attributes_dict["Best_Hit"]
+                        s1, start, end, s4  = extract_best_hit_components(best_hit)
+                        _, hit_start, hit_end, _ = get_original_header_and_coordinates(
+                            feature.header, start, end, matching_table
+                            )
+                        # update Best_Hit attribute
+                        feature.attributes_dict["Best_Hit"] = \
+                            F'{s1}:{hit_start}-{hit_end}{s4}'
+
                     # if feature is too close (less than 100 nt) to the end ends of
                     # chunk,skip it
                     if feature.start < 100 or feature.end > real_chunk_size - 100:
@@ -343,6 +472,7 @@ def recalculate_gff3_back_to_original_coordinates(gff3_file, matching_table,
                     feature.end = ori_end
                     fh_out.write(str(feature))
     return gff3_file_recalculated
+
 
 
 

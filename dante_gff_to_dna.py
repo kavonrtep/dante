@@ -190,12 +190,10 @@ if __name__ == "__main__":
                         default=configuration.EXTRACT_OUT_DIR,
                         help='output directory')
     parser.add_argument(
-        '-ex',
-        '--extended',
-        type=str2bool,
-        default=True,
-        help=
-        'extend the domains edges if not the whole datatabase sequence was aligned')
+        '-ex', '--extended', action='store_true',
+        help=('Extend the domain edges if not the whole database sequence was aligned '
+              '(default: False)'))
+
     script_path = os.path.dirname(os.path.realpath(__file__))
     # add path to database fi0les
     args = parser.parse_args()
