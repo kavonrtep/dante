@@ -32,12 +32,12 @@ def check_file_start(gff_file):
 
 def extract_nt_seqs(DNA_SEQ, DOM_GFF, OUT_DIR, CLASS_TBL, EXTENDED):
     ''' Extract nucleotide sequences of protein domains found by DANTE from input DNA seq.
-		Sequences are saved in fasta files separately for each transposon lineage.
-		Sequences extraction is based on position of Best_Hit alignment reported by LASTAL.
-		The positions can be extended (optional) based on what part of database domain was aligned
+        Sequences are saved in fasta files separately for each transposon lineage.
+        Sequences extraction is based on position of Best_Hit alignment reported by LASTAL.
+        The positions can be extended (optional) based on what part of database domain was aligned
         (Best_Hit_DB_Pos attribute).
-		The strand orientation needs to be considered in extending and extracting the sequence itself
-	'''
+        The strand orientation needs to be considered in extending and extracting the sequence itself
+    '''
     [count_comment, first_line] = check_file_start(DOM_GFF)
     unique_classes = get_unique_classes(CLASS_TBL)
     files_dict = defaultdict(str)
@@ -57,56 +57,50 @@ def extract_nt_seqs(DNA_SEQ, DOM_GFF, OUT_DIR, CLASS_TBL, EXTENDED):
             seq_id = gff_line['seqid']
             dom_type = gff_line['attributes']['Name']
             strand = gff_line['strand']
-            align_nt_start = int(gff_line['attributes']['Best_Hit'].split(":")[
-                -1].split("-")[0])
-            align_nt_end = int(gff_line['attributes']['Best_Hit'].split(":")[
-                -1].split("-")[1].split("[")[0])
+            align_nt_start = int(gff_line['attributes']['Best_Hit'].split(":")[-1].split("-")[0])
+            align_nt_end = int(gff_line['attributes']['Best_Hit'].split(":")[-1].split("-")[1].split("[")[0])
             if seq_id != seq_id_stored:
                 seq_id_stored = seq_id
                 seq_nt = allSeqs[seq_id_stored]
             if EXTENDED:
-                ## which part of database sequence was aligned
                 db_part = gff_line['attributes']['Best_Hit_DB_Pos']
-                ## db_part = line.split("\t")[8].split(";")[4].split("=")[1]
-                ## datatabse seq length
                 dom_len = int(db_part.split("of")[1])
-                ## start of alignment on database seq
                 db_start = int(db_part.split("of")[0].split(":")[0])
-                ## end of alignment on database seq
                 db_end = int(db_part.split("of")[0].split(":")[1])
-                ## number of nucleotides missing in the beginning
                 dom_nt_prefix = (db_start - 1) * 3
-                ## number of nucleotides missing in the end
                 dom_nt_suffix = (dom_len - db_end) * 3
                 if strand == "+":
                     dom_nt_start = align_nt_start - dom_nt_prefix
                     dom_nt_end = align_nt_end + dom_nt_suffix
-                ## reverse extending for - strand
                 else:
                     dom_nt_start = align_nt_start - dom_nt_suffix
                     dom_nt_end = align_nt_end + dom_nt_prefix
-                ## correction for domain after extending having negative starting positon
                 dom_nt_start = max(1, dom_nt_start)
             else:
                 dom_nt_start = align_nt_start
                 dom_nt_end = align_nt_end
             full_dom_nt = seq_nt.seq[dom_nt_start - 1:dom_nt_end]
-            ## for - strand take reverse complement of the extracted sequence
             if strand == "-":
                 full_dom_nt = full_dom_nt.reverse_complement()
             full_dom_nt = str(full_dom_nt)
-            ## report when domain classified to the last level and no Ns in extracted seq
             if elem_type in unique_classes and "N" not in full_dom_nt:
-                # lineages reported in separate fasta files
-                if not elem_type in files_dict:
+                # prepare output file path if first time
+                if elem_type not in files_dict:
                     files_dict[elem_type] = os.path.join(
-                        OUT_DIR, "{}.fasta".format(elem_type.split("|")[
-                            -1].replace("/", "_")))
-                with open(files_dict[elem_type], "a") as out_nt_seq:
-                    out_nt_seq.write(">{}:{}-{}|{}[{}]\n{}\n".format(
-                        seq_nt.id, dom_nt_start, dom_nt_end, dom_type,
-                        elem_type, textwrap.fill(full_dom_nt,
-                                                 configuration.FASTA_LINE)))
+                        OUT_DIR, f"{elem_type.split('|')[-1].replace('/', '_')}.fasta")
+                    # clear existing file on first write
+                    mode = "w"
+                else:
+                    mode = "a"
+                # write sequence in appropriate mode
+                with open(files_dict[elem_type], mode) as out_nt_seq:
+                    out_nt_seq.write(
+                        ">{}:{}-{} {} {}\n{}\n".format(
+                            seq_nt.id, dom_nt_start, dom_nt_end,
+                            dom_type, elem_type,
+                            textwrap.fill(full_dom_nt, configuration.FASTA_LINE)
+                        )
+                    )
                 domains_counts_dict[elem_type] += 1
     return domains_counts_dict
 
