@@ -258,6 +258,72 @@ def read_single_fasta_to_dictionary(fh):
     fasta_dict = {k: ''.join(v) for k, v in fasta_dict.items()}
     return fasta_dict
 
+def split_fasta_by_length(fasta_file, length_threshold=1000000):
+    """
+    Split fasta file into two files based on sequence length threshold.
+    Sequences shorter than threshold go to short file, longer ones to long file.
+    This function processes the file line by line without loading into memory.
+
+    :param fasta_file: input fasta file path
+    :param length_threshold: length threshold to split sequences (default 1000000)
+    :return: tuple of (short_file_path, long_file_path, has_short, has_long)
+    """
+    short_file = tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='_short.fasta')
+    long_file = tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='_long.fasta')
+
+    short_file_path = short_file.name
+    long_file_path = long_file.name
+
+    has_short = False
+    has_long = False
+
+    with open(fasta_file, 'r') as f:
+        current_header = None
+        current_seq_lines = []
+        current_length = 0
+
+        for line in f:
+            if line.startswith('>'):
+                # Process previous sequence if exists
+                if current_header is not None:
+                    if current_length < length_threshold:
+                        short_file.write(current_header)
+                        for seq_line in current_seq_lines:
+                            short_file.write(seq_line)
+                        has_short = True
+                    else:
+                        long_file.write(current_header)
+                        for seq_line in current_seq_lines:
+                            long_file.write(seq_line)
+                        has_long = True
+
+                # Start new sequence
+                current_header = line
+                current_seq_lines = []
+                current_length = 0
+            else:
+                current_seq_lines.append(line)
+                current_length += len(line.strip())
+
+        # Process last sequence
+        if current_header is not None:
+            if current_length < length_threshold:
+                short_file.write(current_header)
+                for seq_line in current_seq_lines:
+                    short_file.write(seq_line)
+                has_short = True
+            else:
+                long_file.write(current_header)
+                for seq_line in current_seq_lines:
+                    long_file.write(seq_line)
+                has_long = True
+
+    short_file.close()
+    long_file.close()
+
+    return short_file_path, long_file_path, has_short, has_long
+
+
 def split_fasta_to_parts(fasta_file, number_of_parts):
     fasta_file_dir = tempfile.mkdtemp()
     # split fasta file to parts and save them to temporary directory
@@ -582,7 +648,7 @@ parser.add_argument(
     help="number of threads to use"
     )
 parser.add_argument('-S', '--short_reads', action='store_true',
-                    help='use this option if your input sequences are short reads',
+                    help='(DEPRECATED - now automatic) use this option if your input sequences are short reads',
                     default=False
                     )
 
@@ -653,43 +719,105 @@ args.new_ldb = False
 # run dante
 chunk_size = 500000
 overlap = 2000
+length_threshold = 1000000
 
+# Split input file into short and long sequences automatically
+print("Analyzing input sequences and splitting by length...")
+short_file, long_file, has_short, has_long = split_fasta_by_length(
+    args.query, length_threshold=length_threshold
+)
 
-if not args.short_reads:
-    # split fasta file to chunks
-    fasta_file_split, matching_table = split_fasta_to_chunks(args.query, chunk_size, overlap)
-    print('getting fasta sequence size')
+print(f"Sequences < {length_threshold} bp: {'Yes' if has_short else 'No'}")
+print(f"Sequences >= {length_threshold} bp: {'Yes' if has_long else 'No'}")
+
+# List to collect all output GFF files
+all_output_gffs = []
+files_to_cleanup = []
+
+# Process short sequences (if any) - use short-read mode
+if has_short:
+    print("\n=== Processing short sequences ===")
+    files_to_cleanup.append(short_file)
+
+    if args.cpu == 1:
+        print("Running DANTE on short sequences with 1 CPU")
+        args_short = copy.deepcopy(args)
+        args_short.query = short_file
+        short_output = tempfile.NamedTemporaryFile(delete=False, suffix='_short.gff').name
+        args_short.domain_gff = short_output
+        args_short.short_reads = True
+        dante.main(args_short)
+        all_output_gffs.append(short_output)
+    else:
+        print(f"Splitting short sequences into {args.cpu} parts for parallel processing")
+        parts = split_fasta_to_parts(short_file, number_of_parts=args.cpu)
+        args_list = []
+        output_files = make_temp_files(args.cpu)
+
+        for i, part in enumerate(parts):
+            args_part = copy.deepcopy(args)
+            args_list.append(args_part)
+            args_part.query = part
+            args_part.domain_gff = output_files[i]
+            args_part.short_reads = True
+
+        with Pool(args.cpu) as p:
+            p.map(dante.main, args_list)
+
+        # Concatenate short sequence results
+        short_combined = tempfile.NamedTemporaryFile(delete=False, suffix='_short_combined.gff').name
+        with open(short_combined, 'w') as f:
+            for output_file in output_files:
+                with open(output_file, 'r') as f_tmp:
+                    for line in f_tmp:
+                        f.write(line)
+                os.remove(output_file)
+
+        all_output_gffs.append(short_combined)
+        # Clean up parts directory
+        shutil.rmtree(os.path.dirname(parts[0]))
+else:
+    print("No short sequences to process")
+    os.remove(short_file)
+
+# Process long sequences (if any) - use chunking mode
+if has_long:
+    print("\n=== Processing long sequences ===")
+    files_to_cleanup.append(long_file)
+
+    # Split fasta file to chunks
+    fasta_file_split, matching_table = split_fasta_to_chunks(long_file, chunk_size, overlap)
+    print('Getting fasta sequence sizes')
     fasta_seq_size = read_fasta_sequence_size(fasta_file_split)
     total_size = sum(fasta_seq_size.values())
     number_of_sequences = len(fasta_seq_size)
-    print('total size: ', total_size)
-    print('number of sequences: ', number_of_sequences)
-    print('splitting fasta file to chunks')
+    print(f'Total size: {total_size}')
+    print(f'Number of sequences: {number_of_sequences}')
 
     if total_size > chunk_size and number_of_sequences > 1 and args.cpu > 1:
-        print("running DANTE on chunks")
+        print("Running DANTE on chunks")
         seq_id_size_sorted = [i[0] for i in sorted(
             fasta_seq_size.items(), key=lambda x: int(x[1]), reverse=True
-            )]
+        )]
         number_of_temp_files = int(total_size / chunk_size) + 1
         if number_of_temp_files > number_of_sequences:
             number_of_temp_files = number_of_sequences
 
         temp_files_fasta = make_temp_files(number_of_temp_files)
-        # do not used file handles as it can cause oproblem with maximum number of open files
         seq_id_file_path_dict = dict(zip(seq_id_size_sorted, cycle(temp_files_fasta)))
-        # write sequences to temporary files
+
+        # Write sequences to temporary files
         with open(fasta_file_split, 'r') as f:
             for line in f:
                 if line[0] == '>':
                     header = line.strip().split(' ')[0][1:]
-                    # append to file
                     with open(seq_id_file_path_dict[header], 'a') as fout:
                         fout.write(line)
                 else:
                     with open(seq_id_file_path_dict[header], 'a') as fout:
                         fout.write(line)
         os.remove(fasta_file_split)
+
         args_list = []
         output_files = make_temp_files(number_of_temp_files)
         for i, temp_file_out in enumerate(temp_files_fasta):
@@ -697,85 +825,80 @@ if not args.short_reads:
             args_list.append(args_part)
             args_part.query = temp_files_fasta[i]
             args_part.domain_gff = output_files[i]
-            # dante.main(args_part)
+            args_part.short_reads = False
 
-        # run dante in parallel, use Pool after all runs finishes concatenate results,
-        # use n_cpu and number of processes
-
-        print("Number of chunks: ", number_of_temp_files)
+        print(f"Number of chunks: {number_of_temp_files}")
         with Pool(args.cpu) as p:
             p.map(dante.main, args_list, chunksize=1)
 
         for fn in temp_files_fasta:
             os.remove(fn)
 
-
-        # recalculate coordinates
+        # Recalculate coordinates
         tmp_gff_unfiltered = tempfile.NamedTemporaryFile(delete=False).name
         with open(tmp_gff_unfiltered, 'w') as f:
             for args_part in args_list:
-                tmp_gff=recalculate_gff3_back_to_original_coordinates(args_part.domain_gff,
-                                                                     matching_table,
-                                                                     chunk_size,
-                                                                     overlap)
+                tmp_gff = recalculate_gff3_back_to_original_coordinates(
+                    args_part.domain_gff, matching_table, chunk_size, overlap
+                )
                 with open(tmp_gff, 'r') as f_tmp:
                     for line in f_tmp:
                         f.write(line)
                 os.remove(tmp_gff)
-        # filter gff to remove duplicates (these are generated when overlapping chunks are
-        # processed)
-        gff3_header = "##gff-version 3\n"
 
-        with open(args.domain_gff, 'w') as f, open(tmp_gff_unfiltered, 'r') as f_tmp:
-            # sort gff, use sort command and read output from stdout
-            p = subprocess.Popen(['sort', '-k1,1', '-k4,4n'],stdin=f_tmp,
-                                 stdout=subprocess.PIPE)
+        # Filter gff to remove duplicates
+        gff3_header = "##gff-version 3\n"
+        long_combined = tempfile.NamedTemporaryFile(delete=False, suffix='_long_combined.gff').name
+
+        with open(long_combined, 'w') as f, open(tmp_gff_unfiltered, 'r') as f_tmp:
+            p = subprocess.Popen(['sort', '-k1,1', '-k4,4n'], stdin=f_tmp,
+                                stdout=subprocess.PIPE)
             last_line_coord = ""
             f.write(gff3_header)
             for line in p.stdout:
                 if line.decode('utf-8').startswith('#'):
                     continue
-                items=line.decode('utf-8').split('\t')
-                coord = F'{items[0]}_{items[3]}_{items[4]}'
+                items = line.decode('utf-8').split('\t')
+                coord = f'{items[0]}_{items[3]}_{items[4]}'
                 if coord != last_line_coord:
                     f.write(line.decode('utf-8'))
                     last_line_coord = coord
-            for line in f_tmp:
-                f.write(line)
-        # clean up
+
         os.remove(tmp_gff_unfiltered)
-        # remove temporary files
         for args_part in args_list:
             os.remove(args_part.domain_gff)
+
+        all_output_gffs.append(long_combined)
     else:
-        print("running DANTE on whole file")
-        dante.main(args)
+        print("Running DANTE on whole long sequence file")
+        args_long = copy.deepcopy(args)
+        args_long.query = long_file
+        long_output = tempfile.NamedTemporaryFile(delete=False, suffix='_long.gff').name
+        args_long.domain_gff = long_output
+        args_long.short_reads = False
+        dante.main(args_long)
+        all_output_gffs.append(long_output)
 else:
-    if args.cpu==1:
-        print("running DANTE on short reads with 1 cpu")
-        dante.main(args)
-    else:
-        # simply split input file to args.cpu pieces and run in parallel
-        print("Spliting input file to parts")
-        parts = split_fasta_to_parts(args.query, number_of_parts=args.cpu)
-        args_list = []
-        output_files = make_temp_files(args.cpu)
-        for i, part in enumerate(parts):
-            args_part = copy.deepcopy(args)
-            args_list.append(args_part)
-            args_part.query = part
-            args_part.domain_gff = output_files[i]
-        with Pool(args.cpu) as p:
-            p.map(dante.main, args_list)
-        # concatenate results
-        with open(args.domain_gff, 'w') as f:
-            for output_file in output_files:
-                with open(output_file, 'r') as f_tmp:
-                    for line in f_tmp:
-                        f.write(line)
-                os.remove(output_file)
-        # clean up - delete whole directory and its content
-        shutil.rmtree(os.path.dirname(parts[0]))
+    print("No long sequences to process")
+    os.remove(long_file)
+
+# Merge all results into final output file
+print("\n=== Merging results ===")
+gff3_header = "##gff-version 3\n"
+
+with open(args.domain_gff, 'w') as f_out:
+    f_out.write(gff3_header)
+    for gff_file in all_output_gffs:
+        with open(gff_file, 'r') as f_in:
+            for line in f_in:
+                if not line.startswith('##gff-version'):
+                    f_out.write(line)
+        os.remove(gff_file)
+
+# Clean up temporary split files
+for fn in files_to_cleanup:
+    if os.path.exists(fn):
+        os.remove(fn)
 
 
 
@@ -787,5 +910,6 @@ add_version_to_gff3(args.domain_gff, __version__, args.database)
 # remove temporary files, recursive remove directory
 if args.extra_database is not None:
     shutil.rmtree(db_tmp_dir)
+
 
 shutil.rmtree(master_tmp)
