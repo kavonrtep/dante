@@ -333,23 +333,42 @@ def split_fasta_to_parts(fasta_file, number_of_parts):
         for line in f:
             if line[0] == '>':
                 number_of_sequences += 1
-    part_size = int(number_of_sequences / number_of_parts) + 1
-    # adjust last part size to
-    last_part_size = number_of_sequences - (number_of_parts - 1) * part_size
-    part_sizes = [part_size] * (number_of_parts - 1) + [last_part_size]
-    part_files = [os.path.join(fasta_file_dir, F'part_{i}.fasta') for i in range(number_of_parts)]
-    for i, size in enumerate(part_sizes):
-        fn = part_files[i]
-        with open(fasta_file, 'r') as f, open(fn, 'w') as f_out:
-            n = 0
-            while n < size:
-                line = f.readline()
-                if line[0] == '>':
-                    n += 1
-                if n <= size:
-                    f_out.write(line)
-            # set file pointer one line back
-            f.seek(f.tell() - len(line))
+
+    # Adjust number of parts if there are fewer sequences than requested parts
+    if number_of_sequences < number_of_parts:
+        number_of_parts = number_of_sequences
+
+    # Calculate part sizes
+    part_size = int(number_of_sequences / number_of_parts)
+    remainder = number_of_sequences % number_of_parts
+
+    # Distribute sequences: first 'remainder' parts get one extra sequence
+    part_sizes = [part_size + 1 if i < remainder else part_size
+                  for i in range(number_of_parts)]
+
+    part_files = [os.path.join(fasta_file_dir, F'part_{i}.fasta')
+                  for i in range(number_of_parts)]
+    print(part_files)
+    # Split file in a single pass
+    with open(fasta_file, 'r') as f:
+        current_part = 0
+        sequences_in_current_part = 0
+        f_out = open(part_files[current_part], 'w')
+
+        for line in f:
+            if line[0] == '>':
+                # Check if we need to move to the next part
+                if (sequences_in_current_part >= part_sizes[current_part] and
+                    current_part < number_of_parts - 1):
+                    f_out.close()
+                    current_part += 1
+                    sequences_in_current_part = 0
+                    f_out = open(part_files[current_part], 'w')
+                sequences_in_current_part += 1
+            f_out.write(line)
+
+        f_out.close()
+
     return part_files
 
 
@@ -752,8 +771,7 @@ if has_short:
         print(f"Splitting short sequences into {args.cpu} parts for parallel processing")
         parts = split_fasta_to_parts(short_file, number_of_parts=args.cpu)
         args_list = []
-        output_files = make_temp_files(args.cpu)
-
+        output_files = make_temp_files(min(args.cpu, len(parts)))
         for i, part in enumerate(parts):
             args_part = copy.deepcopy(args)
             args_list.append(args_part)
