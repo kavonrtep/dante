@@ -559,6 +559,21 @@ def recalculate_gff3_back_to_original_coordinates(gff3_file, matching_table,
     return gff3_file_recalculated
 
 
+# Shared context for the parallel coordinate-recalculation pool. Set in the main
+# body just before the Pool is created; the forked workers (Linux) inherit it,
+# so the large matching_table is never pickled per task.
+_recalc_matching_table = None
+_recalc_chunk_size = None
+_recalc_overlap = None
+
+
+def _recalc_worker(gff3_file):
+    """Pool worker: recalculate one chunk's GFF3 back to original coordinates."""
+    return recalculate_gff3_back_to_original_coordinates(
+        gff3_file, _recalc_matching_table, _recalc_chunk_size, _recalc_overlap
+    )
+
+
 
 
 class CustomFormatter(
@@ -852,16 +867,27 @@ if has_long:
         for fn in temp_files_fasta:
             os.remove(fn)
 
-        # Recalculate coordinates
+        # Recalculate coordinates back to the original genome. Each chunk is
+        # independent, so this runs across args.cpu workers instead of a single
+        # thread — on large genomes with many chunks this serial step rivalled
+        # the (parallel) search time. matching_table is shared via a module
+        # global inherited by the forked workers, so it is not pickled per task.
+        # The final GFF is globally sorted below, so the concatenation order here
+        # does not affect the result.
+        globals().update(
+            _recalc_matching_table=matching_table,
+            _recalc_chunk_size=chunk_size,
+            _recalc_overlap=overlap,
+        )
+        chunk_gffs = [args_part.domain_gff for args_part in args_list]
+        with Pool(args.cpu) as p:
+            recalculated_gffs = p.map(_recalc_worker, chunk_gffs, chunksize=1)
+
         tmp_gff_unfiltered = tempfile.NamedTemporaryFile(delete=False).name
         with open(tmp_gff_unfiltered, 'w') as f:
-            for args_part in args_list:
-                tmp_gff = recalculate_gff3_back_to_original_coordinates(
-                    args_part.domain_gff, matching_table, chunk_size, overlap
-                )
+            for tmp_gff in recalculated_gffs:
                 with open(tmp_gff, 'r') as f_tmp:
-                    for line in f_tmp:
-                        f.write(line)
+                    shutil.copyfileobj(f_tmp, f)
                 os.remove(tmp_gff)
 
         # Filter gff to remove duplicates
@@ -869,7 +895,10 @@ if has_long:
         long_combined = tempfile.NamedTemporaryFile(delete=False, suffix='_long_combined.gff').name
 
         with open(long_combined, 'w') as f, open(tmp_gff_unfiltered, 'r') as f_tmp:
-            p = subprocess.Popen(['sort', '-k1,1', '-k4,4n'], stdin=f_tmp,
+            # --parallel + a larger buffer speed up the single global sort without
+            # changing its output; the merge tail used to be single-threaded.
+            p = subprocess.Popen(['sort', '--parallel', str(args.cpu), '-S', '10%',
+                                  '-k1,1', '-k4,4n'], stdin=f_tmp,
                                 stdout=subprocess.PIPE)
             last_line_coord = ""
             f.write(gff3_header)
