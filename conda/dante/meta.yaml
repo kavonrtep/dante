@@ -1,0 +1,55 @@
+# Version is extracted by regex from a copy of the top-level
+# version.py placed in this recipe dir by the conda-release workflow
+# (or manually "cp ../../version.py ." prior to a local build).
+# load_file_data only supports JSON/YAML/TOML and rejects .py;
+# load_file_regex reads any text file and returns the re.Match.
+{% set m = load_file_regex(load_file='version.py',
+                           regex_pattern="__version__\\s*=\\s*['\"]([^'\"]+)['\"]",
+                           from_recipe_dir=True) %}
+{% set version = m.group(1) if m else '0.0.0.dev' %}
+
+package:
+  name: dante
+  version: {{ version }}
+
+source:
+  # Build from the checked-out source tree. No URL / sha256 needed;
+  # CI checks out at the release tag and the build consumes that tree.
+  # The bundled REXdb protein-domain database (tool-data/protein_domains)
+  # is tracked in git and therefore included in the package.
+  path: ../..
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python =3.11.0
+    - numpy =1.24.2
+    - biopython =1.81
+    - last =1453
+    - r-base =4.2.3
+
+test:
+  commands:
+    - dante --version
+    - dante --help
+    - dante_gff_output_filtering.py --help
+
+about:
+  home: https://github.com/kavonrtep/dante
+  dev_url: https://github.com/kavonrtep/dante
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file: LICENCE
+  summary: >
+    DANTE — Domain-based ANnotation of Transposable Elements. Identifies
+    transposable-element protein-coding domains in DNA sequences by
+    similarity search against the REXdb protein-domain database.
+
+extra:
+  copy_test_source_files: true
+  final: true
+  recipe-maintainers:
+    - kavonrtep

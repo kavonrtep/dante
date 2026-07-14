@@ -1,0 +1,92 @@
+name: conda-release
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+*']
+
+jobs:
+  build-and-upload:
+    name: build + upload to anaconda.org
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert tag matches version.py
+        run: |
+          V=$(python -c "exec(open('version.py').read()); print(__version__)")
+          if [ "$V" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::version.py ($V) does not match tag ($GITHUB_REF_NAME)"
+            exit 1
+          fi
+          echo "tag matches version.py: $V"
+
+      - name: Set up miniforge / mamba
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-update-conda: false
+          use-mamba: true
+          activate-environment: release
+          python-version: "3.11"
+          channels: conda-forge,bioconda,petrnovak
+          channel-priority: strict
+
+      - name: Install build tooling
+        run: |
+          # anaconda-client's binstar_client still imports pkg_resources
+          # which setuptools 81.0.0 removed. Pin setuptools<81 (this is
+          # the upstream-recommended workaround). Drop the pin once
+          # anaconda-client migrates to packaging.version.
+          mamba install -y conda-build boa anaconda-client "setuptools<81"
+
+      - name: Sync version.py into recipe dir
+        run: |
+          # meta.yaml reads the version via load_file_regex('version.py',
+          # from_recipe_dir=True); conda-build copies the recipe into a
+          # temp workdir before rendering, so the file must live inside
+          # the recipe dir.
+          cp version.py conda/dante/version.py
+          echo "recipe version.py:"
+          cat conda/dante/version.py
+
+      - name: Build conda package
+        run: |
+          mkdir -p build_out
+          conda mambabuild -c conda-forge -c bioconda -c petrnovak \
+            --output-folder build_out \
+            conda/dante
+
+      - name: Upload to anaconda.org
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          if [ -z "${ANACONDA_API_TOKEN:-}" ]; then
+            echo "::error::ANACONDA_API_TOKEN secret is not set"
+            exit 1
+          fi
+          # noarch package lives under build_out/noarch/
+          FILES=$(ls build_out/noarch/dante-*.tar.bz2 \
+                     build_out/noarch/dante-*.conda 2>/dev/null || true)
+          if [ -z "$FILES" ]; then
+            echo "::error::no built package found in build_out/noarch/"
+            exit 1
+          fi
+          for f in $FILES; do
+            echo "Uploading $f"
+            anaconda -t "$ANACONDA_API_TOKEN" upload \
+              --user petrnovak \
+              --label main \
+              "$f"
+          done
+
+      - name: Upload build artefact (for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dante-${{ github.ref_name }}
+          path: build_out/noarch/dante-*
+          if-no-files-found: ignore
