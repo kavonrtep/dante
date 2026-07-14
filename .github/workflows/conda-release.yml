@@ -41,7 +41,13 @@ jobs:
           # which setuptools 81.0.0 removed. Pin setuptools<81 (this is
           # the upstream-recommended workaround). Drop the pin once
           # anaconda-client migrates to packaging.version.
-          mamba install -y conda-build boa anaconda-client "setuptools<81"
+          #
+          # Use conda-build's `conda build` (not boa's `conda mambabuild`):
+          # boa only registers a `conda mambabuild` subcommand, which no
+          # longer registers on current conda, and ships no standalone
+          # `mambabuild` binary. Modern conda already defaults to the
+          # libmamba solver, so `conda build` solves just as fast.
+          mamba install -y conda-build anaconda-client "setuptools<81"
 
       - name: Sync version.py into recipe dir
         run: |
@@ -56,9 +62,7 @@ jobs:
       - name: Build conda package
         run: |
           mkdir -p build_out
-          # boa provides `mambabuild` as a standalone executable, not as
-          # a `conda` subcommand in this environment.
-          mambabuild -c conda-forge -c bioconda -c petrnovak \
+          conda build -c conda-forge -c bioconda -c petrnovak \
             --output-folder build_out \
             conda/dante
 
