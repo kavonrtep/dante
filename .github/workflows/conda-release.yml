@@ -56,7 +56,9 @@ jobs:
       - name: Build conda package
         run: |
           mkdir -p build_out
-          conda mambabuild -c conda-forge -c bioconda -c petrnovak \
+          # boa provides `mambabuild` as a standalone executable, not as
+          # a `conda` subcommand in this environment.
+          mambabuild -c conda-forge -c bioconda -c petrnovak \
             --output-folder build_out \
             conda/dante
 
