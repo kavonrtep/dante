@@ -37,17 +37,20 @@ jobs:
 
       - name: Install build tooling
         run: |
-          # anaconda-client's binstar_client still imports pkg_resources
-          # which setuptools 81.0.0 removed. Pin setuptools<81 (this is
-          # the upstream-recommended workaround). Drop the pin once
-          # anaconda-client migrates to packaging.version.
-          #
-          # Use conda-build's `conda build` (not boa's `conda mambabuild`):
-          # boa only registers a `conda mambabuild` subcommand, which no
-          # longer registers on current conda, and ships no standalone
-          # `mambabuild` binary. Modern conda already defaults to the
-          # libmamba solver, so `conda build` solves just as fast.
-          mamba install -y conda-build anaconda-client "setuptools<81"
+          # `conda build` is a subcommand plugin that conda discovers from
+          # the BASE env (where the conda process itself runs), not from the
+          # active `release` env. So conda-build must be installed into base
+          # or `conda build` is an "invalid choice". (Same reason boa's
+          # `conda mambabuild` was unavailable.) Modern conda already
+          # defaults to the libmamba solver, so `conda build` is fast.
+          conda install -y -n base -c conda-forge conda-build
+          conda build --version
+          # anaconda-client runs in the active `release` env during the
+          # upload step (that env's bin dir is what's on PATH). Its
+          # binstar_client imports pkg_resources, which setuptools 81.0.0
+          # removed, so pin setuptools<81 (upstream-recommended workaround;
+          # drop once anaconda-client migrates off pkg_resources).
+          mamba install -y anaconda-client "setuptools<81"
 
       - name: Sync version.py into recipe dir
         run: |
