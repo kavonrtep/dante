@@ -63,11 +63,31 @@ Verified: two runs of the same input with different `PYTHONHASHSEED` are now
 byte-identical (baseline `HEAD` differed); guarded by `tests.sh` +
 `.github/workflows/tests.yml`.
 
-Requested fix **#2 — not reproduced / not done.** Static analysis showed DANTE
-runs `lastal` single-threaded (`-p` is the scoring matrix, not `-P` threads);
-parallelism is a process `Pool` over genome chunks whose output is globally
-sorted + de-duplicated, so the final bytes do not depend on thread scheduling.
-The residual ~0.1 % boundary jitter is therefore most likely `lastal`
-alignment tie-breaking or overlap-chunk duplicate resolution, not Python thread
-order. It needs an empirical repro before any change and was left out of this
-(low-priority) fix.
+Requested fix **#2 — disproved on production data; nothing to fix.** The
+boundary jitter does not exist. It was verified against the two CARP runs that
+motivated this request — the **same 13.76 Gbp genome**, same command
+(`dante ... -c 32`), same DANTE 0.2.11, Viridiplantae_v4.0:
+
+| Metric | Value |
+| --- | --- |
+| GFF3 records compared (`run-000097` vs `run-000117`) | 4,165,836 |
+| Raw differing lines | 64,351 (1.5 %) |
+| Lines differing in coordinates / score / strand (cols 1–8) | **0** |
+| Lines with a genuinely different `Region_Hits` *set* | **0** |
+| Differences remaining after applying 0.2.12's canonical sort | **0** |
+
+Every one of the 64,351 differences is `Region_Hits_Classifications` order
+(plus, on 3,339 `Ambiguous_domain` records, the `/`-joined `domain_type` in
+`Name=`). Not one of 4.16 M records differs in start/end/score/strand, so there
+is **no boundary jitter**. The first differing record is exactly the example in
+this request — same locus `47747–47965`, identical `Best_Hit=…|SIRE`, only the
+hit-list order swaps (`Lyco[195bp]` vs `SIRE[207bp]` as the leading entry); the
+apparent "top hit change" is just the first element of a reordered list, not a
+real classification change.
+
+This matches the static analysis: `lastal` is deterministic (byte-identical
+across runs, even with `-P` threads), and no code path routes hash/thread order
+into a coordinate. Applying exactly what 0.2.12 does (sort `Region_Hits` + sort
+`domain_type`) collapses all 64,351 differences to **0** — i.e. 0.2.12 makes the
+two production 0.2.11 runs byte-identical. Fix #1 is therefore the complete
+resolution; there is no separate boundary-determinism work to do.
