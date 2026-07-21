@@ -272,16 +272,19 @@ def score_matrix_evaluation(score_matrix, classes_dict, THRESHOLD_SCORE):
 
 
 def group_annot_regs(ann_per_reg):
-    ''' Get list of domains, annotations, longest common annotations and 
-	counts of positions with certain annotation per regions '''
+    ''' Get list of domains, annotations, longest common annotations and
+	counts of positions with certain annotation per regions.
+	unique_annotations and domain_type are emitted in a canonical
+	(sorted) order so the GFF output is byte-reproducible run-to-run;
+	otherwise set() iteration order varies with PYTHONHASHSEED between
+	processes and reshuffles Region_Hits_Classifications. '''
     ## tranform list of lists (potential multiple annotations for every position ) to flat list of all annotations
     all_annotations = [item for sublist in ann_per_reg for item in sublist]
-    unique_annotations = list(set(all_annotations))
+    unique_annotations = sorted(set(all_annotations))
+    ## ann_pos_counts stays paired with the sorted unique_annotations
     ann_pos_counts = [all_annotations.count(x) for x in unique_annotations]
-    unique_annotations = list(set(
-        [item for sublist in ann_per_reg for item in sublist]))
-    domain_type = list(set([annotation.split("|")[0]
-                            for annotation in unique_annotations]))
+    domain_type = sorted(set([annotation.split("|")[0]
+                              for annotation in unique_annotations]))
     classification_list = [annotation.split("|")
                            for annotation in unique_annotations]
     ann_substring = "|".join(os.path.commonprefix(classification_list))
@@ -289,11 +292,16 @@ def group_annot_regs(ann_per_reg):
     return domain_type, ann_substring, unique_annotations, ann_pos_counts
 
 
-def best_score(scores, region):
-    ''' From overlapping intervals take the one with the highest score '''
-    ## if more hits have the same best score take only the first one
-    best_idx = region[np.where(scores == max(scores))[0][0]]
-    best_idx_reg = np.where(scores == max(scores))[0][0]
+def best_score(scores, region, al_len, names, db_names):
+    ''' From overlapping intervals take the one with the highest score.
+    Deterministic tie-break, independent of the order hits arrive from
+    lastal: score desc, then alignment length desc, then lineage name,
+    then DB sequence name (the last key guarantees a total order). '''
+    best_idx_reg = min(
+        range(len(scores)),
+        key=lambda i: (-int(scores[i]), -int(al_len[i]),
+                       str(names[i]), str(db_names[i])))
+    best_idx = region[best_idx_reg]
     return best_idx, best_idx_reg
 
 
@@ -596,7 +604,10 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                                                   THRESHOLD_SCORE)
             [domain_type, ann_substring, unique_annotations, ann_pos_counts
              ] = group_annot_regs(ann_per_reg)
-            [best_idx, best_idx_reg] = best_score(scores, region)
+            al_len_region = (end_hit[np.array(region)]
+                             - start_hit[np.array(region)])
+            [best_idx, best_idx_reg] = best_score(
+                scores, region, al_len_region, annotations, db_names)
             annotation_best = annotations[best_idx_reg]
             db_name_best = db_names[best_idx_reg]
             db_starts_best = db_starts[best_idx_reg]
@@ -776,7 +787,10 @@ def domain_search(QUERY, LAST_DB, CLASSIFICATION, OUTPUT_DOMAIN,
                                                       THRESHOLD_SCORE)
                 [domain_type, ann_substring, unique_annotations, ann_pos_counts
                  ] = group_annot_regs(ann_per_reg)
-                [best_idx, best_idx_reg] = best_score(scores, region)
+                al_len_region = (end_hit[np.array(region)]
+                                 - start_hit[np.array(region)])
+                [best_idx, best_idx_reg] = best_score(
+                    scores, region, al_len_region, annotations, db_names)
                 annotation_best = annotations[best_idx_reg]
                 db_name_best = db_names[best_idx_reg]
                 db_starts_best = db_starts[best_idx_reg]

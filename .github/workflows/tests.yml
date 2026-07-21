@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  determinism-and-fixture:
+    name: determinism + fixture test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up miniforge / mamba
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          auto-update-conda: false
+          use-mamba: true
+          activate-environment: dante-test
+          python-version: "3.11"
+          channels: conda-forge,bioconda
+          channel-priority: strict
+
+      - name: Install runtime deps
+        run: |
+          # Only what the domain-search test needs: the LAST aligner plus
+          # the Python deps. R is only used by summarize_gff.R, not by the
+          # core domain search this test exercises.
+          mamba install -y 'last=1453' 'biopython=1.81' 'numpy=1.24.2'
+
+      - name: Run determinism + fixture test
+        run: ./tests.sh
